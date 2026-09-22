@@ -95,7 +95,7 @@ Start at [[protocol]].
 | 15-a-summary-that-names-the-work | implemented | [[efforts/15-a-summary-that-names-the-work/spec]] | 0 | 0 | 0 |
 | 17-a-resume-summary-of-its-own | implemented | [[efforts/17-a-resume-summary-of-its-own/spec]] | 0 | 0 | 4 |
 | 21-languages-and-honest-skills | implemented | [[efforts/21-languages-and-honest-skills/spec]] | 1 | 0 | 3 |
-| 23-degree-certificate-and-linkedin-profile | accepted | [[efforts/23-degree-certificate-and-linkedin-profile/spec]] | 0 | 0 | 3 |
+| 23-degree-certificate-and-linkedin-profile | implemented | [[efforts/23-degree-certificate-and-linkedin-profile/spec]] | 0 | 0 | 3 |
 | 3-site-redesign | implemented | [[efforts/3-site-redesign/spec]] | 0 | 1 | 8 |
 | 5-sections-and-resume | implemented | [[efforts/5-sections-and-resume/spec]] | 0 | 0 | 6 |
 | 7-document-downloads-and-contact-details | implemented | [[efforts/7-document-downloads-and-contact-details/spec]] | 1 | 0 | 6 |
