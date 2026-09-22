@@ -16,9 +16,9 @@ export interface LanguageTest {
 
 // "Working proficiency, STEP 85 (2022)": the level as authored, then the test
 // where one was taken, after the locale's own list separator. The year alone
-// and not the date: the other dates on the document print at the precision a
-// reader needs, and the month of a language test is not one of them, while
-// the year is what tells a reader how old the score is.
+// and not the date, as a period prints (formatPeriod in src/lib/i18n.ts): the
+// month of a language test is nothing a reader needs, while the year is what
+// tells a reader how old the score is.
 export function levelLine(level: string, test: LanguageTest | undefined, separator: string): string {
   if (!test) return level;
   return `${level}${separator}${test.name} ${test.score} (${String(test.date).slice(0, 4)})`;

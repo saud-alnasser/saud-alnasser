@@ -257,7 +257,7 @@ const muted = 'text-sm text-muted-foreground';
                   {text('position', data.position)}
                   {data.kind === 'training' && ` (${t.experience.training})`}
                 </h3>
-                <p class={period}>{formatPeriod(locale, data.period)}</p>
+                <p class={period} data-period>{formatPeriod(locale, data.period)}</p>
               </div>
               <p class={muted}>
                 <span class="text-foreground">{text('organisation', data.organisation)}</span>
@@ -294,7 +294,7 @@ const muted = 'text-sm text-muted-foreground';
                   {t.listSeparator}
                   {text('area', data.area)}
                 </h3>
-                <p class={period}>{formatPeriod(locale, data.period)}</p>
+                <p class={period} data-period>{formatPeriod(locale, data.period)}</p>
               </div>
               <p class="text-sm">{text('institution', data.institution)}</p>
               {/* Only the statuses the period does not already say; see
@@ -407,7 +407,7 @@ const muted = 'text-sm text-muted-foreground';
                   <li class="cv-entry">
                     <div class={row}>
                       <h3 class="font-semibold">{data.name}</h3>
-                      <p class={period}>{formatPeriod(locale, data.period)}</p>
+                      <p class={period} data-period>{formatPeriod(locale, data.period)}</p>
                     </div>
                     <p class={muted}>{text('role', data.role)}</p>
                     <p class="mt-2 leading-6">{text('summary', data.summary)}</p>

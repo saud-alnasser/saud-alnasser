@@ -62,7 +62,7 @@ const caption = `${qualification}${t.listSeparator}${institution}`;
 ---
 
 <Card as="article">
-  <p class="text-sm text-muted-foreground tabular-nums">{formatPeriod(locale, data.period)}</p>
+  <p class="text-sm text-muted-foreground tabular-nums" data-period>{formatPeriod(locale, data.period)}</p>
   <h3 class="mt-1 text-lg font-semibold tracking-tight">{institution}</h3>
   <p class="mt-1">{qualification}</p>
   {status && <p class="mt-2 text-sm text-muted-foreground" data-status={data.status}>{status}</p>}

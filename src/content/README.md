@@ -26,7 +26,11 @@ people; where the two disagree, the code is right and this file is corrected.
   language map.
 - **Dates** are `YYYY`, `YYYY-MM`, or `YYYY-MM-DD`, quoted or not. This is
   the JSON Resume date form, so a date accepted here is accepted there. A
-  `period` is `start` and an optional `end`; no `end` means ongoing.
+  `period` is `start` and an optional `end`; no `end` means ongoing. Write
+  a date to whatever precision is known: the ordering and the JSON Resume
+  documents read it as written, while the site and both documents print a
+  `period` as years alone, `2024` for work that fell in one year and
+  `2022-2026` for work that did not.
 - **Links** are full URLs. To leave a link out, omit the key; an empty string
   is refused.
 - **Unknown keys are refused**, so a misspelt field fails the build rather
@@ -135,7 +139,7 @@ keeps separate Education, Certifications, and Courses sections.
 | `institution` | text | yes | the school or university |
 | `area` | text | yes | the field, such as "Computer science" |
 | `studyType` | text | yes | the qualification, such as "Bachelor of Science" or "High school diploma" |
-| `period` | `start`, optional `end` | no | when; `end` is the completion term where course work is finished |
+| `period` | `start`, optional `end` | no | when, as precisely as is known; `end` is when the course work finished, and its presence is what says so |
 | `status` | one of `completed`, `certificate-pending`, `in-progress` | no | shown only where it says something the period does not: `completed` prints nothing, because `end` has already said it. `certificate-pending` means the course work is complete and the certificate has not been issued; the site never says "graduated" or "awarded" for it |
 | `courses` | list of text | yes, each item | optional. Notable courses |
 | `document` | file path | no | optional. The degree certificate's PDF, relative to this folder, as `files/saudi-electronic-university.pdf`, with its preview beside it, exactly as a certificate names its own (see "The certificate documents" below). The card opens it in the same dialog. The build refuses an entry whose PDF or preview does not exist, naming the file, and the same redaction rule applies: a degree certificate carries the student number and the national ID number, and both are removed from the file before it is added |

@@ -96,6 +96,7 @@ Start at [[protocol]].
 | 17-a-resume-summary-of-its-own | implemented | [[efforts/17-a-resume-summary-of-its-own/spec]] | 0 | 0 | 4 |
 | 21-languages-and-honest-skills | implemented | [[efforts/21-languages-and-honest-skills/spec]] | 1 | 0 | 3 |
 | 23-degree-certificate-and-linkedin-profile | implemented | [[efforts/23-degree-certificate-and-linkedin-profile/spec]] | 0 | 0 | 3 |
+| 25-years-only-time-frames | implemented | [[efforts/25-years-only-time-frames/spec]] | 0 | 0 | 2 |
 | 3-site-redesign | implemented | [[efforts/3-site-redesign/spec]] | 0 | 1 | 8 |
 | 5-sections-and-resume | implemented | [[efforts/5-sections-and-resume/spec]] | 0 | 0 | 6 |
 | 7-document-downloads-and-contact-details | implemented | [[efforts/7-document-downloads-and-contact-details/spec]] | 1 | 0 | 6 |
@@ -143,6 +144,8 @@ Every task of every effort. The tracker carries the effort, never its tasks.
 | [[efforts/23-degree-certificate-and-linkedin-profile/tickets/01-the-document-on-the-entry]] feat(content): the education entry names its document, redacted, with its preview and the command that renders it | 23-degree-certificate-and-linkedin-profile | resolved | — |
 | [[efforts/23-degree-certificate-and-linkedin-profile/tickets/02-the-control-on-the-card]] feat(site): the university card opens the degree certificate in the page's dialog | 23-degree-certificate-and-linkedin-profile | resolved | 01 |
 | [[efforts/23-degree-certificate-and-linkedin-profile/tickets/03-the-linkedin-profile]] feat(content): the LinkedIn profile, read by the home page, the documents, the JSON files, and the README | 23-degree-certificate-and-linkedin-profile | resolved | — |
+| [[efforts/25-years-only-time-frames/tickets/01-the-function-that-prints-years]] feat(site): every period printed as years, from the one function | 25-years-only-time-frames | resolved | — |
+| [[efforts/25-years-only-time-frames/tickets/02-the-university-dated-2022-to-2026]] feat(content): the university dated 2022 to 2026 | 25-years-only-time-frames | resolved | 01 |
 | [[efforts/3-site-redesign/tickets/01-foundation-and-header]] feat(site): card, icon, and fold components, the wider column, and the header controls with icons | 3-site-redesign | resolved | — |
 | [[efforts/3-site-redesign/tickets/02-home-page]] feat(site): lay the home page out as a hero, contact actions, skill cards, and section cards | 3-site-redesign | resolved | 01 |
 | [[efforts/3-site-redesign/tickets/03-work-page]] feat(site): render projects and experience as card grids with folded highlights | 3-site-redesign | resolved | 01 |

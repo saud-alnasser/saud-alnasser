@@ -6,7 +6,7 @@ import { parse as parseYaml } from 'yaml';
 import { marker } from '../scripts/form-marker.mjs';
 import { fill, formatPeriod, strings } from '../src/lib/i18n';
 import { levelLine } from '../src/lib/languages';
-import { byOrderThenName } from '../src/lib/order';
+import { byOrderThenName, byStartAscending } from '../src/lib/order';
 import { isCertification, isCourse, isShown, onResume } from '../src/lib/shown';
 import { at, locales, type Locale } from './pages';
 
@@ -138,6 +138,19 @@ for (const locale of locales) {
         await page.goto(route);
         const section = page.locator('[data-cv-section="summary"]');
         await expect(section.locator('p'), `the summary on ${route}`).toHaveText(summaryText(variant, locale));
+      });
+
+      // Each institution's period through the function the page prints it
+      // with, in the order the section lists them, so the value on the page
+      // is the entry's and not any pair of years the shape check in
+      // tests/periods.spec.ts would accept.
+      test('dates each education entry from the content', async ({ page }) => {
+        await page.goto(route);
+        await expect(page.locator('[data-cv-section="education"] [data-period]')).toHaveText(
+          entries('education')
+            .sort(byStartAscending)
+            .map((data) => formatPeriod(locale, data.period)),
+        );
       });
 
       // One line per language, "name: level", the level followed by the test
