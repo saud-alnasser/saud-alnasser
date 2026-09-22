@@ -8,7 +8,7 @@
 //   locales                 the locales with their direction and own name
 //   strings[locale]         the UI strings for one locale
 //   formatDate(locale, iso) a YYYY, YYYY-MM, or YYYY-MM-DD date for display
-//   formatPeriod(locale, p) "start to end", or "start to present"
+//   formatPeriod(locale, p) "2024", "2022-2026", or "2024-Present": years alone
 //   plural(locale, n, forms) the form of a noun that goes with a count
 
 export type Locale = 'en' | 'ar';
@@ -208,7 +208,6 @@ const en = {
   },
   period: {
     present: 'Present',
-    to: 'to',
   },
 };
 
@@ -352,7 +351,6 @@ const ar: Strings = {
   },
   period: {
     present: 'الآن',
-    to: 'إلى',
   },
 };
 
@@ -392,8 +390,23 @@ export function plural(locale: Locale, count: number, forms: PluralForms): strin
   return forms[new Intl.PluralRules(locale).select(count)] ?? forms.other;
 }
 
-export function formatPeriod(locale: Locale, period: { start: string; end?: string }): string {
-  const start = formatDate(locale, period.start);
-  const end = period.end ? formatDate(locale, period.end) : strings[locale].period.present;
-  return `${start} ${strings[locale].period.to} ${end}`;
+// A period prints as years: the one year the work fell in, or the start's
+// year and the end's joined by a hyphen, or the start's year and the present
+// where there is no end. The content keeps the month, because the ordering
+// and the JSON Resume documents read it; a reader of a page or a document
+// needs the year, and a resume parser reads "2022-2026" as a range. A hyphen
+// and not an en dash: between two numbers a hyphen is a number separator to
+// the bidi algorithm, so the Arabic pages show the range in one
+// left-to-right piece with the start first, the same as the English.
+export function formatPeriod(locale: Locale, period: { start: string | number; end?: string | number }): string {
+  const start = year(period.start);
+  const end = period.end === undefined ? strings[locale].period.present : year(period.end);
+  return start === end ? start : `${start}-${end}`;
+}
+
+// The year of a YYYY, YYYY-MM, or YYYY-MM-DD date, which is its first four
+// characters. A bare year read straight from YAML is a number, as formatDate
+// says, so it is stringified first.
+function year(iso: string | number): string {
+  return String(iso).slice(0, 4);
 }
