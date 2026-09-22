@@ -12,8 +12,8 @@ studyType:
   en: Bachelor of Science
   ar: بكالوريوس العلوم
 period:
-  start: "2023-09"
-  end: "2026-09"
+  start: "2022"
+  end: "2026"
 status: completed
 courses:
   - en: Digital Logic Design
