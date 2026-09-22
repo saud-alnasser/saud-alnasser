@@ -20,6 +20,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse as parseYaml } from 'yaml';
 import { base, site } from '../astro.config.mjs';
+import { profileIcon } from '../src/lib/networks.ts';
 import { joinBase } from '../src/lib/paths.ts';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -57,10 +58,14 @@ const links = [
 
 // The profiles the block links to, above the site: every one in the content
 // except GitHub, because this README is the GitHub profile page and a link to
-// itself says nothing. The same test src/lib/networks.ts applies, on the
-// network's name, so a profile is skipped by what it is rather than by its
-// position in the list.
-const isGitHub = ({ network }) => network.trim().toLowerCase() === 'github';
+// itself says nothing. Which network is GitHub is decided in
+// src/lib/networks.ts, the way the documents decide which address becomes
+// the QR code, so the two agree on every spelling of the name. The emoji is
+// one row per network, like the site links below, with a plain link for a
+// network no row names.
+const isGitHub = ({ network }) => profileIcon(network) === 'github';
+const emojis = { linkedin: '💼' };
+const emojiFor = (network) => emojis[network.trim().toLowerCase()] ?? '🔗';
 
 // The block as the content says it should read.
 export async function renderProfile() {
@@ -72,7 +77,7 @@ export async function renderProfile() {
     '',
     ...profile.profiles
       .filter((entry) => !isGitHub(entry))
-      .map(({ network, username, url }) => `- 💼 **${network}** — [${username}](${url})`),
+      .map(({ network, username, url }) => `- ${emojiFor(network)} **${network}** — [${username}](${url})`),
     ...links.map(
       ({ emoji, label, path: page }) =>
         `- ${emoji} **${label}** — [English](${at(`/en/${page}`)}) · [العربية](${at(`/ar/${page}`)})`,

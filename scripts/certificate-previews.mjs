@@ -33,10 +33,17 @@ const width = 1600;
 const quality = 80;
 
 // The fonts pdf.js substitutes for the fourteen standard ones a PDF may use
-// without embedding. It appends a file name to this and reads the result, and
-// it insists on a forward slash at the end whatever the platform's separator,
-// which Node's file system accepts on Windows as well.
-const standardFontDataUrl = `${path.dirname(require.resolve('pdfjs-dist/package.json')).split(path.sep).join('/')}/standard_fonts/`;
+// without embedding, and the WebAssembly decoders it needs for a JBIG2 or
+// CCITT fax image, which is how the degree certificate stores its QR code.
+// It appends a file name to each and reads the result, and it insists on a
+// forward slash at the end whatever the platform's separator, which Node's
+// file system accepts on Windows as well. Without `wasmUrl` pdf.js warns that
+// the image could not be decoded, draws the page without it, and resolves,
+// so the preview would silently lack the code; `render` below turns that
+// warning into the failure the header promises.
+const pdfjs = path.dirname(require.resolve('pdfjs-dist/package.json')).split(path.sep).join('/');
+const standardFontDataUrl = `${pdfjs}/standard_fonts/`;
+const wasmUrl = `${pdfjs}/wasm/`;
 
 class RenderFailure extends Error {
   constructor(reason, message) {
@@ -52,7 +59,7 @@ async function render(files, name) {
   const source = path.join(files, name);
   const target = path.join(files, `${path.basename(name, '.pdf')}.webp`);
 
-  const task = getDocument({ data: new Uint8Array(await readFile(source)), standardFontDataUrl });
+  const task = getDocument({ data: new Uint8Array(await readFile(source)), standardFontDataUrl, wasmUrl });
   try {
     let pdf;
     try {
@@ -64,10 +71,22 @@ async function render(files, name) {
     const scale = width / page.getViewport({ scale: 1 }).width;
     const viewport = page.getViewport({ scale });
     const canvas = createCanvas(Math.round(viewport.width), Math.round(viewport.height));
+    // An image pdf.js cannot decode is a warning on the console and a page
+    // rendered without it, never a rejection, so the warnings are collected
+    // and a page missing an image fails like a page that did not render.
+    const warnings = [];
+    const warn = console.warn;
+    console.warn = (...parts) => warnings.push(parts.join(' '));
     try {
       await page.render({ canvas, viewport }).promise;
     } catch (error) {
       throw new RenderFailure('page-not-rendered', `${path.relative(root, source)}: ${error.message}`);
+    } finally {
+      console.warn = warn;
+    }
+    const undecoded = warnings.filter((line) => /Unable to decode image|Dependent image isn't ready/.test(line));
+    if (undecoded.length > 0) {
+      throw new RenderFailure('image-not-decoded', `${path.relative(root, source)}: ${undecoded[0]}`);
     }
     const webp = await sharp(canvas.toBuffer('image/png')).webp({ quality }).toBuffer();
     await writeFile(target, webp);
@@ -77,10 +96,10 @@ async function render(files, name) {
   }
 }
 
-// Every PDF under each collection's files/ directory. A collection with no
-// documents at all is the failure it always was; a directory that is absent
-// is read as empty, so a collection whose documents have all been removed
-// does not need an empty folder kept for this script.
+// Every PDF under each collection's files/ directory. Both directories must
+// be readable, as the one always had to be, and no PDF under either is the
+// failure it always was: a renamed folder is found here rather than as a
+// site full of blank cards.
 const documents = [];
 for (const collection of collections) {
   const files = path.join(root, 'src', 'content', collection, 'files');
@@ -88,11 +107,8 @@ for (const collection of collections) {
   try {
     names = (await readdir(files)).filter((name) => name.endsWith('.pdf')).sort();
   } catch (error) {
-    if (error.code !== 'ENOENT') {
-      console.error(`certificate-previews: cannot read ${path.relative(root, files)}: ${error.message}`);
-      process.exit(1);
-    }
-    names = [];
+    console.error(`certificate-previews: cannot read ${path.relative(root, files)}: ${error.message}`);
+    process.exit(1);
   }
   documents.push(...names.map((name) => ({ files, name })));
 }

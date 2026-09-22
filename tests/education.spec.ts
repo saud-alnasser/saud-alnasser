@@ -186,8 +186,8 @@ for (const locale of locales) {
       await page.goto(url);
       for (const entry of education) {
         const card = page.locator(timeline).filter({ hasText: entry.institution[locale] });
-        await expect(card, `the card of ${entry.institution.en} is an article`).toHaveJSProperty('tagName', 'LI');
-        await expect(card.locator('article')).toHaveCount(1);
+        await expect(card, `the card of ${entry.institution.en} is a timeline item`).toHaveJSProperty('tagName', 'LI');
+        await expect(card.locator('article'), `the card of ${entry.institution.en} is an article`).toHaveCount(1);
         await expect(card.locator(control), `documents offered by ${entry.institution.en}`).toHaveCount(
           entry.document ? 1 : 0,
         );
@@ -202,7 +202,10 @@ for (const locale of locales) {
         await expect(link).toHaveAttribute('href', /\/_astro\/.+\.pdf$/);
         await expect(link).toHaveAttribute('data-document', (await link.getAttribute('href'))!);
         await expect(link).toHaveAttribute('data-preview', /\.webp$/);
-        expect(Number(await link.getAttribute('data-preview-width'))).toBeGreaterThan(0);
+        // The preview is rendered 1600 pixels wide by scripts/certificate-previews.mjs,
+        // and the height follows the page, so the width is the one number that
+        // is fixed and a swapped pair fails here.
+        await expect(link).toHaveAttribute('data-preview-width', '1600');
         expect(Number(await link.getAttribute('data-preview-height'))).toBeGreaterThan(0);
         await expect(link).toHaveAttribute('data-caption', caption);
       }

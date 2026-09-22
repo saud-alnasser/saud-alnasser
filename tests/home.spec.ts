@@ -201,9 +201,12 @@ for (const locale of locales) {
         await expect(action).toHaveAccessibleName(entry.network);
         await expect(action.locator('svg')).toHaveAttribute('data-icon', profileIcon(entry.network));
       }
-      const linkedin = profile.profiles.find((entry) => entry.network === 'LinkedIn');
-      expect(linkedin, 'the content lists a LinkedIn profile').toBeTruthy();
-      await expect(page.locator('[data-contact="linkedin"] svg')).toHaveAttribute('data-icon', 'linkedin');
+      // The profile the content must list, by name: the loop above would pass
+      // with LinkedIn removed, and its absence is the thing to notice.
+      expect(
+        profile.profiles.map((entry) => entry.network),
+        'the content lists a LinkedIn profile',
+      ).toContain('LinkedIn');
 
       const cv = page.locator('[data-contact="cv"]');
       await expect(cv).toHaveAttribute('href', at(`/${locale}/cv/`));
@@ -284,10 +287,11 @@ for (const locale of locales) {
 }
 
 test('a network with a mark takes it, and one without falls back to the link icon', () => {
-  // The only profile in the content source is GitHub; the fallback is what
-  // every other network would render, so it is asserted where it is decided.
+  // The two networks the content lists each have a mark; the fallback is what
+  // any other network would render, so it is asserted where it is decided.
   expect(profileIcon('GitHub')).toBe('github');
   expect(profileIcon('github')).toBe('github');
+  expect(profileIcon('LinkedIn')).toBe('linkedin');
   expect(profileIcon('Mastodon')).toBe('external-link');
 });
 
