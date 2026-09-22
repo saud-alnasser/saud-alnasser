@@ -333,6 +333,15 @@ async function documentPdfs() {
       lines.push(`${relative}: ${size} bytes; pdftotext is not on the PATH, so the text was not checked`);
       continue;
     }
+    // A period prints as years alone (src/lib/i18n.ts, formatPeriod), so a
+    // month abbreviation followed by a year is a period that leaked its
+    // month, from whichever template printed it. A certificate date is the
+    // one legitimate month on the page, and it prints day first, so a digit
+    // and a space before the month is what excludes it.
+    const leaked = text.match(/(?<!\d )\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{4}\b/);
+    if (leaked) {
+      throw new CheckFailure(name, `${relative}: "${leaked[0]}" is a period printed with its month`);
+    }
     const found = text.split(/\r?\n/).map(squash);
     let cursor = 0;
     for (const group of groups) {

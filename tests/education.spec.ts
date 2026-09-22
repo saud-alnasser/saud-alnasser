@@ -38,7 +38,7 @@ type EducationEntry = {
   studyType: Text;
   area: Text;
   status: EducationStatus;
-  period: { start: string };
+  period: { start: string; end?: string };
   courses?: Text[];
   document?: string;
 };
@@ -92,6 +92,10 @@ for (const locale of locales) {
       await page.goto(url);
       const card = page.locator(timeline).filter({ hasText: degree.institution[locale] });
       await expect(card).toHaveCount(1);
+      // The period through the function the card prints it with, so the
+      // value is the entry's and not any pair of years the shape check in
+      // tests/periods.spec.ts would accept.
+      await expect(card.locator('[data-period]')).toHaveText(formatPeriod(locale, degree.period));
       const status = statusOf(locale, degree);
       if (status === null) await expect(card.locator('[data-status]')).toHaveCount(0);
       else await expect(card.locator('[data-status]')).toHaveText(status);

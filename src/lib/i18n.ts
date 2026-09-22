@@ -400,7 +400,7 @@ export function plural(locale: Locale, count: number, forms: PluralForms): strin
 // left-to-right piece with the start first, the same as the English.
 export function formatPeriod(locale: Locale, period: { start: string | number; end?: string | number }): string {
   const start = year(period.start);
-  const end = period.end === undefined ? strings[locale].period.present : year(period.end);
+  const end = period.end ? year(period.end) : strings[locale].period.present;
   return start === end ? start : `${start}-${end}`;
 }
 

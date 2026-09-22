@@ -1,7 +1,8 @@
 # The degree is complete: the course work finished in the 2025-2026 summer term
 # and the certificate has been issued. The status field says so; the site shows
 # a status only where it says something the period does not, so this one prints
-# nothing and the end date carries it.
+# nothing and the presence of an end date carries it. The period is the two
+# years Saud gave; the months are not known, and the site prints years alone.
 institution:
   en: Saudi Electronic University
   ar: الجامعة السعودية الإلكترونية

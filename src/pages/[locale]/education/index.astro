@@ -84,11 +84,7 @@ const count = fill(t.education.onlineCourses.count, {
               <Education locale={locale} entry={item.entry} />
             ) : (
               <Card href="#courses" data-courses-node>
-                {period && (
-                  <p class="text-sm text-muted-foreground tabular-nums" data-period>
-                    {formatPeriod(locale, period)}
-                  </p>
-                )}
+                {period && <p class="text-sm text-muted-foreground tabular-nums" data-period>{formatPeriod(locale, period)}</p>}
                 <h3 class="mt-1 text-lg font-semibold tracking-tight">{t.education.onlineCourses.name}</h3>
                 <p class="mt-1">{count}</p>
                 <p class="mt-2 flex items-center gap-1.5 text-sm text-primary">
