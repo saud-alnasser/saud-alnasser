@@ -10,7 +10,7 @@ import {
   byStartAscending,
   byStartDescending,
 } from '../lib/order';
-import { profileIcon } from '../lib/networks';
+import { codedProfile, profileIcon } from '../lib/networks';
 import { isCertification, isCourse, isShown, onResume } from '../lib/shown';
 import QrCode from './QrCode.astro';
 
@@ -137,14 +137,16 @@ const tail: (ProjectSection | CertificateSection)[] = resume
 // columns and prints one line per group instead.
 const keywords = [...new Set(skills.flatMap((entry) => entry.data.keywords))];
 
-// The GitHub address is the header's QR code rather than a line of text in
-// the contact line, which is where it used to print. Any other profile keeps
-// its address written out: one code is what the header has room for, and a
-// network dropped from the document because it has no code would be a fact
-// lost silently. `profileIcon` is what decides which is GitHub, so a second
-// GitHub-shaped network never produces two codes.
-const coded = profile.data.profiles.find((entry) => profileIcon(entry.network) === 'github');
-const written = profile.data.profiles.filter((entry) => entry !== coded);
+// The LinkedIn address is the header's QR code, and it is the one profile
+// either document carries. The code was GitHub's from 2026-09-11, with every
+// other profile written out on the contact line so that no fact was dropped
+// in silence; on 2026-09-22 Saud swapped the code to LinkedIn and chose to
+// take the GitHub address off the documents rather than write it out, so
+// the contact line now carries no profile at all. Every profile still
+// reaches the home page, the README, and both resume.json documents, which
+// read the same list. `codedProfile` decides which entry is the code, and it
+// is the same function the dist check and the browser case ask.
+const coded = codedProfile(profile.data.profiles);
 
 const link = 'text-primary underline underline-offset-4 hover:decoration-2';
 // A section heading: the accent over a hairline rule that runs the width of
@@ -221,21 +223,13 @@ const muted = 'text-sm text-muted-foreground';
           <span>{location}</span>
           <span aria-hidden="true" class="text-muted-foreground">|</span>
         </li>
-        {
-          written.map((p) => (
-            <li class="flex items-center gap-x-2">
-              <a href={p.url} class={link}>
-                {p.url}
-              </a>
-              <span aria-hidden="true" class="text-muted-foreground">
-                |
-              </span>
-            </li>
-          ))
-        }
       </ul>
     </div>
-    {coded && <QrCode url={coded.url} label={`${coded.network}: ${coded.url}`} />}
+    {
+      coded && (
+        <QrCode url={coded.url} label={`${coded.network}: ${coded.url}`} mark={profileIcon(coded.network)} />
+      )
+    }
   </header>
 
   <section aria-labelledby="cv-summary" data-cv-section="summary">
@@ -415,9 +409,9 @@ const muted = 'text-sm text-muted-foreground';
                         not the application's: two lines an entry, over the
                         entries the content marks for the resume, which is a
                         third of the page budget. Every technology is already
-                        in the key skills above, and the repository is one
-                        click from the portfolio link in the contact line.
-                        Both are on the CV, whole. */}
+                        in the key skills above, and the repository is on the
+                        work page and in resume.json. Both are on the CV,
+                        whole. */}
                     {!resume && (
                       <>
                         <p class={`leading-6 ${muted}`}>

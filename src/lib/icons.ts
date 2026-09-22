@@ -3,9 +3,10 @@
 // dependency or a request.
 //
 // They live in a module rather than inside Icon.astro because two components
-// need them. Icon.astro draws any of them; QrCode.astro draws one, the GitHub
-// mark, into the middle of a QR code, and a mark typed out twice is a mark
-// that can differ in two places. The `kind` says how a body is painted:
+// need them. Icon.astro draws any of them; QrCode.astro draws one, the mark
+// of the profile the documents carry as their code (the LinkedIn mark since
+// 2026-09-22), into the middle of a QR code, and a mark typed out twice is a
+// mark that can differ in two places. The `kind` says how a body is painted:
 // `stroke` bodies are outlines in the current text colour, `fill` bodies are
 // solid shapes.
 //

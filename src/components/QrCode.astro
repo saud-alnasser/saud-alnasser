@@ -1,16 +1,19 @@
 ---
 import QRCode from 'qrcode';
-import { icons } from '../lib/icons';
+import { icons, type IconName } from '../lib/icons';
 
-// The GitHub address as a QR code, with the GitHub mark at its centre.
+// A profile address as a QR code, with that network's mark at its centre.
+// Which profile is the document component's to say, through `codedProfile`
+// in src/lib/networks.ts: LinkedIn since 2026-09-22, GitHub before that.
 //
 // It is the one graphic either document carries, and it is here because the
 // address stopped being text: the contact line used to print the URL, which
 // nobody types off paper, and a code a phone reads in a second is what that
 // line was for. The cost was stated when it was chosen on 2026-09-11 and is
 // worth repeating here, because it is invisible from the markup: a resume
-// parser reading the PDF now finds no GitHub address at all. What still
-// carries it is the JSON Resume document, at `basics.profiles[].url`.
+// parser reading the PDF finds no profile address at all, since the contact
+// line writes none out. What still carries every profile is the JSON Resume
+// document, at `basics.profiles[].url`.
 //
 // Encoded here, at build time, from whatever the content source says. Not a
 // committed SVG, which would drift from `profile.yaml` silently; not a QR
@@ -32,10 +35,23 @@ interface Props {
   // address are gone from the contact line, so this is the only place a
   // screen reader hears it.
   label: string;
+  // The mark drawn at the centre, by its name in src/lib/icons.ts: the
+  // network's own mark, which the caller reads off the profile with
+  // `profileIcon`, so the mark and the address can never name two networks.
+  mark: IconName;
   class?: string;
 }
 
-const { url, label, class: className } = Astro.props;
+const { url, label, mark: markName, class: className } = Astro.props;
+// A fill body, painted in the ink. Both marks a profile can carry are fill
+// bodies, and a stroke body is refused at build time rather than drawn: an
+// outline at this scale is untested against the decoder, and painting by
+// kind here would type out a second copy of what src/components/Icon.astro
+// already decides.
+const { kind, body } = icons[markName];
+if (kind !== 'fill') {
+  throw new Error(`QrCode: the mark "${markName}" is a stroke body, and the code draws only a fill body at its centre`);
+}
 
 const qr = QRCode.create(url, { errorCorrectionLevel: 'H' });
 const modules = qr.modules.size;
@@ -91,12 +107,14 @@ const ink = '#1c2128';
 // would be two thirds of this and the name would sit off the paper's centre
 // on the resume alone.
 //
-// What that buys the scanner is 0.52mm a module, over 41 modules: 33 of data
-// at error correction level H, and the 4 of quiet zone each side that the
-// standard asks for. The ticket's own estimate was 0.6mm, which counted the
-// data and forgot the quiet zone. 0.52mm is small, and no measurement here
-// settles whether a phone reads it off paper. Only a phone does, which is
-// why that is an acceptance criterion rather than a note.
+// What that buys the scanner depends on the address. The LinkedIn address
+// is 40 characters, which at error correction level H is a 37-module symbol,
+// 45 with the 4 of quiet zone each side that the standard asks for: 0.47mm
+// a module in this box, measured with the encoder on 2026-09-22. The GitHub
+// address it replaced was 32 characters, 33 modules, 0.52mm. Both are over
+// the 0.4mm floor scripts/check-dist.mjs enforces, and both are small: no
+// measurement here settles whether a phone reads it off paper. Only a phone
+// does, which is why that is an acceptance criterion rather than a note.
 const box = 80;
 
 const escaped = (text: string) =>
@@ -117,6 +135,6 @@ const escaped = (text: string) =>
     <rect width={side} height={side} fill={plate}></rect>
     <path d={dark.join('')} fill={ink}></path>
     <rect x={knockoutAt} y={knockoutAt} width={knockout} height={knockout} fill={plate}></rect>
-    <g transform={`translate(${markAt} ${markAt}) scale(${markScale})`} fill={ink} set:html={icons.github.body} />
+    <g transform={`translate(${markAt} ${markAt}) scale(${markScale})`} fill={ink} data-icon={markName} set:html={body} />
   </svg>
 </a>
