@@ -5,7 +5,9 @@ import { expect, test, type Page } from '@playwright/test';
 import { parse as parseYaml } from 'yaml';
 import { marker } from '../scripts/form-marker.mjs';
 import { fill, formatPeriod, strings } from '../src/lib/i18n';
+import { icons } from '../src/lib/icons';
 import { levelLine } from '../src/lib/languages';
+import { codedProfile, profileIcon } from '../src/lib/networks';
 import { byOrderThenName, byStartAscending } from '../src/lib/order';
 import { isCertification, isCourse, isShown, onResume } from '../src/lib/shown';
 import { at, locales, type Locale } from './pages';
@@ -225,16 +227,22 @@ for (const locale of locales) {
 
       });
 
-      // The GitHub address is the header's QR code, and the contact line no
-      // longer writes it out. That is the one place either document trades a
-      // fact a parser can read for one a phone can: the code is the only
+      // The LinkedIn address is the header's QR code, and the contact line
+      // writes no profile out. That is the one place either document trades
+      // a fact a parser can read for one a phone can: the code is the only
       // route to the address on paper, so what it decodes to is checked
       // against src/content/profile.yaml over the rendered PDF by
       // scripts/check-dist.mjs. What is left for a browser to say is the half
       // a PDF cannot show: that on screen it is the link, that it carries the
       // address as its accessible name, because the words that used to say it
-      // are gone, and that no contact item writes the address out any more.
-      test('carries the GitHub address as one code in the header, and nowhere in the text', async ({ page }) => {
+      // are gone, that the mark at its centre is the network's own, and that
+      // no contact item writes any profile's address out.
+      //
+      // Which profile is the code is read from the same function the
+      // component and the dist check read it from, never from the profiles'
+      // order: GitHub stays first in the content for the home page and the
+      // README, and the code is found by its network.
+      test('carries the LinkedIn address as one code in the header, and no profile address in the text', async ({ page }) => {
         await page.goto(route);
         const code = page.locator('article.cv [data-qr-code]');
         await expect(code).toHaveCount(1);
@@ -244,12 +252,24 @@ for (const locale of locales) {
         // same way.
         await expect(page.locator('article.cv svg')).toHaveCount(1);
 
-        const address = profile.profiles[0].url;
+        const coded = codedProfile(profile.profiles as { network: string; url: string }[]);
+        expect(coded, 'the content lists the profile the code carries').toBeDefined();
+        const address = coded!.url;
         await expect(code, 'the code names the address it carries').toHaveAccessibleName(
           new RegExp(address.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
         );
         const linked = page.locator('article.cv header a', { has: page.locator('[data-qr-code]') });
         await expect(linked, 'on screen the code is the link to that address').toHaveAttribute('href', address);
+
+        // The mark at the centre is the network's own, drawn from the same
+        // body the icon component draws it from: the LinkedIn mark, whose
+        // body in src/lib/icons.ts is one path.
+        const markName = profileIcon(coded!.network);
+        const mark = code.locator('[data-qr-mark]');
+        await expect(mark, 'the mark is the network\'s').toHaveAttribute('data-qr-mark', markName);
+        const body = icons[markName].body.match(/ d="([^"]+)"/)?.[1];
+        expect(body, 'the icon body is one path').toBeDefined();
+        await expect(mark.locator('path'), 'the mark is drawn from the icon body').toHaveAttribute('d', body!);
 
         // The header block the code sits beside, which is what pays for it:
         // the code is drawn no taller than the name and the label, so the
@@ -294,8 +314,17 @@ for (const locale of locales) {
         );
         await page.emulateMedia({ media: 'screen' });
 
+        // No profile on the contact line: not the one the code carries, and
+        // not any other, since 2026-09-22. The two hosts are named as well as
+        // the addresses read from the content, so a profile rewritten to a
+        // different path on the same host is still refused.
         const contact = await page.locator('[data-cv-contact]').innerText();
-        expect(contact, `the contact line on ${route} writes no GitHub address out`).not.toContain('github.com');
+        for (const entry of profile.profiles as { network: string; url: string }[]) {
+          expect(contact, `the contact line on ${route} writes no ${entry.network} address out`).not.toContain(entry.url);
+        }
+        for (const host of ['github.com', 'linkedin.com']) {
+          expect(contact, `the contact line on ${route} names no ${host} address`).not.toContain(host);
+        }
       });
 
       // The keyboard path, end to end, which is what the effort's criterion 8
@@ -483,3 +512,19 @@ for (const locale of locales) {
     }
   });
 }
+
+// Which profile is the code is decided once, in src/lib/networks.ts, and the
+// component, the dist check, and the header case above all ask it. Asserted
+// where it is decided: every spelling `profileIcon` recognises gives the same
+// entry, and a list with no LinkedIn profile gives nothing rather than the
+// first entry or GitHub's.
+test('the coded profile is the LinkedIn one, by network and in any spelling', () => {
+  const github = { network: 'GitHub', url: 'https://github.com/example' };
+  for (const network of ['linkedin', 'LinkedIn', ' LINKEDIN ']) {
+    const linkedin = { network, url: 'https://www.linkedin.com/in/example' };
+    expect(codedProfile([github, linkedin]), `spelled ${JSON.stringify(network)}`).toBe(linkedin);
+    expect(codedProfile([linkedin, github]), `spelled ${JSON.stringify(network)}, listed first`).toBe(linkedin);
+  }
+  expect(codedProfile([github])).toBeUndefined();
+  expect(codedProfile([])).toBeUndefined();
+});

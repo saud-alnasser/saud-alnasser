@@ -26,6 +26,7 @@ import { readmeWithProfile } from './readme-profile.mjs';
 import { formatPeriod, localeInfo, strings } from '../src/lib/i18n.ts';
 import { levelLine } from '../src/lib/languages.ts';
 import { gapReport, pick } from '../src/lib/localized.ts';
+import { codedProfile } from '../src/lib/networks.ts';
 import { byOrderThenName, byStartAscending, byStartDescending } from '../src/lib/order.ts';
 import { joinBase } from '../src/lib/paths.ts';
 import { isShown } from '../src/lib/shown.ts';
@@ -342,6 +343,19 @@ async function documentPdfs() {
     if (leaked) {
       throw new CheckFailure(name, `${relative}: "${leaked[0]}" is a period printed with its month`);
     }
+    // No profile address is written out on either document: the one profile
+    // on paper is the QR code, which `qrCode` below decodes, and the contact
+    // line carries none since 2026-09-22. Read from the content's own list
+    // rather than from a literal, so a third profile added later is refused
+    // the same way. A project's repository link on the CV starts with the
+    // GitHub profile address, so an address counts only where nothing that
+    // could continue a URL follows it.
+    for (const entry of profile.profiles ?? []) {
+      const address = new RegExp(`${entry.url.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![^\\s"'<>()\\[\\]])`);
+      if (address.test(text)) {
+        throw new CheckFailure(name, `${relative}: the ${entry.network} address ${entry.url} is written out, and no profile is`);
+      }
+    }
     const found = text.split(/\r?\n/).map(squash);
     let cursor = 0;
     for (const group of groups) {
@@ -407,23 +421,26 @@ const modulesOf = (version) => version * 4 + 17;
 
 // The smallest module this will let ship, in millimetres on paper.
 //
-// The code is drawn at 0.52mm a module, which is already small, and no check
-// can say whether a phone reads that off a home printer: only a phone can, and
-// that is an acceptance criterion of its own. What this floor does is narrower
-// and worth having anyway. Below about 0.4mm no consumer camera reads a code
-// at arm's length whatever the printer does, so a code that small has lost the
-// GitHub address outright rather than merely made it awkward. It is set under
-// the drawn size rather than at it, so a deliberate change to the box is a
-// decision somebody makes rather than a build somebody has to fight.
+// The code is drawn at 0.47mm a module for the LinkedIn address, which is
+// already small, and no check can say whether a phone reads that off a home
+// printer: only a phone can, and that is an acceptance criterion of its own.
+// What this floor does is narrower and worth having anyway. Below about 0.4mm
+// no consumer camera reads a code at arm's length whatever the printer does,
+// so a code that small has lost the address outright rather than merely made
+// it awkward. It is set under the drawn size rather than at it, so a
+// deliberate change to the box is a decision somebody makes rather than a
+// build somebody has to fight.
 const QR_MODULE_MM = 0.4;
 async function qrCode() {
   const name = 'qr code';
   const profile = parseYaml(await readFile(path.join(context.content, 'profile.yaml'), 'utf8')).profile;
-  const coded = (profile.profiles ?? []).find((entry) => String(entry.network).trim().toLowerCase() === 'github');
+  // Which profile the code carries is decided once, in src/lib/networks.ts,
+  // and the component that draws the code asks the same function.
+  const coded = codedProfile(profile.profiles ?? []);
   if (!coded?.url) {
     throw new CheckFailure(
       name,
-      'src/content/profile.yaml holds no GitHub profile, so this check has nothing to compare against; it must fail rather than pass over a code it cannot verify',
+      'src/content/profile.yaml holds no LinkedIn profile, so this check has nothing to compare against; it must fail rather than pass over a code it cannot verify',
     );
   }
 
@@ -454,7 +471,7 @@ async function qrCode() {
       if (!decoded) {
         throw new CheckFailure(
           name,
-          `no QR code could be read on page 1 of ${path.basename(file)}; the code is the document's only route to the GitHub address on paper, so a code that will not decode has lost it`,
+          `no QR code could be read on page 1 of ${path.basename(file)}; the code is the document's only route to the LinkedIn address on paper, so a code that will not decode has lost it`,
         );
       }
       if (decoded.data !== coded.url) {
@@ -485,7 +502,7 @@ async function qrCode() {
         throw new CheckFailure(
           name,
           `the QR code on page 1 of ${path.basename(file)} has modules of ${module.toFixed(2)}mm, and the floor is ${QR_MODULE_MM}mm; ` +
-            'it is the only route to the GitHub address on paper, and a code no camera can read has lost it whatever it decodes to here',
+            'it is the only route to the LinkedIn address on paper, and a code no camera can read has lost it whatever it decodes to here',
         );
       }
       lines.push(
