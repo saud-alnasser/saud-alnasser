@@ -121,12 +121,16 @@ check, and the browser test all ask it. That is the one place either document
 trades a fact a resume parser can read for one a phone can, and the cost is
 real: an ATS reading the PDF finds no profile address, GitHub's included, since
 Saud chose on 2026-09-22 to take it off the documents rather than write it out.
-What still carries every profile is each language's `resume.json`, at
-`basics.profiles[].url`. Because the code is the only route, `qr code` in
+The CV's project rows still print each project's repository link, which begins
+with the GitHub profile address and is the project's address, not the
+profile's. What still carries every profile is each language's `resume.json`,
+at `basics.profiles[].url`. Because the code is the only route, `qr code` in
 `scripts/check-dist.mjs` rasterises page one of all four documents and decodes
 it back out of the pixels, failing if it does not read, does not match the
-content source, or prints a module under 0.4mm; `document pdfs` refuses any
-profile address in the extracted text. `document hazards` refuses every other
+content source, or prints a module under 0.4mm; `document pdfs` refuses a
+profile address printed as its own item, with or without its scheme, in the
+extracted text of all four documents and the filled copies, and does not count
+a project link that continues it. `document hazards` refuses every other
 graphic inside a document, which is why the code is the exception rather than
 the first of many.
 

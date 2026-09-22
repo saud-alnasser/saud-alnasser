@@ -34,6 +34,9 @@ function entries(collection: string): any[] {
 }
 
 const profile = parseYaml(readFileSync(path.join(content, 'profile.yaml'), 'utf8')).profile;
+// The profiles, typed once: the header case reads which of them is the code
+// and refuses every one of them on the contact line.
+const profiles: { network: string; url: string }[] = profile.profiles;
 const projects = entries('projects').filter((data) => isShown(data));
 const certificates = entries('certificates');
 // In the order the documents print them (src/lib/order.ts), which is by
@@ -252,7 +255,7 @@ for (const locale of locales) {
         // same way.
         await expect(page.locator('article.cv svg')).toHaveCount(1);
 
-        const coded = codedProfile(profile.profiles as { network: string; url: string }[]);
+        const coded = codedProfile(profiles);
         expect(coded, 'the content lists the profile the code carries').toBeDefined();
         const address = coded!.url;
         await expect(code, 'the code names the address it carries').toHaveAccessibleName(
@@ -265,8 +268,8 @@ for (const locale of locales) {
         // body the icon component draws it from: the LinkedIn mark, whose
         // body in src/lib/icons.ts is one path.
         const markName = profileIcon(coded!.network);
-        const mark = code.locator('[data-qr-mark]');
-        await expect(mark, 'the mark is the network\'s').toHaveAttribute('data-qr-mark', markName);
+        const mark = code.locator('[data-icon]');
+        await expect(mark, 'the mark is the network\'s').toHaveAttribute('data-icon', markName);
         const body = icons[markName].body.match(/ d="([^"]+)"/)?.[1];
         expect(body, 'the icon body is one path').toBeDefined();
         await expect(mark.locator('path'), 'the mark is drawn from the icon body').toHaveAttribute('d', body!);
@@ -319,7 +322,7 @@ for (const locale of locales) {
         // the addresses read from the content, so a profile rewritten to a
         // different path on the same host is still refused.
         const contact = await page.locator('[data-cv-contact]').innerText();
-        for (const entry of profile.profiles as { network: string; url: string }[]) {
+        for (const entry of profiles) {
           expect(contact, `the contact line on ${route} writes no ${entry.network} address out`).not.toContain(entry.url);
         }
         for (const host of ['github.com', 'linkedin.com']) {

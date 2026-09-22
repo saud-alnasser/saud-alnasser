@@ -343,19 +343,6 @@ async function documentPdfs() {
     if (leaked) {
       throw new CheckFailure(name, `${relative}: "${leaked[0]}" is a period printed with its month`);
     }
-    // No profile address is written out on either document: the one profile
-    // on paper is the QR code, which `qrCode` below decodes, and the contact
-    // line carries none since 2026-09-22. Read from the content's own list
-    // rather than from a literal, so a third profile added later is refused
-    // the same way. A project's repository link on the CV starts with the
-    // GitHub profile address, so an address counts only where nothing that
-    // could continue a URL follows it.
-    for (const entry of profile.profiles ?? []) {
-      const address = new RegExp(`${entry.url.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![^\\s"'<>()\\[\\]])`);
-      if (address.test(text)) {
-        throw new CheckFailure(name, `${relative}: the ${entry.network} address ${entry.url} is written out, and no profile is`);
-      }
-    }
     const found = text.split(/\r?\n/).map(squash);
     let cursor = 0;
     for (const group of groups) {
@@ -383,6 +370,46 @@ async function documentPdfs() {
       lines.push(`${document}.${other}.pdf: ${sizes[`${document}.${other}`]} bytes`);
     }
   }
+
+  // No profile address is written out on either document, in either
+  // language: the one profile on paper is the QR code, which `qrCode` below
+  // decodes, and the contact line carries none since 2026-09-22. All eight
+  // files, because the loop above reads the facts in English alone and this
+  // is a fact about both languages. Read from the content's own list rather
+  // than from a literal, so a third profile added later is refused the same
+  // way.
+  //
+  // An address counts without its scheme, with a trailing slash, or with a
+  // query after it, so a contact line that printed it in any of those shapes
+  // is refused; it does not count where a path continues it, because a
+  // project's repository link on the CV starts with the GitHub profile
+  // address and is the project's, not the profile's. An address that
+  // pdftotext broke across two lines is not caught, and no line here is
+  // long enough to be broken.
+  const addresses = (profile.profiles ?? []).map((entry) => ({
+    network: entry.network,
+    pattern: new RegExp(
+      `${entry.url.replace(/^https?:\/\//, '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/?(?![^\\s"'<>()\\[\\]?#])`,
+    ),
+  }));
+  let checked = 0;
+  for (const document of documents) {
+    for (const language of context.locales) {
+      for (const [directory, relative] of [
+        [context.dist, `${document}.${language}.pdf`],
+        [context.artifacts, `${document}.${language}.filled.pdf`],
+      ]) {
+        const text = await extractText(path.join(directory, relative));
+        if (text === null) continue;
+        checked += 1;
+        const written = addresses.find(({ pattern }) => pattern.test(text));
+        if (written) {
+          throw new CheckFailure(name, `${relative}: the ${written.network} profile address is written out, and no profile is`);
+        }
+      }
+    }
+  }
+  if (checked > 0) lines.push(`no profile address is written out in any of the ${checked} PDFs, published or filled`);
   return lines;
 }
 

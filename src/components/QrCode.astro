@@ -43,9 +43,15 @@ interface Props {
 }
 
 const { url, label, mark: markName, class: className } = Astro.props;
-// A fill body is painted in the ink; a stroke body is drawn in it, at the
-// weight src/components/Icon.astro draws every stroke icon at.
+// A fill body, painted in the ink. Both marks a profile can carry are fill
+// bodies, and a stroke body is refused at build time rather than drawn: an
+// outline at this scale is untested against the decoder, and painting by
+// kind here would type out a second copy of what src/components/Icon.astro
+// already decides.
 const { kind, body } = icons[markName];
+if (kind !== 'fill') {
+  throw new Error(`QrCode: the mark "${markName}" is a stroke body, and the code draws only a fill body at its centre`);
+}
 
 const qr = QRCode.create(url, { errorCorrectionLevel: 'H' });
 const modules = qr.modules.size;
@@ -129,15 +135,6 @@ const escaped = (text: string) =>
     <rect width={side} height={side} fill={plate}></rect>
     <path d={dark.join('')} fill={ink}></path>
     <rect x={knockoutAt} y={knockoutAt} width={knockout} height={knockout} fill={plate}></rect>
-    <g
-      transform={`translate(${markAt} ${markAt}) scale(${markScale})`}
-      fill={kind === 'fill' ? ink : 'none'}
-      stroke={kind === 'stroke' ? ink : undefined}
-      stroke-width={kind === 'stroke' ? 2 : undefined}
-      stroke-linecap={kind === 'stroke' ? 'round' : undefined}
-      stroke-linejoin={kind === 'stroke' ? 'round' : undefined}
-      data-qr-mark={markName}
-      set:html={body}
-    />
+    <g transform={`translate(${markAt} ${markAt}) scale(${markScale})`} fill={ink} data-icon={markName} set:html={body} />
   </svg>
 </a>

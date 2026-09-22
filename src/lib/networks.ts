@@ -1,10 +1,12 @@
-// The icon a profile link carries. A network the icon set has a mark for is
-// shown by its mark; every other network falls back to the external link
-// icon, so adding a profile to src/content/profile.yaml never leaves a link
-// without an icon and never needs a template changed.
+// What a profile's network decides: the icon its link carries, and whether
+// it is the profile the documents carry as their QR code.
 //
-// The names are src/components/Icon.astro's. A network gains its own mark by
-// adding the path there and a row here, and nothing else.
+// The icon: a network the icon set has a mark for is shown by its mark;
+// every other network falls back to the external link icon, so adding a
+// profile to src/content/profile.yaml never leaves a link without an icon
+// and never needs a template changed. The names are
+// src/components/Icon.astro's. A network gains its own mark by adding the
+// path there and a row here, and nothing else.
 
 export type ProfileIcon = 'github' | 'linkedin' | 'external-link';
 

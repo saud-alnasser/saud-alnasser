@@ -232,8 +232,8 @@ details[open] > summary .fold-chevron {
  * here is what a utility cannot say.
  */
 
-/* A long address in the contact line or a project's links wraps rather than
-   pushing the column past the paper. */
+/* A long address in a project's links, or one the download form puts on the
+   contact line, wraps rather than pushing the column past the paper. */
 .cv {
   overflow-wrap: break-word;
 }
