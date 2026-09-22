@@ -32,6 +32,10 @@ The header of both documents carries the LinkedIn address as its QR code with th
 
 The earlier document effort recorded that a profile which is not the code is written out so that no fact is dropped in silence. Requirement 3 of this effort's spec retires that rule by Saud's decision, so the contact list stops printing any profile rather than printing GitHub's.
 
+## Corrected at review, 2026-09-22
+
+Two things the record below says were changed by the review-fix commit on the same day: the QR component no longer paints a body by its kind, it draws a fill body and refuses a stroke one at build time; and the group at the centre is marked `data-icon`, the name the icon component uses, rather than `data-qr-mark`. The profile-address guard in the dist check also grew from the four English files to all eight, and strips the bidi control characters the Arabic PDFs extract with, which is what let its Arabic half fail. The record stands as what was verified when the ticket landed.
+
 ## What verified each criterion, on 2026-09-22
 
 The one function is `codedProfile` in `src/lib/networks.ts`, beside `profileIcon`, which it uses to recognise the network. The component passes the mark's name to the QR component, which now takes a `mark` prop and paints a body by its kind the way the icon component does, and marks the group `data-qr-mark` so the browser case can read which mark it is.

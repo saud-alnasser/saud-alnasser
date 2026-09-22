@@ -121,7 +121,7 @@ check, and the browser test all ask it. That is the one place either document
 trades a fact a resume parser can read for one a phone can, and the cost is
 real: an ATS reading the PDF finds no profile address, GitHub's included, since
 Saud chose on 2026-09-22 to take it off the documents rather than write it out.
-The CV's project rows still print each project's repository link, which begins
+The CV's project rows still print each public project's repository link, which begins
 with the GitHub profile address and is the project's address, not the
 profile's. What still carries every profile is each language's `resume.json`,
 at `basics.profiles[].url`. Because the code is the only route, `qr code` in

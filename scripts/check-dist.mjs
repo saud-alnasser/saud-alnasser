@@ -386,29 +386,49 @@ async function documentPdfs() {
   // address and is the project's, not the profile's. An address that
   // pdftotext broke across two lines is not caught, and no line here is
   // long enough to be broken.
+  //
+  // The Arabic PDFs extract with a bidi control character closing every
+  // Latin run, U+202C after each project link and after the filled email,
+  // which is not whitespace and so would satisfy the lookahead's "a path
+  // continues it" and hide an address written on the Arabic contact line.
+  // Found at review on 2026-09-22, when the Arabic half of this check could
+  // not fail; the marks are stripped before matching, so both halves can.
   const addresses = (profile.profiles ?? []).map((entry) => ({
     network: entry.network,
     pattern: new RegExp(
       `${entry.url.replace(/^https?:\/\//, '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/?(?![^\\s"'<>()\\[\\]?#])`,
     ),
   }));
+  const bidiMarks = /[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g;
   let checked = 0;
+  let unread = 0;
   for (const document of documents) {
     for (const language of context.locales) {
       for (const [directory, relative] of [
         [context.dist, `${document}.${language}.pdf`],
         [context.artifacts, `${document}.${language}.filled.pdf`],
       ]) {
-        const text = await extractText(path.join(directory, relative));
-        if (text === null) continue;
+        const file = path.join(directory, relative);
+        try {
+          await stat(file);
+        } catch {
+          throw new CheckFailure(name, `${relative} does not exist; run \`pnpm render:pdf\` after the build`);
+        }
+        const text = await extractText(file);
+        if (text === null) {
+          unread += 1;
+          continue;
+        }
         checked += 1;
-        const written = addresses.find(({ pattern }) => pattern.test(text));
+        const plain = text.replace(bidiMarks, '');
+        const written = addresses.find(({ pattern }) => pattern.test(plain));
         if (written) {
           throw new CheckFailure(name, `${relative}: the ${written.network} profile address is written out, and no profile is`);
         }
       }
     }
   }
+  if (unread > 0) lines.push(`${unread} PDFs not checked for a written profile address; pdftotext is not on the PATH`);
   if (checked > 0) lines.push(`no profile address is written out in any of the ${checked} PDFs, published or filled`);
   return lines;
 }
