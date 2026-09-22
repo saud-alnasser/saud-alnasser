@@ -1,7 +1,8 @@
 // Renders the first page of every certificate document to a preview image
 // beside it: src/content/certificates/files/<name>.pdf becomes
-// files/<name>.webp, 1600 pixels wide, WebP at quality 80. Run after adding
-// or replacing a certificate document, and commit the previews with it:
+// files/<name>.webp, 1600 pixels wide, WebP at quality 80, and the same
+// under src/content/education/files/, where a degree certificate lives.
+// Run after adding or replacing a document, and commit the previews with it:
 //
 //   pnpm certificates:previews
 //
@@ -25,7 +26,9 @@ import sharp from 'sharp';
 
 const require = createRequire(import.meta.url);
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const files = path.join(root, 'src', 'content', 'certificates', 'files');
+// The two collections whose entries may name a document, each with its own
+// files/ directory beside its entries (src/content.config.ts).
+const collections = ['certificates', 'education'];
 const width = 1600;
 const quality = 80;
 
@@ -45,7 +48,7 @@ class RenderFailure extends Error {
 // One PDF to one WebP. The page is scaled so its width is exactly the target
 // and its height follows the page's own proportions; the canvas takes the
 // rounded size, since a canvas has whole pixels.
-async function render(name) {
+async function render(files, name) {
   const source = path.join(files, name);
   const target = path.join(files, `${path.basename(name, '.pdf')}.webp`);
 
@@ -74,23 +77,35 @@ async function render(name) {
   }
 }
 
-let names;
-try {
-  names = (await readdir(files)).filter((name) => name.endsWith('.pdf')).sort();
-} catch (error) {
-  console.error(`certificate-previews: cannot read ${path.relative(root, files)}: ${error.message}`);
-  process.exit(1);
+// Every PDF under each collection's files/ directory. A collection with no
+// documents at all is the failure it always was; a directory that is absent
+// is read as empty, so a collection whose documents have all been removed
+// does not need an empty folder kept for this script.
+const documents = [];
+for (const collection of collections) {
+  const files = path.join(root, 'src', 'content', collection, 'files');
+  let names;
+  try {
+    names = (await readdir(files)).filter((name) => name.endsWith('.pdf')).sort();
+  } catch (error) {
+    if (error.code !== 'ENOENT') {
+      console.error(`certificate-previews: cannot read ${path.relative(root, files)}: ${error.message}`);
+      process.exit(1);
+    }
+    names = [];
+  }
+  documents.push(...names.map((name) => ({ files, name })));
 }
-if (names.length === 0) {
-  console.error(`certificate-previews: no PDF under ${path.relative(root, files)}`);
+if (documents.length === 0) {
+  console.error(`certificate-previews: no PDF under src/content/{${collections.join(',')}}/files/`);
   process.exit(1);
 }
 
 try {
-  for (const name of names) {
-    console.log(await render(name));
+  for (const { files, name } of documents) {
+    console.log(await render(files, name));
   }
-  console.log(`certificate-previews: ${names.length} previews written, ${width} pixels wide, WebP quality ${quality}`);
+  console.log(`certificate-previews: ${documents.length} previews written, ${width} pixels wide, WebP quality ${quality}`);
 } catch (error) {
   if (error instanceof RenderFailure) {
     console.error(`certificate-previews: ${error.reason}: ${error.message}`);

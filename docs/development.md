@@ -34,7 +34,7 @@ pnpm lighthouse   # Lighthouse on the home, CV, and resume pages, mobile profile
 pnpm check:live <address>  # asks a served site for its pages and downloads; the deploy job runs it last
 pnpm readme       # rewrites the profile block of README.md from src/content/ and the config
 pnpm scan:history # the identifier scan over the whole git history
-pnpm certificates:previews # renders the preview image beside every certificate PDF under src/content/certificates/files/
+pnpm certificates:previews # renders the preview image beside every PDF under src/content/certificates/files/ and src/content/education/files/
 ```
 
 Node 22.12 or later (CI uses 24) and pnpm 12. The site is static files only.
