@@ -69,11 +69,14 @@ profile:
   location:
     en: Riyadh, Saudi Arabia
     ar: الرياض، المملكة العربية السعودية
-  # GitHub first: the QR code on both documents, the home page's first
-  # action, and the README, which is the GitHub profile page itself, read the
-  # first entry as GitHub. Every other profile is written out as text on the
-  # documents' contact line and as a line above the Portfolio link in the
-  # README's profile block.
+  # GitHub first: the home page's first action and the README, which is the
+  # GitHub profile page itself, read the first entry as GitHub. Every other
+  # profile is a line above the Portfolio link in the README's profile block.
+  # The QR code on both documents is LinkedIn's, found by its network rather
+  # than by its place in this list (src/lib/networks.ts), and it is the one
+  # profile either document carries: since 2026-09-22 the contact line writes
+  # no profile out, by Saud's decision, so GitHub is on neither document page
+  # nor in any PDF and survives in both resume.json documents.
   profiles:
     - network: GitHub
       username: saud-alnasser

@@ -944,8 +944,9 @@ async function noOverclaim() {
 //
 // The graphic clause is narrower than it reads and deliberately so. Four
 // efforts held "no image" outright, because a parser cannot read one; the QR
-// code carrying the GitHub address is the single exception Saud chose on
-// 2026-09-11 with that cost stated. So this refuses every <svg> inside the
+// code carrying a profile address is the single exception Saud chose on
+// 2026-09-11 with that cost stated, GitHub's address then and LinkedIn's
+// since 2026-09-22. So this refuses every <svg> inside the
 // document's article except the one marked `data-qr-code`, rather than
 // refusing none of them: an inline <svg> is not an <img>, so a check that
 // only looked for <img> would go on reporting "no image" while the document

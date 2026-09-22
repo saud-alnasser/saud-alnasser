@@ -70,6 +70,8 @@ The university card offers the degree certificate the way a course card offers i
 - **Removing the grade or the GPA from the certificate.** They are what the certificate says, and Saud asked for the certificate. Redaction covers identifiers alone.
 - **Filling the LinkedIn profile itself.** That is on LinkedIn, outside this repository, and this session has no browser to do it with; the text is written separately for Saud to paste.
 - **A LinkedIn icon on the documents.** The contact line writes a non-GitHub address out as text, by the decision recorded in `CvDocument.astro`; the QR code stays GitHub's.
+
+  **Reversed on 2026-09-22** by [[efforts/27-the-linkedin-address-as-the-code/spec]]: the code is LinkedIn's, with its mark at the centre, and the contact line writes no profile out. This exclusion stands as the record of what this effort decided.
 - **Changing the custom LinkedIn address.** Which slug the account uses is Saud's, on LinkedIn. If he changes it, `profile.yaml` changes with it and everything follows.
 
 # Assumptions

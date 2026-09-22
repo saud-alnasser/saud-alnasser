@@ -110,17 +110,23 @@ and the page budget run over the document a reader actually gets; the
 placeholder values they carry are in `scripts/placeholder.mjs`, obviously not
 real, and written once because both the render step and the check read them.
 
-**On paper, the QR code in the header is the only route to the GitHub
-address.** Both documents used to print the address as text in the contact
-line, which is a thing nobody types off a page; it is now a code built at build
-time from `src/content/profile.yaml`, with the GitHub mark knocked into the
-middle of it, and the text is gone. That is the one place either document
+**On paper, the QR code in the header is the only route to the LinkedIn
+address, and the documents carry no other profile.** Both documents used to
+print a profile address as text in the contact line, which is a thing nobody
+types off a page; the LinkedIn address is now a code built at build time from
+`src/content/profile.yaml`, with the LinkedIn mark knocked into the middle of
+it, and no profile is written out at all. Which profile is the code is decided
+once, by `codedProfile` in `src/lib/networks.ts`, and the component, the dist
+check, and the browser test all ask it. That is the one place either document
 trades a fact a resume parser can read for one a phone can, and the cost is
-real: an ATS reading the PDF finds no GitHub address. What still carries it is
-each language's `resume.json`, at `basics.profiles[].url`. Because the code is the only
-route, `qr code` in `scripts/check-dist.mjs` rasterises page one of all four
-documents and decodes it back out of the pixels, failing if it does not read or
-does not match the content source. `document hazards` refuses every other
+real: an ATS reading the PDF finds no profile address, GitHub's included, since
+Saud chose on 2026-09-22 to take it off the documents rather than write it out.
+What still carries every profile is each language's `resume.json`, at
+`basics.profiles[].url`. Because the code is the only route, `qr code` in
+`scripts/check-dist.mjs` rasterises page one of all four documents and decodes
+it back out of the pixels, failing if it does not read, does not match the
+content source, or prints a module under 0.4mm; `document pdfs` refuses any
+profile address in the extracted text. `document hazards` refuses every other
 graphic inside a document, which is why the code is the exception rather than
 the first of many.
 
