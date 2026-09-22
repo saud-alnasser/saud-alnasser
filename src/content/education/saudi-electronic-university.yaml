@@ -58,3 +58,6 @@ courses:
     ar: مشروع التخرج
   - en: Practical Training
     ar: التدريب العملي
+# The degree certificate, issued 2026-08-20, redacted of its student number and
+# national ID number before it was added; src/content/README.md says how.
+document: files/saudi-electronic-university.pdf

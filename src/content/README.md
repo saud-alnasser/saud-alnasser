@@ -42,9 +42,10 @@ people; where the two disagree, the code is right and this file is corrected.
 One file, `src/content/profile.yaml`, with a single top-level key `profile:`
 holding the person. The profile block of the repository's `README.md`,
 between the `<!-- profile -->` markers, is written from `summary` here by
-`pnpm readme`, under links to the site, the CV, and the resume in both
-languages, so who Saud is stays authored once; the dist check fails when the
-README is behind. The record itself — the skills, the projects, the rest —
+`pnpm readme`, over one line per profile other than GitHub, which the README
+already is the page of, and then links to the site, the CV, and the resume in
+both languages, so who Saud is stays authored once; the dist check fails when
+the README is behind. The record itself — the skills, the projects, the rest —
 is on the site, and the README links to it rather than repeating it. The
 languages Saud speaks are not here either: they are entries under
 `languages/`, read by the two hiring documents and the JSON Resume document
@@ -137,6 +138,7 @@ keeps separate Education, Certifications, and Courses sections.
 | `period` | `start`, optional `end` | no | when; `end` is the completion term where course work is finished |
 | `status` | one of `completed`, `certificate-pending`, `in-progress` | no | shown only where it says something the period does not: `completed` prints nothing, because `end` has already said it. `certificate-pending` means the course work is complete and the certificate has not been issued; the site never says "graduated" or "awarded" for it |
 | `courses` | list of text | yes, each item | optional. Notable courses |
+| `document` | file path | no | optional. The degree certificate's PDF, relative to this folder, as `files/saudi-electronic-university.pdf`, with its preview beside it, exactly as a certificate names its own (see "The certificate documents" below). The card opens it in the same dialog. The build refuses an entry whose PDF or preview does not exist, naming the file, and the same redaction rule applies: a degree certificate carries the student number and the national ID number, and both are removed from the file before it is added |
 
 ## `certificates/`
 
@@ -162,12 +164,14 @@ Reclassifying an entry means changing this one field.
 
 A certificate's PDF lives in `certificates/files/`, named after its entry:
 the entry `code-with-mosh-react.yaml` names `files/code-with-mosh-react.pdf`.
-Beside every PDF sits its preview, `files/code-with-mosh-react.webp`, the
-first page rendered 1600 pixels wide; the site shows the preview and links
-to the PDF. The previews are generated, and committed with the PDFs:
+A degree certificate lives the same way in `education/files/`, named after
+its institution's entry. Beside every PDF sits its preview,
+`files/code-with-mosh-react.webp`, the first page rendered 1600 pixels wide;
+the site shows the preview and links to the PDF. The previews are generated,
+and committed with the PDFs:
 
 ```sh
-pnpm certificates:previews   # renders files/<name>.webp for every files/<name>.pdf
+pnpm certificates:previews   # renders files/<name>.webp for every files/<name>.pdf, in both folders
 ```
 
 Run it after adding or replacing a PDF, and commit what it wrote. The build
@@ -175,9 +179,13 @@ checks that both files exist for every entry that names a `document`, so a
 PDF added without its preview fails the build until the command has run. A
 document is scanned for identifiers before it is published, the same way the
 CV PDF is; one that carries a national or student identifier is not added
-until it is redacted. A scanned certificate has no text layer for that scan to
-read, so such a document is read by eye for identifiers before it is added,
-and the dist check reports how many documents it could read.
+until it is redacted. Redacting means removing the numbers from the file's
+content, not painting over them, so the text layer and the page agree; the
+degree certificate under `education/files/` was redacted that way, and its
+verification QR code was left as it is. A scanned certificate has no text
+layer for that scan to read, so such a document is read by eye for
+identifiers before it is added, and the dist check reports how many documents
+it could read.
 
 ## `skills/`
 

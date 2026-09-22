@@ -4,3 +4,11 @@
 * text=auto eol=lf
 
 pnpm-lock.yaml linguist-generated=true
+# The documents, their previews, and the bundled fonts are bytes, whatever
+# their first eight kilobytes look like: a PDF whose streams happen to hold
+# no NUL byte early reads as text to git's heuristic, gets its line endings
+# normalised, and prints as a text diff, which the identifier scan over the
+# history then reads hex signature bytes out of.
+*.pdf binary
+*.webp binary
+*.woff2 binary

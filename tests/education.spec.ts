@@ -33,7 +33,15 @@ type Text = Record<'en' | 'ar', string>;
 // A status the content may carry: the ones the page has a wording for, and
 // `completed`, which it deliberately has none for.
 type EducationStatus = 'completed' | keyof (typeof strings)['en']['education']['status'];
-type EducationEntry = { institution: Text; status: EducationStatus; period: { start: string }; courses?: Text[] };
+type EducationEntry = {
+  institution: Text;
+  studyType: Text;
+  area: Text;
+  status: EducationStatus;
+  period: { start: string };
+  courses?: Text[];
+  document?: string;
+};
 type CertificateEntry = { name: Text; kind: 'course' | 'certification'; date?: string };
 
 const education = entries<EducationEntry>('education').sort(byStartAscending);
@@ -60,6 +68,14 @@ const dated = courses.filter((entry) => entry.date).sort(byDateAscending);
 // changes what this expects instead of failing here.
 const mostRecent = education[education.length - 1];
 const degree = education.find((entry) => entry.courses?.length)!;
+
+// The institutions whose entry names a document, the degree certificate: each
+// card carries one link that opens it in the page's certificate dialog, the
+// dialog tests/certificates.spec.ts covers from the course cards. Read from
+// the content, so an institution without one is asserted to offer nothing.
+const documented = education.filter((entry) => entry.document);
+const control = '[data-document]';
+const dialog = '[data-certificate-dialog]';
 
 // The phase runs from the earliest dated certificate to the latest.
 const period = { start: String(dated[0].date), end: String(dated[dated.length - 1].date) };
@@ -166,6 +182,73 @@ for (const locale of locales) {
       }
     });
 
+    test('offers the degree certificate from the card whose entry names one, and from no other', async ({ page }) => {
+      await page.goto(url);
+      for (const entry of education) {
+        const card = page.locator(timeline).filter({ hasText: entry.institution[locale] });
+        await expect(card, `the card of ${entry.institution.en} is a timeline item`).toHaveJSProperty('tagName', 'LI');
+        await expect(card.locator('article'), `the card of ${entry.institution.en} is an article`).toHaveCount(1);
+        await expect(card.locator(control), `documents offered by ${entry.institution.en}`).toHaveCount(
+          entry.document ? 1 : 0,
+        );
+        if (!entry.document) continue;
+
+        const link = card.locator(control);
+        const caption = [entry.studyType[locale], entry.area[locale], entry.institution[locale]].join(
+          t.listSeparator,
+        );
+        await expect(link).toHaveJSProperty('tagName', 'A');
+        await expect(link).toHaveText(t.certificate.open);
+        await expect(link).toHaveAttribute('href', /\/_astro\/.+\.pdf$/);
+        await expect(link).toHaveAttribute('data-document', (await link.getAttribute('href'))!);
+        await expect(link).toHaveAttribute('data-preview', /\.webp$/);
+        // The preview is rendered 1600 pixels wide by scripts/certificate-previews.mjs,
+        // and the height follows the page, so the width is the one number that
+        // is fixed and a swapped pair fails here.
+        await expect(link).toHaveAttribute('data-preview-width', '1600');
+        expect(Number(await link.getAttribute('data-preview-height'))).toBeGreaterThan(0);
+        await expect(link).toHaveAttribute('data-caption', caption);
+      }
+    });
+
+    if (documented.length > 0) {
+      test('opens the degree certificate in the dialog, closes back to the link, and leaves the courses folding', async ({
+        page,
+      }) => {
+        await page.goto(url);
+        await page.evaluate(() => Promise.all(document.getAnimations().map((animation) => animation.finished)));
+        const card = page.locator(timeline).filter({ hasText: documented[0]!.institution[locale] });
+        const link = card.locator(control);
+        const expected = {
+          preview: await link.getAttribute('data-preview'),
+          document: await link.getAttribute('data-document'),
+          caption: await link.getAttribute('data-caption'),
+        };
+
+        await expect(page.locator(dialog)).not.toHaveAttribute('open');
+        await link.click();
+        await expect(page.locator(dialog)).toHaveAttribute('open', '');
+        await expect(page.locator(`${dialog} [data-certificate-image]`)).toHaveAttribute('src', expected.preview!);
+        await expect(page.locator(`${dialog} [data-certificate-image]`)).toHaveAttribute('alt', expected.caption!);
+        await expect(page.locator(`${dialog} [data-certificate-caption]`)).toHaveText(expected.caption!);
+        await expect(page.locator(`${dialog} [data-certificate-link]`)).toHaveAttribute('href', expected.document!);
+        // The click opened the dialog rather than following the link.
+        await expect(page).toHaveURL(new RegExp(`${url.replace(/\//g, '\\/')}$`));
+
+        await page.keyboard.press('Escape');
+        await expect(page.locator(dialog)).not.toHaveAttribute('open');
+        await expect(link).toBeFocused();
+
+        // The fold beside it is untouched by the link: it still opens, and a
+        // click on its summary opens no dialog.
+        const fold = card.locator('details');
+        await fold.locator('summary').click();
+        await expect(fold).toHaveAttribute('open', '');
+        await expect(page.locator(dialog)).not.toHaveAttribute('open');
+        await expect(fold.locator('li')).toHaveCount(documented[0]!.courses?.length ?? 0);
+      });
+    }
+
     test('meets the contrast criterion with the courses open', async ({ page, colorScheme }) => {
       // The contrast tests audit every page with its folds closed; the open
       // course list is the surface they cannot see.
@@ -205,6 +288,16 @@ for (const locale of locales) {
       await expect(fold).toHaveAttribute('open', '');
       await expect(fold.locator('li')).toHaveCount(degree.courses!.length);
       await expect(fold.locator('li').first()).toBeVisible();
+    });
+
+    test('leaves the degree certificate link the link to its PDF', async ({ page }) => {
+      await page.goto(url);
+      const links = page.locator(`${timeline} ${control}`);
+      await expect(links).toHaveCount(documented.length);
+      for (const link of await links.all()) {
+        await expect(link).toHaveJSProperty('tagName', 'A');
+        await expect(link).toHaveAttribute('href', /\.pdf$/);
+      }
     });
   });
 }

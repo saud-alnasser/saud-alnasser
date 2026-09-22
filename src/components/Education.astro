@@ -1,7 +1,16 @@
 ---
+// An institution's card on the education timeline. Where the entry names a
+// document, the degree certificate, the card ends with a link that opens it
+// in the page's one certificate dialog, through the same data attributes a
+// course card carries and the same click handler in the base layout. The
+// link sits inside the card rather than being the card, as a course card is:
+// this card holds the courses fold, a <details> element, and interactive
+// content does not nest inside a link. Without script the link is the PDF.
+
 import type { CollectionEntry } from 'astro:content';
 import Card from './Card.astro';
 import Fold from './Fold.astro';
+import Icon from './Icon.astro';
 import { formatPeriod, strings, type Locale } from '../lib/i18n';
 import { localized } from '../lib/localized';
 
@@ -9,6 +18,21 @@ interface Props {
   locale: Locale;
   entry: CollectionEntry<'education'>;
 }
+
+// The documents and their previews, read once for the build the way
+// Certificate.astro reads the certificates', keyed by the path the entry's
+// `document` names relative to the education directory. An empty files/
+// directory gives an empty map and a card with no link, which is right.
+const documents = import.meta.glob('../content/education/files/*.pdf', {
+  query: '?url',
+  import: 'default',
+  eager: true,
+}) as Record<string, string>;
+
+const previews = import.meta.glob('../content/education/files/*.webp', {
+  import: 'default',
+  eager: true,
+}) as Record<string, ImageMetadata>;
 
 const { locale, entry } = Astro.props;
 const { data } = entry;
@@ -23,12 +47,24 @@ const status = data.status === 'completed' ? null : t.education.status[data.stat
 // The courses are the one list that would swamp the card: twenty-one of them
 // against four lines of everything else. They fold.
 const courses = data.courses ?? [];
+
+const institution = text('institution', data.institution);
+const qualification = `${text('studyType', data.studyType)}${t.listSeparator}${text('area', data.area)}`;
+
+const key = (relative: string) => `../content/education/${relative}`;
+const address = data.document ? documents[key(data.document)] : undefined;
+const preview = data.document ? previews[key(data.document.replace(/\.pdf$/, '.webp'))] : undefined;
+
+// What the dialog says the image is, and what a screen reader hears in place
+// of it: the qualification and who awarded it, the way a course's caption is
+// the course and who issued it.
+const caption = `${qualification}${t.listSeparator}${institution}`;
 ---
 
 <Card as="article">
   <p class="text-sm text-muted-foreground tabular-nums">{formatPeriod(locale, data.period)}</p>
-  <h3 class="mt-1 text-lg font-semibold tracking-tight">{text('institution', data.institution)}</h3>
-  <p class="mt-1">{text('studyType', data.studyType)}{t.listSeparator}{text('area', data.area)}</p>
+  <h3 class="mt-1 text-lg font-semibold tracking-tight">{institution}</h3>
+  <p class="mt-1">{qualification}</p>
   {status && <p class="mt-2 text-sm text-muted-foreground" data-status={data.status}>{status}</p>}
   {
     courses.length > 0 && (
@@ -39,6 +75,25 @@ const courses = data.courses ?? [];
           ))}
         </ul>
       </Fold>
+    )
+  }
+  {
+    address && (
+      // The same words in the same place as a course card's, muted until it
+      // is pointed at, for the same reason: the accent on this page belongs
+      // to the timeline's one node.
+      <a
+        href={address}
+        data-document={address}
+        data-preview={preview?.src}
+        data-preview-width={preview ? String(preview.width) : undefined}
+        data-preview-height={preview ? String(preview.height) : undefined}
+        data-caption={caption}
+        class="mt-4 inline-flex items-center gap-1.5 rounded-sm text-sm text-muted-foreground hover:text-primary motion-safe:transition-colors"
+      >
+        {t.certificate.open}
+        <Icon name="file" class="size-4" />
+      </a>
     )
   }
 </Card>

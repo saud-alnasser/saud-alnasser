@@ -143,28 +143,36 @@ const education = defineCollection({
       period,
       status: z.enum(educationStatuses),
       courses: z.array(localized).optional(),
+      // The degree certificate, once issued, which the university card opens
+      // the way a course card opens its certificate. Optional: an institution
+      // still studied at has none to name.
+      document: documentUnder('education').optional(),
     })
     .strict(),
 });
 
-// A certificate's document: the path of its PDF relative to the certificates
+// An entry's document: the path of its PDF relative to the collection's own
 // directory, as `files/code-with-mosh-react.pdf`, with its preview,
 // `files/code-with-mosh-react.webp`, rendered beside it by
 // `pnpm certificates:previews`. Both must exist, so an entry naming a file
 // that is not there fails the build naming the file rather than shipping a
 // dead link or a blank card, and a PDF added without its preview fails the
-// same way until the command has run.
-const certificatesDirectory = fileURLToPath(new URL('./content/certificates/', import.meta.url));
-const certificateDocument = z
-  .string()
-  .regex(/^files\/[^/\\]+\.pdf$/, 'a document is written files/<name>.pdf')
-  .superRefine((value, context) => {
-    for (const relative of [value, value.replace(/\.pdf$/, '.webp')]) {
-      if (!existsSync(path.join(certificatesDirectory, relative))) {
-        context.addIssue({ code: 'custom', message: `${relative} does not exist under src/content/certificates/` });
+// same way until the command has run. A certificate names its own, and so
+// does an institution, for the degree certificate the education page opens
+// from the university card; the two collections keep their files apart.
+function documentUnder(collection: 'certificates' | 'education') {
+  const directory = fileURLToPath(new URL(`./content/${collection}/`, import.meta.url));
+  return z
+    .string()
+    .regex(/^files\/[^/\\]+\.pdf$/, 'a document is written files/<name>.pdf')
+    .superRefine((value, context) => {
+      for (const relative of [value, value.replace(/\.pdf$/, '.webp')]) {
+        if (!existsSync(path.join(directory, relative))) {
+          context.addIssue({ code: 'custom', message: `${relative} does not exist under src/content/${collection}/` });
+        }
       }
-    }
-  });
+    });
+}
 
 const certificates = defineCollection({
   loader: glob({ pattern: '*.yaml', base: './src/content/certificates' }),
@@ -177,7 +185,7 @@ const certificates = defineCollection({
       kind: z.enum(certificateKinds),
       date: iso8601.optional(),
       url: url.optional(),
-      document: certificateDocument.optional(),
+      document: documentUnder('certificates').optional(),
       resume,
     })
     .strict(),
