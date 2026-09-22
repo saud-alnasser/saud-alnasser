@@ -1,5 +1,5 @@
 ---
-status: open
+status: resolved
 ---
 
 # feat(content): the LinkedIn profile, read by the home page, the documents, the JSON files, and the README
@@ -10,15 +10,15 @@ status: open
 
 ## Acceptance Criteria
 
-- [ ] `profile.yaml` carries `{ network: LinkedIn, username: saud-alnasser-profile, url: https://www.linkedin.com/in/saud-alnasser-profile }` as its second profile; on `/en/` and `/ar/`, `[data-contact="linkedin"]` links to that address with a `[data-icon="linkedin"]` icon, and `[data-contact="github"]` is still first, asserted in `tests/home.spec.ts` (criterion 5).
-- [ ] On all four document pages `[data-cv-contact]` contains the LinkedIn address and not `github.com`; `dist/en/resume.json` and `dist/ar/resume.json` carry two `basics.profiles` entries, GitHub then LinkedIn, and `pnpm check:dist` reports both valid (criterion 5).
-- [ ] `README.md` carries `- 💼 **LinkedIn** — [saud-alnasser-profile](https://www.linkedin.com/in/saud-alnasser-profile)` directly above the Portfolio line inside the profile markers; `pnpm readme --check` exits 0, and exits 1 with the profile removed from `profile.yaml` (criterion 6).
-- [ ] `pnpm render:pdf` reports `resume.en.pdf`, `resume.ar.pdf`, and the filled copy of each at one page on A4 and one page at Letter with at least 10mm free at Letter; the four numbers go in the commit message (criterion 7).
-- [ ] `pnpm build` prints `[localized] 0 gaps`, and `pnpm check`, `pnpm check:dist`, `pnpm test`, and `pnpm test:content` pass (criteria 9 and 10).
+- [x] `profile.yaml` carries `{ network: LinkedIn, username: saud-alnasser-profile, url: https://www.linkedin.com/in/saud-alnasser-profile }` as its second profile; on `/en/` and `/ar/`, `[data-contact="linkedin"]` links to that address with a `[data-icon="linkedin"]` icon, and `[data-contact="github"]` is still first, asserted in `tests/home.spec.ts` (criterion 5). Verified 2026-09-22: the entry is the second under `profiles:`; `dist/en/index.html` carries the actions in the order `github linkedin cv resume` with one `data-icon="linkedin"`; the extended case `offers the contact actions with icons and names` passed in both languages and both palettes, asserting the first action is GitHub and each later profile's address, name, and mark.
+- [x] On all four document pages `[data-cv-contact]` contains the LinkedIn address and not `github.com`; `dist/en/resume.json` and `dist/ar/resume.json` carry two `basics.profiles` entries, GitHub then LinkedIn, and `pnpm check:dist` reports both valid (criterion 5). Verified 2026-09-22: each of the four built pages carries `linkedin.com/in/saud-alnasser-profile`; the existing case `carries the GitHub address as one code in the header, and nowhere in the text` passed on all four routes, which is the `github.com` half; both JSON files carry `["GitHub:https://github.com/saud-alnasser","LinkedIn:https://www.linkedin.com/in/saud-alnasser-profile"]`; `pnpm check:dist` printed `en/resume.json: valid` and `ar/resume.json: valid`.
+- [x] `README.md` carries `- 💼 **LinkedIn** — [saud-alnasser-profile](https://www.linkedin.com/in/saud-alnasser-profile)` directly above the Portfolio line inside the profile markers; `pnpm readme --check` exits 0, and exits 1 with the profile removed from `profile.yaml` (criterion 6). Verified 2026-09-22: `pnpm readme` rewrote the block with that line as the first list item; `pnpm readme --check` printed `README.md carries the profile as src/content/ states it`; with the LinkedIn entry cut from `profile.yaml` the check exited 1, and the entry was put back.
+- [x] `pnpm render:pdf` reports `resume.en.pdf`, `resume.ar.pdf`, and the filled copy of each at one page on A4 and one page at Letter with at least 10mm free at Letter; the four numbers go in the commit message (criterion 7). Verified 2026-09-22: `resume.en.pdf` 1 page at A4 with 54.8mm free, 1 page at Letter with 36.8mm free; `resume.en.filled.pdf` 49.5mm and 31.5mm; `resume.ar.pdf` 54.3mm and 36.3mm; `resume.ar.filled.pdf` 49.0mm and 31.0mm. The published copies are unchanged; the filled copies lost 5.3mm, because the contact line wraps once the email and the phone number join the LinkedIn address on it.
+- [x] `pnpm build` prints `[localized] 0 gaps`, and `pnpm check`, `pnpm check:dist`, `pnpm test`, and `pnpm test:content` pass (criteria 9 and 10). Verified 2026-09-22: `[localized] 0 gaps`; `pnpm check` `0 errors, 0 warnings`; `pnpm check:dist` exited 0; `pnpm test` printed `616 passed (34.1s)`; `pnpm test:content` printed `test-content-mechanism: passed`; `pnpm scan:history` printed `no identifier pattern matches`.
 
 ## Relevant areas
 
-`src/content/profile.yaml`. `src/lib/icons.ts` and `src/lib/networks.ts`, the mark and the map. `scripts/readme-profile.mjs` and `README.md`. `tests/home.spec.ts`, the contact actions case. `src/components/CvDocument.astro` and `src/lib/resume.ts` follow the profile with no change of their own.
+`src/content/profile.yaml`. `src/lib/icons.ts` and `src/lib/networks.ts`, the mark and the map. `scripts/readme-profile.mjs` and `README.md`. `tests/home.spec.ts`, the contact actions case. `src/components/CvDocument.astro` and `src/lib/resume.ts` followed the profile with no change of their own.
 
 ## Constraints
 

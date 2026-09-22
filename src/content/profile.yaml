@@ -69,7 +69,15 @@ profile:
   location:
     en: Riyadh, Saudi Arabia
     ar: الرياض، المملكة العربية السعودية
+  # GitHub first: the QR code on both documents, the home page's first
+  # action, and the README, which is the GitHub profile page itself, read the
+  # first entry as GitHub. Every other profile is written out as text on the
+  # documents' contact line and as a line above the Portfolio link in the
+  # README's profile block.
   profiles:
     - network: GitHub
       username: saud-alnasser
       url: https://github.com/saud-alnasser
+    - network: LinkedIn
+      username: saud-alnasser-profile
+      url: https://www.linkedin.com/in/saud-alnasser-profile

@@ -42,9 +42,10 @@ people; where the two disagree, the code is right and this file is corrected.
 One file, `src/content/profile.yaml`, with a single top-level key `profile:`
 holding the person. The profile block of the repository's `README.md`,
 between the `<!-- profile -->` markers, is written from `summary` here by
-`pnpm readme`, under links to the site, the CV, and the resume in both
-languages, so who Saud is stays authored once; the dist check fails when the
-README is behind. The record itself — the skills, the projects, the rest —
+`pnpm readme`, over one line per profile other than GitHub, which the README
+already is the page of, and then links to the site, the CV, and the resume in
+both languages, so who Saud is stays authored once; the dist check fails when
+the README is behind. The record itself — the skills, the projects, the rest —
 is on the site, and the README links to it rather than repeating it. The
 languages Saud speaks are not here either: they are entries under
 `languages/`, read by the two hiring documents and the JSON Resume document

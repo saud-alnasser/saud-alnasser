@@ -1,7 +1,8 @@
 // Writes the profile block of README.md, the page GitHub shows for the
-// account, from the content source and the site config: the summary, and the
-// addresses of the three things a reader came for, the site, the CV, and the
-// resume, each in both languages. Who Saud is stays authored once, in
+// account, from the content source and the site config: the summary, the
+// profiles other than GitHub, and the addresses of the three things a reader
+// came for, the site, the CV, and the resume, each in both languages. Who
+// Saud is stays authored once, in
 // src/content/, and the profile page repeats it without a second hand-written
 // copy. The skills, the projects, and the rest of the record are on the site;
 // the README points at it rather than growing a copy. Run after editing the
@@ -54,6 +55,13 @@ const links = [
   { emoji: '📃', label: 'Resume', path: 'resume/' },
 ];
 
+// The profiles the block links to, above the site: every one in the content
+// except GitHub, because this README is the GitHub profile page and a link to
+// itself says nothing. The same test src/lib/networks.ts applies, on the
+// network's name, so a profile is skipped by what it is rather than by its
+// position in the list.
+const isGitHub = ({ network }) => network.trim().toLowerCase() === 'github';
+
 // The block as the content says it should read.
 export async function renderProfile() {
   const { profile } = parseYaml(await readFile(path.join(content, 'profile.yaml'), 'utf8'));
@@ -62,6 +70,9 @@ export async function renderProfile() {
     open,
     wrap(profile.summary.en),
     '',
+    ...profile.profiles
+      .filter((entry) => !isGitHub(entry))
+      .map(({ network, username, url }) => `- 💼 **${network}** — [${username}](${url})`),
     ...links.map(
       ({ emoji, label, path: page }) =>
         `- ${emoji} **${label}** — [English](${at(`/en/${page}`)}) · [العربية](${at(`/ar/${page}`)})`,

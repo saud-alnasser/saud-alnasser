@@ -191,6 +191,19 @@ for (const locale of locales) {
       await expect(github).toHaveAttribute('href', profile.profiles[0]!.url);
       await expect(github.locator('svg')).toHaveAttribute('data-icon', 'github');
       await expect(github).toHaveAccessibleName('GitHub');
+      // GitHub is the first action as it is the first profile; every other
+      // profile follows it, each with its network's mark where the icon set
+      // has one (src/lib/networks.ts), the LinkedIn profile among them.
+      await expect(actions.first()).toHaveAttribute('data-contact', 'github');
+      for (const entry of profile.profiles.slice(1)) {
+        const action = page.locator(`[data-contact="${entry.network.toLowerCase()}"]`);
+        await expect(action).toHaveAttribute('href', entry.url);
+        await expect(action).toHaveAccessibleName(entry.network);
+        await expect(action.locator('svg')).toHaveAttribute('data-icon', profileIcon(entry.network));
+      }
+      const linkedin = profile.profiles.find((entry) => entry.network === 'LinkedIn');
+      expect(linkedin, 'the content lists a LinkedIn profile').toBeTruthy();
+      await expect(page.locator('[data-contact="linkedin"] svg')).toHaveAttribute('data-icon', 'linkedin');
 
       const cv = page.locator('[data-contact="cv"]');
       await expect(cv).toHaveAttribute('href', at(`/${locale}/cv/`));
