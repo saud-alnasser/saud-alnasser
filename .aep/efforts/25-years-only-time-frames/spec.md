@@ -1,5 +1,5 @@
 ---
-status: draft
+status: accepted
 ---
 
 # Problem
@@ -21,7 +21,7 @@ A reader of any page or either document sees a time frame as a year, "2024", or 
 - `src/content/README.md`: the line that says what a `period` is, gaining what it prints as.
 - `src/lib/languages.ts`: the comment that contrasts the language test's year with the other dates on the document, which stops being a contrast.
 - The tests and checks that read the content to know what to expect, which already call `formatPeriod` and follow it: `tests/work.spec.ts`, `tests/education.spec.ts`, `tests/resume.spec.ts`, `scripts/check-dist.mjs`. In scope for one new assertion: that what is printed carries no month.
-- The five components that call `formatPeriod` need no change of their own: `Experience.astro`, `Project.astro`, `Education.astro`, `CvDocument.astro`, and the education page.
+- The five templates that call `formatPeriod`, `Experience.astro`, `Project.astro`, `Education.astro`, `CvDocument.astro`, and the education page: the element that prints the period gains a `data-period` marker so a test can find every one, and nothing else about them changes.
 
 # Requirements
 
@@ -36,7 +36,7 @@ A reader of any page or either document sees a time frame as a year, "2024", or 
 # Acceptance Criteria
 
 1. Called directly, `formatPeriod('en', { start: '2024-03', end: '2024-11' })` is `2024`, `formatPeriod('en', { start: '2023-09', end: '2025-05' })` is `2023-2025`, `formatPeriod('en', { start: '2024-06' })` is `2024-Present`, and the three Arabic calls give `2024`, `2023-2025`, and `2024-الآن`. Asserted in a test that calls the function.
-2. On `/en/work/`, `/ar/work/`, `/en/education/`, `/ar/education/`, and the four document pages, every element that prints a period matches `^\d{4}(-(\d{4}|Present|الآن))?$` after trimming, asserted in the Playwright tests beside the existing period assertions, and `pdftotext` over `cv.en.pdf` and `resume.en.pdf` prints no English month abbreviation followed by a year. `pnpm check:dist` still finds the CV rows it expects, since it builds them from the same function.
+2. On `/en/work/`, `/ar/work/`, `/en/education/`, `/ar/education/`, and the four document pages, every `[data-period]` element matches `^\d{4}(-(\d{4}|Present|الآن))?$` after trimming, there is at least one on each page, and each entry's own period assertion in the existing tests still holds, and `pdftotext` over `cv.en.pdf` and `resume.en.pdf` prints no English month abbreviation followed by a year. `pnpm check:dist` still finds the CV rows it expects, since it builds them from the same function.
 3. `git diff main -- src/content/` names only `src/content/education/saudi-electronic-university.yaml`, and in it only the two period lines. `dist/en/resume.json` and `dist/ar/resume.json` carry `education[0].startDate` as `2022` and `endDate` as `2026`, and every project's `startDate` and `endDate` at the month precision `main` carries.
 4. `/en/education/` and `/ar/education/` print `2022-2026` on the university card, and all four document pages print it on the education row, asserted in the tests through the content the way the existing assertions are.
 5. `src/content/README.md` carries the sentence on the "Dates" line, and the header comment of `src/lib/i18n.ts` describes the year-only form.
