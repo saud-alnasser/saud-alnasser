@@ -118,22 +118,29 @@ const count = fill(t.education.onlineCourses.count, {
   </section>
 
   {/*
-    The certifications, the same grid of the same cards. Its heading keeps the
-    id the certificates section had, so an inbound link to #certificates still
-    lands on a credential rather than on nothing.
+    The certifications, the same grid of the same cards, rendered only while
+    an entry exists, the way the CV prints a section only where it holds
+    something: a heading over an empty grid would say "no credential" in so
+    many words. Its heading keeps the id the certificates section had, so an
+    inbound link to #certificates still lands on a credential; with none, the
+    anchor is absent rather than kept as an empty target.
   */}
-  <section aria-labelledby="certificates" class="mt-16">
-    <h2 id="certificates" class="text-xl font-semibold tracking-tight">{t.sections.certifications}</h2>
-    <ul data-grid="certifications" class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
-      {
-        certifications.map((entry) => (
-          <li>
-            <Certificate locale={locale} entry={entry} />
-          </li>
-        ))
-      }
-    </ul>
-  </section>
+  {
+    certifications.length > 0 && (
+      <section aria-labelledby="certificates" class="mt-16">
+        <h2 id="certificates" class="text-xl font-semibold tracking-tight">
+          {t.sections.certifications}
+        </h2>
+        <ul data-grid="certifications" class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
+          {certifications.map((entry) => (
+            <li>
+              <Certificate locale={locale} entry={entry} />
+            </li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
 
   {/* The one dialog every certificate card opens, outside main. */}
   <CertificateDialog locale={locale} slot="dialog" />
