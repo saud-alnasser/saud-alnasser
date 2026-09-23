@@ -1,5 +1,6 @@
 # What the CV says about the online courses, in one entry rather than a list
-# of 26: the providers, and the topics, in the order the line prints them.
+# of every course: the providers, and the topics, in the order the line
+# prints them.
 # The count of courses and the years are not here; the build reads them from
 # the course entries under certificates/, so a course added or removed moves
 # them with no edit to this file. The education page still shows every
