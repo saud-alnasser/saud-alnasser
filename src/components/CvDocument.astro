@@ -1,6 +1,6 @@
 ---
 import { getCollection, getEntry } from 'astro:content';
-import { formatDate, formatPeriod, strings, type Locale } from '../lib/i18n';
+import { fill, formatDate, formatPeriod, plural, strings, type Locale } from '../lib/i18n';
 import { levelLine } from '../lib/languages';
 import { localized } from '../lib/localized';
 import {
@@ -12,6 +12,7 @@ import {
 } from '../lib/order';
 import { codedProfile, profileIcon } from '../lib/networks';
 import { isCertification, isCourse, isShown, onResume } from '../lib/shown';
+import { educationTimeline, type TimelineItem } from '../lib/timeline';
 import QrCode from './QrCode.astro';
 
 // The document both of the site's document pages are: the CV, which holds
@@ -39,17 +40,23 @@ import QrCode from './QrCode.astro';
 //   name, label, contact line             the same
 //   summary, from `summary`               its own, from `resumeSummary`
 //   experience, every entry with bullets  the same
-//   education, with the course list       education, without the course list
+//   education, with the course list,      education, without the course list
+//     and the online courses as one         and without the self-study entry
+//     self-study entry in the timeline's
+//     place for them
 //   skills, the keywords in columns       skills, one line per group
 //   languages, one line each              the same
 //   certifications, kind: certification   projects, the ones marked resume,
-//   courses, kind: course                   without technologies or links
-//   projects, every shown project         certifications, the ones marked
-//                                         courses, the ones marked
+//   projects, every shown project           without technologies or links
+//                                         certifications, the ones marked
 //
-// A section prints only where it holds something, so the resume shows neither
-// credential heading until an entry is marked, and the CV drops one if its
-// kind is left empty.
+// A section prints only where it holds something, so the resume shows no
+// certifications heading until an entry is marked, and the CV drops its own
+// while no certification exists. The course completions are never listed one
+// by one on either document: the CV reads them as the one self-study entry,
+// whose topics and providers are src/content/self-study.yaml's and whose
+// count and years are the course entries', and the education page and the
+// JSON Resume documents are where every course is listed.
 
 interface Props {
   locale: Locale;
@@ -93,19 +100,44 @@ const shownProjects = (await getCollection('projects', ({ data }) => isShown(dat
 // resume can never name a project the content source dropped.
 const projects = resume ? shownProjects.filter((entry) => onResume(entry.data)) : shownProjects;
 
+// The education section's items. The CV lays the record out in time through
+// the same function the education page uses (src/lib/timeline.ts), so the
+// online-courses phase sits before the university on paper exactly where the
+// timeline puts its node; the resume prints the institutions alone, as it
+// did. The courses arrive in the site's order, by date with the undated
+// last, which is what the node's period is read from.
+const courses = certificates.filter((entry) => isCourse(entry.data)).map((entry) => entry.data);
+const timeline: TimelineItem<(typeof education)[number]>[] = resume
+  ? education.map((entry) => ({ kind: 'education', entry }))
+  : educationTimeline(education, courses);
+
+// What the self-study entry says: the count of courses in the noun's form
+// for that count, the providers joined the way the language joins a list,
+// and the authored topics. Built here, in one place, so the dist check's
+// reading-order expectation and the browser case can build the same line
+// from the same strings.
+const selfStudy = (await getEntry('selfStudy', 'selfStudy'))!;
+const selfStudyText = localized(locale, 'selfStudy', selfStudy.id);
+const providers = new Intl.ListFormat(locale, { type: 'conjunction' }).format(selfStudy.data.providers);
+const through = (count: number) =>
+  fill(t.cv.selfStudy.through, { count: String(count), noun: plural(locale, count, t.education.onlineCourses.noun), providers });
+const topics = selfStudy.data.topics.map((topic, index) => selfStudyText(`topics[${index}]`, topic)).join(t.listSeparator);
+
 // The sections after the skills and the languages, in the order this variant
 // prints them, which is the order scripts/check-dist.mjs and
-// tests/resume.spec.ts read. The CV is the record, so its credentials come
-// before its projects and its course completions have a section of their
-// own; the resume leads with the work and carries a credential only where an
-// entry is marked for it.
+// tests/resume.spec.ts read. The CV is the record, so its certifications come
+// before its projects; the resume leads with the work and carries a
+// certification only where an entry is marked for it. A course completion
+// has no section on either: the CV reads the courses as the self-study entry
+// above, and marking a course for the resume marks nothing, because the
+// resume prints no course, which src/content/README.md says beside the
+// marker.
 type ProjectSection = { id: 'projects'; entries: typeof shownProjects };
-type CertificateSection = { id: 'certifications' | 'courses'; heading: string; entries: typeof certificates };
+type CertificateSection = { id: 'certifications'; heading: string; entries: typeof certificates };
 
-// A marked certificate keeps its own kind's heading on the resume, as it has
-// on the CV: a course completion listed under "Certifications" would claim
-// more than the entry says. Nothing is marked today, and both rows render
-// only when they hold something, so the resume shows neither until one is.
+// Both rows render only when they hold something, so the resume shows no
+// certifications heading until an entry is marked, and the CV none while no
+// certification exists.
 const tail: (ProjectSection | CertificateSection)[] = resume
   ? [
       { id: 'projects', entries: projects },
@@ -114,11 +146,6 @@ const tail: (ProjectSection | CertificateSection)[] = resume
         heading: t.cv.certifications,
         entries: certificates.filter((entry) => isCertification(entry.data) && onResume(entry.data)),
       },
-      {
-        id: 'courses',
-        heading: t.cv.courses,
-        entries: certificates.filter((entry) => isCourse(entry.data) && onResume(entry.data)),
-      },
     ]
   : [
       {
@@ -126,7 +153,6 @@ const tail: (ProjectSection | CertificateSection)[] = resume
         heading: t.cv.certifications,
         entries: certificates.filter((entry) => isCertification(entry.data)),
       },
-      { id: 'courses', heading: t.cv.courses, entries: certificates.filter((entry) => isCourse(entry.data)) },
       { id: 'projects', entries: projects },
     ];
 
@@ -277,7 +303,32 @@ const muted = 'text-sm text-muted-foreground';
     <h2 id="cv-education" class={heading}>{t.nav.education}</h2>
     <ol class="mt-3 space-y-5">
       {
-        education.map((entry) => {
+        timeline.map((item) => {
+          if (item.kind === 'courses') {
+            // The online courses as one entry in the shape of an
+            // institution's: the title with the years at the far edge, the
+            // count and the providers where the institution's name goes, and
+            // the topics in the place and style of the course list. The CV
+            // alone prints it; `timeline` holds no node on the resume.
+            return (
+              <li class="cv-entry" data-self-study>
+                <div class={row}>
+                  <h3 class="font-semibold">{t.cv.selfStudy.title}</h3>
+                  {item.period && (
+                    <p class={period} data-period>
+                      {formatPeriod(locale, item.period)}
+                    </p>
+                  )}
+                </div>
+                <p class="text-sm">{through(item.count)}</p>
+                <p class={`mt-2 leading-6 ${muted}`}>
+                  <span class="text-foreground">{t.cv.selfStudy.topics}: </span>
+                  {topics}
+                </p>
+              </li>
+            );
+          }
+          const { entry } = item;
           const { data } = entry;
           const text = localized(locale, 'education', entry.id);
           return (

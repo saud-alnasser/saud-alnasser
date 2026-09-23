@@ -198,7 +198,17 @@ const en = {
     skills: 'Key skills',
     languages: 'Languages',
     certifications: 'Certifications',
-    courses: 'Courses',
+    // The one entry the CV's education section prints for the online
+    // courses, in the timeline's place for them: the title, then `through`
+    // over the count of courses read from the content, the noun in the form
+    // the count takes from `education.onlineCourses.noun`, and the providers
+    // joined in the language's own way, then the authored topics under
+    // `topics`. What the entry says is src/content/self-study.yaml's.
+    selfStudy: {
+      title: 'Self-study',
+      through: '{count} online {noun} at {providers}',
+      topics: 'Topics',
+    },
   },
   // The resume page. Everything else it shows is the CV's, above.
   resume: {
@@ -342,7 +352,13 @@ const ar: Strings = {
     skills: 'المهارات الأساسية',
     languages: 'اللغات',
     certifications: 'الشهادات',
-    courses: 'الدورات',
+    selfStudy: {
+      title: 'التعلم الذاتي',
+      // The counted noun takes the form Arabic gives each range, as the
+      // timeline node's does, and the adjective stays singular after it.
+      through: '{count} {noun} إلكترونية في {providers}',
+      topics: 'الموضوعات',
+    },
   },
   resume: {
     title: 'السيرة المختصرة',

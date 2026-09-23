@@ -1,5 +1,5 @@
 ---
-status: open
+status: resolved
 blocked-by: [01]
 ---
 
@@ -11,13 +11,13 @@ The CV's Courses section is gone. Its education section carries one self-study e
 
 ## Acceptance Criteria
 
-- [ ] On `/en/cv/` and `/ar/cv/` there is no `[data-cv-section="courses"]` and no line carrying a single course's name with its issuer; inside `[data-cv-section="education"]` one `[data-self-study]` entry, ordered before the university's, contains the year, the count 26, both provider names, and every authored topic in that language's words; `pnpm check:dist` finds the entry's title with its period and its providers line in reading order in `cv.en.pdf`; removing one SoloLearn entry and rebuilding changes the count to 25 with no other edit, put back and recorded here (criterion 2, requirement 2).
-- [ ] The `selfStudy` check in `scripts/check-dist.mjs` fails naming the first authored topic whose English is contained, case-insensitively, in no course entry's English name, and the first provider that is no course's issuer, tried once each and put back; the authored English topics include Docker, unit testing, design patterns, refactoring, and data structures (criterion 3, requirement 3).
-- [ ] `pnpm test:content` writes a certification fixture beside the course fixture: the course fixture's name is in both education pages and both `resume.json` files and in neither CV page; the certification fixture's name is in both education pages, both CV pages, and both `resume.json` files; with the fixtures present, both home pages carry `data-section-card="certifications"`, both education pages `id="certificates"`, and both CV pages `data-cv-section="certifications"`, and without them none of the six does (criterion 5, requirement 5).
-- [ ] `pnpm check:dist` still reports both JSON Resume documents valid with `certificates` matching the collection and `education` holding the institutions alone (criterion 6, requirement 6).
-- [ ] `tests/resume.spec.ts` asserts on both resume pages that no `[data-self-study]` entry and no credential section prints, and `pnpm render:pdf` reports `resume.en.pdf`, `resume.ar.pdf`, and the filled copy of each at one page on A4 and on Letter with at least 10mm free at Letter; the four numbers go in the commit (criterion 7, requirement 7).
-- [ ] `pnpm build` prints `[localized] 0 gaps` (criterion 9, requirement 9).
-- [ ] `pnpm build`, `pnpm check`, `pnpm render:pdf`, `pnpm check:dist`, `pnpm test`, `pnpm test:content`, and `pnpm scan:history` exit 0 (criterion 10, requirement 10).
+- [x] On `/en/cv/` and `/ar/cv/` there is no `[data-cv-section="courses"]` and no line carrying a single course's name with its issuer; inside `[data-cv-section="education"]` one `[data-self-study]` entry, ordered before the university's, contains the year, the count 26, both provider names, and every authored topic in that language's words; `pnpm check:dist` finds the entry's title with its period and its providers line in reading order in `cv.en.pdf`; removing one SoloLearn entry and rebuilding changes the count to 25 with no other edit, put back and recorded here (criterion 2, requirement 2).
+- [x] The `selfStudy` check in `scripts/check-dist.mjs` fails naming the first authored topic whose English is contained, case-insensitively, in no course entry's English name, and the first provider that is no course's issuer, tried once each and put back; the authored English topics include Docker, unit testing, design patterns, refactoring, and data structures (criterion 3, requirement 3).
+- [x] `pnpm test:content` writes a certification fixture beside the course fixture: the course fixture's name is in both education pages and both `resume.json` files and in neither CV page; the certification fixture's name is in both education pages, both CV pages, and both `resume.json` files; with the fixtures present, both home pages carry `data-section-card="certifications"`, both education pages `id="certificates"`, and both CV pages `data-cv-section="certifications"`, and without them none of the six does (criterion 5, requirement 5).
+- [x] `pnpm check:dist` still reports both JSON Resume documents valid with `certificates` matching the collection and `education` holding the institutions alone (criterion 6, requirement 6).
+- [x] `tests/resume.spec.ts` asserts on both resume pages that no `[data-self-study]` entry and no credential section prints, and `pnpm render:pdf` reports `resume.en.pdf`, `resume.ar.pdf`, and the filled copy of each at one page on A4 and on Letter with at least 10mm free at Letter; the four numbers go in the commit (criterion 7, requirement 7).
+- [x] `pnpm build` prints `[localized] 0 gaps` (criterion 9, requirement 9).
+- [x] `pnpm build`, `pnpm check`, `pnpm render:pdf`, `pnpm check:dist`, `pnpm test`, `pnpm test:content`, and `pnpm scan:history` exit 0 (criterion 10, requirement 10).
 
 ## Relevant areas
 
@@ -35,4 +35,18 @@ The CV's Courses section is gone. Its education section carries one self-study e
 
 ## Notes
 
-The verification of each criterion, with the counts and the four headroom numbers, is recorded here on landing.
+**Two things decided while building, beyond the plan's letter, and why.**
+
+- **The dist check extracts with `pdftotext -simple` rather than `-layout`.** With `-layout`, the reading-order check failed on the new entry: the PDF had "Self-study" and "2021" at one height, but the extracted text put "2021" on the EDUCATION heading's line three rows up. Tried in the built page and re-rendered: a longer title changed nothing, and a two-year range in the same place was read correctly, so `-layout`'s whitespace column cut was moving a narrow single year on the first entry after a short heading, which would also have hit any one-year institution placed first. `-simple` is the one-column mode, the documents are one column by design, and under it every title stays with its date, both PDFs' groups still match, and the identifiers scan reads the same text. The comment over `extractText` records this. The plan's groups approach stands, so this is a detail of the check rather than a return to plan, and it is raised here for the close.
+- **The self-study check runs before the document checks.** Tried once with a misspelt provider: the reading-order check failed first, naming the line, not the cause. Reordered so a content mistake is named as one.
+
+**A marked course now marks nothing.** `resume: true` on a course entry used to print it under a Courses heading on the resume; no course is listed on either document now, so the marker on a course has no effect. Ticket 03 says so in the content README beside the marker.
+
+## What verified each criterion, on 2026-09-23
+
+- **The entry, and no course list.** Both CV pages contain `data-cv-section="courses"` zero times and `data-self-study` once; both resume pages contain it zero times. Rendered, the English reads "Self-study 2021 / 26 online courses at Code with Mosh and SoloLearn / Topics: C#, Python, JavaScript, HTML, SQL, data structures, design patterns, refactoring, unit testing, Docker, Git", and the Arabic the same in its words with the providers joined by the Arabic conjunction. `pnpm check:dist` printed `cv.en.pdf: 46120 bytes, 14 expected facts found in 9 groups in reading order` (11 in 7 before), and `resume.en.pdf` unchanged at 11 in 7. With `sololearn-html.yaml` moved out and the site rebuilt, both CV pages read "25 online courses"; put back, "26". The browser case asserts the entry's position at the timeline's index, its title, its period, the count, each provider, each topic in the page's language, and the conjunction.
+- **The backing check.** `"Kubernetes"` in place of Git: `check-dist: self-study: "Kubernetes" is named as a self-study topic and no course entry's English name contains it`. `"Solo Learn"` in place of SoloLearn: `check-dist: self-study: "Solo Learn" is named as a self-study provider and no course entry names it as its issuer`. Both put back; the passing line is `self-study: 11 topics each contained in a course's name, 2 providers each a course's issuer, over 26 courses`. The authored English list carries Docker, unit testing, design patterns, refactoring, and data structures.
+- **The fixtures.** `pnpm test:content` printed the course fixture present in both education pages and both `resume.json` files and nowhere else, the certification fixture present in those and both CV pages and nowhere else, both cards unopenable in both languages, `certifications: the card, the heading, and the CV section are present in both languages` with the fixtures, and `absent in both languages` without them; passed.
+- **The JSON documents.** `en/resume.json: valid, work 1, education 1, certificates 26, skills 6, languages 2, projects 13`, and the same for `ar`.
+- **The resume.** `tests/resume.spec.ts` passes with no self-study entry on either resume page; `pnpm render:pdf`: `resume.en.pdf` one page at A4 with 54.8mm free and at Letter with 36.8mm free, `resume.ar.pdf` 54.3mm and 36.3mm, the filled copies the same.
+- **The gates.** `pnpm build` `[localized] 0 gaps`; `pnpm check` 0 errors; `pnpm render:pdf` four documents; `pnpm check:dist` exit 0; `pnpm test` 644 passed; `pnpm test:content` passed; `pnpm scan:history` no match over 27 commits.

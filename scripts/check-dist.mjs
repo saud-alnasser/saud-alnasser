@@ -23,13 +23,14 @@ import { placeholder } from './placeholder.mjs';
 import { readmeWithProfile } from './readme-profile.mjs';
 // The site's own date wording and orders, so the expectation reads exactly
 // what the CV page printed. Node strips the types on import.
-import { formatPeriod, localeInfo, strings } from '../src/lib/i18n.ts';
+import { fill, formatPeriod, localeInfo, plural, strings } from '../src/lib/i18n.ts';
 import { levelLine } from '../src/lib/languages.ts';
 import { gapReport, pick } from '../src/lib/localized.ts';
 import { codedProfile } from '../src/lib/networks.ts';
-import { byOrderThenName, byStartAscending, byStartDescending } from '../src/lib/order.ts';
+import { byDateAscending, byOrderThenName, byStartAscending, byStartDescending } from '../src/lib/order.ts';
 import { joinBase } from '../src/lib/paths.ts';
-import { isShown } from '../src/lib/shown.ts';
+import { isCourse, isShown } from '../src/lib/shown.ts';
+import { educationTimeline } from '../src/lib/timeline.ts';
 import { base, site } from '../astro.config.mjs';
 
 const require = createRequire(import.meta.url);
@@ -206,17 +207,29 @@ async function jsonResume() {
 }
 
 // One line of text with its whitespace normalised, so a run of spaces that
-// `pdftotext -layout` inserts between two columns of a line reads as one.
+// `pdftotext` inserts between a title and the date at the far edge of its
+// line reads as one.
 function squash(text) {
   return text.replace(/\s+/g, ' ').trim();
 }
 
-// The text of a PDF as `pdftotext -layout` lays it out, or null when the tool
+// The text of a PDF as `pdftotext -simple` lays it out, or null when the tool
 // is not on the PATH. UTF-8 is asked for explicitly because xpdf's build
 // writes Latin-1 by default and drops everything outside it.
+//
+// `-simple` is the one-column mode, and the documents are one column by
+// design, which the hazards check below enforces. It replaced `-layout` on
+// 2026-09-23, when the CV's education section gained an entry dated to one
+// year: `-layout` cuts a page into columns by whitespace first, and it moved
+// that narrow year, the first after the short EDUCATION heading, up onto the
+// heading's line, three rows from the title it belongs to, while the PDF
+// itself had both at one height. A two-year range in the same place was left
+// alone, so the check would have passed or failed on the width of a date. The
+// one-column mode keeps every title with its date and reads nothing else
+// differently in these documents.
 async function extractText(file) {
   try {
-    const { stdout } = await promisify(execFile)('pdftotext', ['-enc', 'UTF-8', '-layout', file, '-'], {
+    const { stdout } = await promisify(execFile)('pdftotext', ['-enc', 'UTF-8', '-simple', file, '-'], {
       maxBuffer: 16 * 1024 * 1024,
     });
     return stdout;
@@ -271,32 +284,64 @@ async function documentPdfs() {
   const experience = (await visibleEntries('experience')).map((entry) => entry.data).sort(byStartDescending);
   const education = (await visibleEntries('education')).map((entry) => entry.data).sort(byStartAscending);
   const languages = (await visibleEntries('languages')).map((entry) => entry.data).sort(byOrderThenName);
-  const expected = [
-    // The page sets the name in capitals, so that is what comes out of the
-    // PDF whatever the content file says; it is the one item compared
-    // without case.
-    { items: [profile.name[locale]], caseless: true },
-    // The email was the second group and the document no longer prints it, so
-    // the published PDFs anchor on the name alone. The contact line is checked
-    // over the filled documents below, which are the only copies that have
-    // one.
-  ];
-  for (const entry of experience) {
-    expected.push({ items: [entry.position[locale], formatPeriod(locale, entry.period)] });
-    expected.push({ items: [entry.organisation[locale]] });
-  }
-  for (const entry of education) {
-    expected.push({
-      items: [`${entry.studyType[locale]}${t.listSeparator}${entry.area[locale]}`, formatPeriod(locale, entry.period)],
-    });
-    expected.push({ items: [entry.institution[locale]] });
-  }
-  // The key skills print between the education and the languages and are not
-  // asserted here: the CV lays them in columns, whose extraction order is not
-  // the page's. A language and its level are one line, so they are one group.
-  for (const entry of languages) {
-    expected.push({ items: [entry.name[locale], levelLine(entry.level[locale], entry.test, t.listSeparator)] });
-  }
+  // The education section is the timeline the CV prints (src/lib/timeline.ts):
+  // the institutions with the online-courses node before the most recent one,
+  // rendered as the self-study entry, whose title with its years is one group
+  // and whose providers line is another, built from the same strings the
+  // component fills; the topics line is not asserted, because it wraps on
+  // paper and the browser case reads it whole instead. The resume prints the
+  // institutions alone, so its expectation holds no node.
+  const courses = (await visibleEntries('certificates')).map((entry) => entry.data).filter(isCourse).sort(byDateAscending);
+  const selfStudy = parseYaml(await readFile(path.join(context.content, 'self-study.yaml'), 'utf8')).selfStudy;
+  const providers = new Intl.ListFormat(locale, { type: 'conjunction' }).format(selfStudy.providers);
+  const timeline = {
+    cv: educationTimeline(education, courses),
+    resume: education.map((entry) => ({ kind: 'education', entry })),
+  };
+  const expectedFor = (document) => {
+    const expected = [
+      // The page sets the name in capitals, so that is what comes out of the
+      // PDF whatever the content file says; it is the one item compared
+      // without case.
+      { items: [profile.name[locale]], caseless: true },
+      // The email was the second group and the document no longer prints it,
+      // so the published PDFs anchor on the name alone. The contact line is
+      // checked over the filled documents below, which are the only copies
+      // that have one.
+    ];
+    for (const entry of experience) {
+      expected.push({ items: [entry.position[locale], formatPeriod(locale, entry.period)] });
+      expected.push({ items: [entry.organisation[locale]] });
+    }
+    for (const item of timeline[document]) {
+      if (item.kind === 'courses') {
+        expected.push({ items: [t.cv.selfStudy.title, ...(item.period ? [formatPeriod(locale, item.period)] : [])] });
+        expected.push({
+          items: [
+            fill(t.cv.selfStudy.through, {
+              count: String(item.count),
+              noun: plural(locale, item.count, t.education.onlineCourses.noun),
+              providers,
+            }),
+          ],
+        });
+        continue;
+      }
+      const { entry } = item;
+      expected.push({
+        items: [`${entry.studyType[locale]}${t.listSeparator}${entry.area[locale]}`, formatPeriod(locale, entry.period)],
+      });
+      expected.push({ items: [entry.institution[locale]] });
+    }
+    // The key skills print between the education and the languages and are
+    // not asserted here: the CV lays them in columns, whose extraction order
+    // is not the page's. A language and its level are one line, so they are
+    // one group.
+    for (const entry of languages) {
+      expected.push({ items: [entry.name[locale], levelLine(entry.level[locale], entry.test, t.listSeparator)] });
+    }
+    return expected;
+  };
 
   // Each document twice: the published file, which carries no contact line at
   // all, and the copy rendered through the download form to .artifacts/,
@@ -311,15 +356,18 @@ async function documentPdfs() {
   // mechanism above is what allows items to share an extracted line, in order,
   // and the contact line puts the email before the phone.
   const contact = [{ items: [placeholder.email, placeholder.phone] }];
-  const subjects = documents.flatMap((document) => [
-    { document, relative: `${document}.${locale}.pdf`, directory: context.dist, groups: expected },
-    {
-      document,
-      relative: `${document}.${locale}.filled.pdf`,
-      directory: context.artifacts,
-      groups: [expected[0], ...contact, ...expected.slice(1)],
-    },
-  ]);
+  const subjects = documents.flatMap((document) => {
+    const expected = expectedFor(document);
+    return [
+      { document, relative: `${document}.${locale}.pdf`, directory: context.dist, groups: expected },
+      {
+        document,
+        relative: `${document}.${locale}.filled.pdf`,
+        directory: context.artifacts,
+        groups: [expected[0], ...contact, ...expected.slice(1)],
+      },
+    ];
+  });
 
   for (const { relative, directory, groups } of subjects) {
     const file = path.join(directory, relative);
@@ -968,6 +1016,35 @@ async function gaps() {
   return [gapReport()];
 }
 
+// Every topic the CV's self-study entry names is one a course taught, and
+// every provider it names issued a course. A topic is backed where its
+// English is contained, case-insensitively, in the English name of at least
+// one course entry; a provider where it is some course's issuer, spelt the
+// same. The schema cannot see across collections, so this is where the claim
+// is checked (src/content/self-study.yaml says the rule beside the topics).
+// The first topic or provider with no witness fails the run by name.
+async function selfStudy() {
+  const name = 'self-study';
+  const file = path.join(context.content, 'self-study.yaml');
+  const { selfStudy: authored } = parseYaml(await readFile(file, 'utf8'));
+  const courses = (await visibleEntries('certificates')).map((entry) => entry.data).filter(isCourse);
+  const names = courses.map((course) => course.name.en.toLowerCase());
+  const issuers = new Set(courses.map((course) => course.issuer));
+  for (const topic of authored.topics) {
+    if (!names.some((courseName) => courseName.includes(topic.en.toLowerCase()))) {
+      throw new CheckFailure(name, `"${topic.en}" is named as a self-study topic and no course entry's English name contains it`);
+    }
+  }
+  for (const provider of authored.providers) {
+    if (!issuers.has(provider)) {
+      throw new CheckFailure(name, `"${provider}" is named as a self-study provider and no course entry names it as its issuer`);
+    }
+  }
+  return [
+    `self-study: ${authored.topics.length} topics each contained in a course's name, ${authored.providers.length} providers each a course's issuer, over ${courses.length} courses`,
+  ];
+}
+
 // Nothing on the site claims more than the content states about a degree. The
 // site renders the status as authored and never reaches past it, so the words
 // "graduated" and "awarded" appear on no page: they name a ceremony and a
@@ -1263,7 +1340,11 @@ async function readmeProfile() {
   return ['readme profile: README.md carries the profile as src/content/ states it'];
 }
 
-const checks = [jsonResume, documentPdfs, qrCode, resumePages, localeTwins, hrefs, basePaths, metadata, sitemap, robots, identifiers, noContactDetails, nationalityWhereItBelongs, languagesWhereTheyBelong, gaps, noOverclaim, documentHazards, readmeProfile];
+// The self-study check runs before the document checks: it reads the content
+// alone, and a topic or provider with no witness would otherwise surface
+// first as a reading-order failure over a PDF, named for the line rather
+// than the cause.
+const checks = [jsonResume, selfStudy, documentPdfs, qrCode, resumePages, localeTwins, hrefs, basePaths, metadata, sitemap, robots, identifiers, noContactDetails, nationalityWhereItBelongs, languagesWhereTheyBelong, gaps, noOverclaim, documentHazards, readmeProfile];
 
 for (const check of checks) {
   try {

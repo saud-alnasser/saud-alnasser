@@ -8,8 +8,9 @@ import { fill, formatPeriod, strings } from '../src/lib/i18n';
 import { icons } from '../src/lib/icons';
 import { levelLine } from '../src/lib/languages';
 import { codedProfile, profileIcon } from '../src/lib/networks';
-import { byOrderThenName, byStartAscending } from '../src/lib/order';
+import { byDateAscending, byOrderThenName, byStartAscending } from '../src/lib/order';
 import { isCertification, isCourse, isShown, onResume } from '../src/lib/shown';
+import { educationTimeline } from '../src/lib/timeline';
 import { at, locales, type Locale } from './pages';
 
 // The two documents: the CV, which holds everything the site shows, and the
@@ -52,32 +53,50 @@ function published(project: any): string | undefined {
 }
 
 // What each document holds, counted from the content the way the site counts
-// it. The CV takes every entry its kind admits; the resume takes only what an
-// entry marks for it, and a marked course keeps the courses heading rather
-// than being listed as a credential it is not.
+// it. The CV takes every certification; the resume takes only what an entry
+// marks for it. A course completion is listed on neither: the CV reads the
+// courses as one self-study entry in its education section, asserted below,
+// and the resume prints no course whatever its entry marks.
 const held = {
   cv: {
     projects: projects.length,
     certifications: certificates.filter((data) => isCertification(data)).length,
-    courses: certificates.filter((data) => isCourse(data)).length,
   },
   resume: {
     projects: projects.filter((data) => onResume(data)).length,
     certifications: certificates.filter((data) => isCertification(data) && onResume(data)).length,
-    courses: certificates.filter((data) => isCourse(data) && onResume(data)).length,
   },
 };
 
-// The order each document prints its last three sections in: the CV leads
-// with the credentials it holds and ends on the projects, the resume leads
-// with the projects. A section renders only where it holds something, so the
-// expectation drops an empty one, which is what lets reclassifying the one
-// certification as a course (criterion 6) or marking a course for the resume
-// move the headings here as well as the cards.
+// The order each document prints its last sections in: the CV leads with the
+// certifications it holds and ends on the projects, the resume leads with the
+// projects. A section renders only where it holds something, so the
+// expectation drops an empty one, which is what lets adding a certification
+// to the content, or marking one for the resume, move the headings here as
+// well as the cards.
 const tailOrder = {
-  cv: ['certifications', 'courses', 'projects'],
-  resume: ['projects', 'certifications', 'courses'],
+  cv: ['certifications', 'projects'],
+  resume: ['projects', 'certifications'],
 } as const;
+
+// The courses in the site's order, by date with the undated last, which the
+// timeline helper reads the node's period from; and the CV's education
+// section as the helper lays it out, the institutions with the self-study
+// entry in the node's place. The resume prints the institutions alone.
+const courses = certificates.filter((data) => isCourse(data)).sort(byDateAscending);
+const institutions = entries('education').sort(byStartAscending);
+const timeline = {
+  cv: educationTimeline(institutions, courses),
+  resume: institutions.map((entry) => ({ kind: 'education' as const, entry })),
+};
+
+// What the self-study entry is authored to say (src/content/self-study.yaml):
+// the providers and the topics, per language through the same fallback as
+// `summaryText`. The count and the years come from the course entries.
+const selfStudy = parseYaml(readFileSync(path.join(content, 'self-study.yaml'), 'utf8')).selfStudy as {
+  providers: string[];
+  topics: { en: string; ar?: string }[];
+};
 
 // The languages sit directly after the key skills on both documents, and like
 // every section print only where the collection holds something.
@@ -145,17 +164,53 @@ for (const locale of locales) {
         await expect(section.locator('p'), `the summary on ${route}`).toHaveText(summaryText(variant, locale));
       });
 
-      // Each institution's period through the function the page prints it
-      // with, in the order the section lists them, so the value on the page
-      // is the entry's and not any pair of years the shape check in
-      // tests/periods.spec.ts would accept.
+      // Each education entry's period through the function the page prints it
+      // with, in the order the section lists them, the self-study entry's
+      // among them on the CV, so the value on the page is the entry's and not
+      // any pair of years the shape check in tests/periods.spec.ts would
+      // accept.
       test('dates each education entry from the content', async ({ page }) => {
         await page.goto(route);
         await expect(page.locator('[data-cv-section="education"] [data-period]')).toHaveText(
-          entries('education')
-            .sort(byStartAscending)
-            .map((data) => formatPeriod(locale, data.period)),
+          timeline[variant].flatMap((item) =>
+            item.kind === 'education'
+              ? [formatPeriod(locale, item.entry.period)]
+              : item.period
+                ? [formatPeriod(locale, item.period)]
+                : [],
+          ),
         );
+      });
+
+      // The online courses as one self-study entry in the CV's education
+      // section, in the node's place before the most recent institution, and
+      // on the resume no such entry at all. The entry names the year, the
+      // count of courses, every provider, and every authored topic in the
+      // page's language, and no course is listed one by one anywhere on
+      // either document.
+      test('reads the courses as one self-study entry on the CV and none on the resume', async ({ page }) => {
+        await page.goto(route);
+        const entry = page.locator('[data-cv-section="education"] [data-self-study]');
+        await expect(page.locator('[data-cv-section="courses"]')).toHaveCount(0);
+        const node = timeline[variant].findIndex((item) => item.kind === 'courses');
+        await expect(entry).toHaveCount(node === -1 ? 0 : 1);
+        if (node === -1) return;
+
+        const t = strings[locale];
+        const items = page.locator('[data-cv-section="education"] > ol > li');
+        await expect(items.nth(node)).toHaveAttribute('data-self-study', '');
+        await expect(entry.locator('h3')).toHaveText(t.cv.selfStudy.title);
+        const item = timeline.cv[node]!;
+        if (item.kind === 'courses' && item.period) {
+          await expect(entry.locator('[data-period]')).toHaveText(formatPeriod(locale, item.period));
+        }
+        const text = (await entry.innerText()).replace(/\s+/g, ' ');
+        expect(text, `the count on ${route}`).toContain(String(courses.length));
+        for (const provider of selfStudy.providers) expect(text, `${provider} on ${route}`).toContain(provider);
+        for (const topic of selfStudy.topics) expect(text, `${topic.en} on ${route}`).toContain(topic[locale] ?? topic.en);
+        // The providers joined the way the language joins a list, which in
+        // Arabic is the conjunction and not the English "and".
+        expect(text).toContain(new Intl.ListFormat(locale, { type: 'conjunction' }).format(selfStudy.providers));
       });
 
       // One line per language, "name: level", the level followed by the test
@@ -185,7 +240,6 @@ for (const locale of locales) {
         const counts = held[variant];
         await expect(page.locator('[data-cv-section="projects"] > ol > li')).toHaveCount(counts.projects);
         await expect(page.locator('[data-cv-section="certifications"] > ul > li')).toHaveCount(counts.certifications);
-        await expect(page.locator('[data-cv-section="courses"] > ul > li')).toHaveCount(counts.courses);
 
         // Named, not only counted: the resume carries the projects the
         // content marks and none of the others.

@@ -1,0 +1,43 @@
+# What the CV says about the online courses, in one entry rather than a list
+# of 26: the providers, and the topics, in the order the line prints them.
+# The count of courses and the years are not here; the build reads them from
+# the course entries under certificates/, so a course added or removed moves
+# them with no edit to this file. The education page still shows every
+# course as its own card, and the JSON Resume documents list every one.
+#
+# A topic is a claim that a course taught it, so every topic is backed: its
+# English is contained, case-insensitively, in the English name of at least
+# one course entry, and `pnpm check:dist` refuses one that is not, naming it.
+# The same check refuses a provider that is no course's issuer. The topics
+# are the subjects the course names cover, except ASP.NET MVC, Entity
+# Framework, and React, left off on 2026-09-23 as a stack the record has
+# moved past; and they name at least the key skills no shown project backs,
+# which the CV's key skills lean on this line for (src/content/README.md,
+# "skills/").
+selfStudy:
+  providers:
+    - "Code with Mosh"
+    - "SoloLearn"
+  topics:
+    - en: "C#"
+      ar: "C#"
+    - en: "Python"
+      ar: "Python"
+    - en: "JavaScript"
+      ar: "JavaScript"
+    - en: "HTML"
+      ar: "HTML"
+    - en: "SQL"
+      ar: "SQL"
+    - en: "data structures"
+      ar: "هياكل البيانات"
+    - en: "design patterns"
+      ar: "أنماط التصميم"
+    - en: "refactoring"
+      ar: "إعادة هيكلة الشفرة"
+    - en: "unit testing"
+      ar: "اختبارات الوحدة"
+    - en: "Docker"
+      ar: "Docker"
+    - en: "Git"
+      ar: "Git"
