@@ -10,10 +10,10 @@
 // where it belongs; so the record reads high school, online courses,
 // university whatever dates the courses carry (src/content/README.md,
 // "education/"). The node counts every course and runs from the earliest
-// dated one to the latest, which is why the courses are taken already in the
-// site's order, by date with the undated last (src/lib/order.ts): the dated
-// ones are then a prefix, and the node's period is the first entry's date to
-// the last dated entry's.
+// dated one to the latest, found here whatever order the courses arrive in.
+// A date is YYYY, YYYY-MM, or YYYY-MM-DD, and those compare as text: a
+// shorter one is a prefix of the longer dates in its span and so sorts
+// first, which is where src/lib/order.ts puts it too.
 //
 // Like shown.ts and order.ts, this file has no runtime import: the scripts
 // and the tests load it with Node stripping the types.
@@ -35,9 +35,11 @@ export function educationTimeline<Entry, Course extends { date?: string | number
   const items: TimelineItem<Entry>[] = education.map((entry) => ({ kind: 'education', entry }));
   if (courses.length === 0) return items;
 
-  const dated = courses.filter((course) => course.date !== undefined);
+  const dates = courses.filter((course) => course.date !== undefined).map((course) => String(course.date));
   const period =
-    dated.length > 0 ? { start: String(dated[0]!.date), end: String(dated[dated.length - 1]!.date) } : undefined;
+    dates.length > 0
+      ? { start: dates.reduce((a, b) => (b < a ? b : a)), end: dates.reduce((a, b) => (b > a ? b : a)) }
+      : undefined;
   items.splice(Math.max(items.length - 1, 0), 0, { kind: 'courses', count: courses.length, period });
   return items;
 }
