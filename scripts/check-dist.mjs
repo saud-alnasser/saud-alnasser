@@ -8,12 +8,10 @@
 // first failure. The reader is a person watching CI, so failures name what was
 // expected and what was found.
 
-import { execFile } from 'node:child_process';
 import { readdir, readFile, stat } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { promisify } from 'node:util';
 import { createCanvas } from '@napi-rs/canvas';
 import jsQR from 'jsqr';
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
@@ -38,7 +36,11 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 // The fonts pdf.js substitutes for the fourteen standard ones a PDF may use
 // without embedding, as scripts/certificate-previews.mjs finds them.
-const standardFontDataUrl = `${path.dirname(require.resolve('pdfjs-dist/package.json')).split(path.sep).join('/')}/standard_fonts/`;
+const pdfjsRoot = path.dirname(require.resolve('pdfjs-dist/package.json')).split(path.sep).join('/');
+const standardFontDataUrl = `${pdfjsRoot}/standard_fonts/`;
+// The character maps a CID font may name instead of embedding, so a
+// certificate set in one extracts as text rather than counting as an image.
+const cMapUrl = `${pdfjsRoot}/cmaps/`;
 
 // The two documents the site publishes: the CV, which holds everything the
 // site shows, and the short resume. Both are rendered from a page of the
@@ -206,36 +208,82 @@ async function jsonResume() {
   return lines;
 }
 
-// One line of text with its whitespace normalised, so a run of spaces that
-// `pdftotext` inserts between a title and the date at the far edge of its
-// line reads as one.
+// One line of text with its whitespace normalised, so a run of spaces
+// between a title and the date at the far edge of its line reads as one.
 function squash(text) {
   return text.replace(/\s+/g, ' ').trim();
 }
 
-// The text of a PDF as `pdftotext -simple` lays it out, or null when the tool
-// is not on the PATH. UTF-8 is asked for explicitly because xpdf's build
-// writes Latin-1 by default and drops everything outside it.
+// The text of a PDF, one line per baseline, top to bottom and left to right,
+// with pages separated by a form feed, read with pdf.js, which the QR check
+// below already uses. A PDF with no text layer gives an empty string.
 //
-// `-simple` is the one-column mode, and the documents are one column by
-// design, which the hazards check below enforces. It replaced `-layout` on
-// 2026-09-23, when the CV's education section gained an entry dated to one
-// year: `-layout` cuts a page into columns by whitespace first, and it moved
-// that narrow year, the first after the short EDUCATION heading, up onto the
-// heading's line, three rows from the title it belongs to, while the PDF
-// itself had both at one height. A two-year range in the same place was left
-// alone, so the check would have passed or failed on the width of a date. The
-// one-column mode keeps every title with its date and reads nothing else
-// differently in these documents.
+// Until 2026-09-23 this ran `pdftotext -layout` from the PATH, and the
+// answer depended on whose pdftotext it was. When the CV's education section
+// gained an entry dated to one year, xpdf's layout mode moved that narrow
+// year, the first after the short EDUCATION heading, up onto the heading's
+// line while the PDF had it beside its title; xpdf's one-column mode read it
+// correctly, and poppler's pdftotext, which CI installed until then, has no
+// such mode and refused the flag outright. So the check no longer asks a
+// tool on the PATH how a page reads. It takes each text item with its
+// position, puts items on one line when their baselines are within a point
+// of each other, which is what a title and its date share exactly, and
+// orders a line's items left to right, the direction of every fact the
+// groups below look for; two items are joined without a space where the
+// second starts where the first ends, so a word split across two runs stays
+// whole. The documents are one column by design, which the hazards check
+// enforces, so a line is a line and no column heuristic is needed to find
+// one.
+//
+// Two things pdftotext gave for free are done by hand. pdf.js emits U+0000
+// for a glyph it cannot map, as it does for some Arabic shapes; that is not
+// whitespace, so it is turned into a space before anything matches against
+// the text, and no address can hide behind one. And the page's text content
+// is the page's content stream alone: what a form field holds, what an
+// annotation says, and an annotation's alternative text are read from the
+// annotations and appended as lines of their own, so an identifier typed
+// into a field of a scanned form is scanned as pdftotext would have scanned
+// it. Text that exists only in an annotation's drawn appearance, such as a
+// signature widget's label, is not text either way and is not read.
 async function extractText(file) {
+  const task = getDocument({ data: new Uint8Array(await readFile(file)), standardFontDataUrl, cMapUrl, cMapPacked: true });
   try {
-    const { stdout } = await promisify(execFile)('pdftotext', ['-enc', 'UTF-8', '-simple', file, '-'], {
-      maxBuffer: 16 * 1024 * 1024,
-    });
-    return stdout;
-  } catch (error) {
-    if (error.code === 'ENOENT') return null;
-    throw error;
+    const pdf = await task.promise;
+    const pages = [];
+    for (let number = 1; number <= pdf.numPages; number += 1) {
+      const page = await pdf.getPage(number);
+      const { items } = await page.getTextContent();
+      const words = items
+        .filter((item) => typeof item.str === 'string' && item.str.trim().length > 0)
+        .map((item) => ({ x: item.transform[4], y: item.transform[5], width: item.width, text: item.str }))
+        .sort((a, b) => b.y - a.y || a.x - b.x);
+      const lines = [];
+      for (const word of words) {
+        const line = lines[lines.length - 1];
+        if (line && Math.abs(line.y - word.y) <= 1) line.words.push(word);
+        else lines.push({ y: word.y, words: [word] });
+      }
+      const text = lines.map(({ words: lineWords }) => {
+        let joined = '';
+        let end = null;
+        for (const word of lineWords.sort((a, b) => a.x - b.x)) {
+          if (end !== null && word.x - end > 1) joined += ' ';
+          joined += word.text;
+          end = word.x + word.width;
+        }
+        return joined;
+      });
+      for (const annotation of await page.getAnnotations()) {
+        const values = [annotation.fieldValue, annotation.contentsObj?.str, annotation.alternativeText];
+        for (const value of values.flat()) {
+          if (typeof value === 'string' && value.trim().length > 0) text.push(value);
+        }
+      }
+      pages.push(text.join('\n'));
+    }
+    return pages.join('\n\f').replace(/\u0000/g, ' ');
+  } finally {
+    await task.destroy();
   }
 }
 
@@ -378,10 +426,6 @@ async function documentPdfs() {
       throw new CheckFailure(name, `${relative} does not exist; run \`pnpm render:pdf\` after the build`);
     }
     const text = await extractText(file);
-    if (text === null) {
-      lines.push(`${relative}: ${size} bytes; pdftotext is not on the PATH, so the text was not checked`);
-      continue;
-    }
     // A period prints as years alone (src/lib/i18n.ts, formatPeriod), so a
     // month abbreviation followed by a year is a period that leaked its
     // month, from whichever template printed it. A certificate date is the
@@ -431,16 +475,18 @@ async function documentPdfs() {
   // query after it, so a contact line that printed it in any of those shapes
   // is refused; it does not count where a path continues it, because a
   // project's repository link on the CV starts with the GitHub profile
-  // address and is the project's, not the profile's. An address that
-  // pdftotext broke across two lines is not caught, and no line here is
-  // long enough to be broken.
+  // address and is the project's, not the profile's. An address the
+  // extraction split across two lines is not caught, and no line here is
+  // long enough to be split.
   //
-  // The Arabic PDFs extract with a bidi control character closing every
-  // Latin run, U+202C after each project link and after the filled email,
-  // which is not whitespace and so would satisfy the lookahead's "a path
-  // continues it" and hide an address written on the Arabic contact line.
-  // Found at review on 2026-09-22, when the Arabic half of this check could
-  // not fail; the marks are stripped before matching, so both halves can.
+  // A character that is not whitespace right after an address would satisfy
+  // the lookahead's "a path continues it" and hide an address written on the
+  // Arabic contact line. Found at review on 2026-09-22, when pdftotext
+  // closed every Latin run in the Arabic PDFs with U+202C and the Arabic half
+  // of this check could not fail. pdf.js emits no such mark and turns the
+  // one character it does emit for an unmapped glyph into a space
+  // (extractText), so the strip below finds nothing today; it stays, at no
+  // cost, so that both halves can fail whatever an extraction emits.
   const addresses = (profile.profiles ?? []).map((entry) => ({
     network: entry.network,
     pattern: new RegExp(
@@ -449,7 +495,6 @@ async function documentPdfs() {
   }));
   const bidiMarks = /[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g;
   let checked = 0;
-  let unread = 0;
   for (const document of documents) {
     for (const language of context.locales) {
       for (const [directory, relative] of [
@@ -463,10 +508,6 @@ async function documentPdfs() {
           throw new CheckFailure(name, `${relative} does not exist; run \`pnpm render:pdf\` after the build`);
         }
         const text = await extractText(file);
-        if (text === null) {
-          unread += 1;
-          continue;
-        }
         checked += 1;
         const plain = text.replace(bidiMarks, '');
         const written = addresses.find(({ pattern }) => pattern.test(plain));
@@ -476,7 +517,6 @@ async function documentPdfs() {
       }
     }
   }
-  if (unread > 0) lines.push(`${unread} PDFs not checked for a written profile address; pdftotext is not on the PATH`);
   if (checked > 0) lines.push(`no profile address is written out in any of the ${checked} PDFs, published or filled`);
   return lines;
 }
@@ -944,8 +984,8 @@ async function robots() {
 }
 
 // No identifier in anything the site publishes: every HTML, JSON, XML, and
-// text file under dist/, and the text of each PDF where pdftotext is on the
-// PATH. The patterns are scripts/identifiers.mjs.
+// text file under dist/, and the text of each PDF. The patterns are
+// scripts/identifiers.mjs.
 //
 // A PDF that is a scanned image has no text layer, so extraction yields
 // nothing and the patterns have nothing to match; most of the course
@@ -964,20 +1004,15 @@ async function identifiers() {
     if (found.length > 0) throw new CheckFailure(name, `dist/${file} matches the pattern of a ${found.join(' and a ')}`);
   }
   const pdfs = (await walk(context.dist)).filter((file) => file.endsWith('.pdf'));
-  let extracted = 0;
   let withText = 0;
   for (const file of pdfs) {
     const text = await extractText(path.join(context.dist, file));
-    if (text === null) break;
-    extracted += 1;
     if (text.trim().length > 0) withText += 1;
     const found = identifiersIn(text);
     if (found.length > 0) throw new CheckFailure(name, `the text of dist/${file} matches the pattern of a ${found.join(' and a ')}`);
   }
   let pdfNote = '';
-  if (pdfs.length > 0 && extracted < pdfs.length) {
-    pdfNote = ` (pdftotext is not on the PATH, so ${pdfs.length} PDFs were not read)`;
-  } else if (pdfs.length > 0) {
+  if (pdfs.length > 0) {
     const imageOnly = pdfs.length - withText;
     pdfNote =
       imageOnly === 0
@@ -1186,7 +1221,6 @@ async function noContactDetails() {
   const textual = ['.html', '.json', '.xml', '.txt', '.css', '.js', '.svg', '.md'];
   const files = await walk(context.dist);
   let pdfs = 0;
-  let read = 0;
   for (const file of files) {
     const full = path.join(context.dist, file);
     const extension = path.extname(file);
@@ -1195,8 +1229,6 @@ async function noContactDetails() {
     if (extension === '.pdf') {
       pdfs += 1;
       text = await extractText(full);
-      if (text === null) continue;
-      read += 1;
     } else if (textual.includes(extension)) {
       text = await readFile(full, 'utf8');
     } else {
@@ -1218,12 +1250,7 @@ async function noContactDetails() {
   const hit = forbidden.find((rule) => rule.test(readme));
   if (hit) throw new CheckFailure(name, `README.md carries ${hit.what}`);
 
-  const pdfNote =
-    pdfs === 0
-      ? ''
-      : read === pdfs
-        ? `, the text of ${pdfs} PDFs among them`
-        : ` (pdftotext is not on the PATH, so ${pdfs} PDFs were not read)`;
+  const pdfNote = pdfs === 0 ? '' : `, the text of ${pdfs} PDFs among them`;
   return [`no contact details: no address, no mailto:, no number in ${files.length} published files${pdfNote}, or README.md`];
 }
 

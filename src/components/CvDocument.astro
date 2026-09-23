@@ -104,8 +104,7 @@ const projects = resume ? shownProjects.filter((entry) => onResume(entry.data)) 
 // the same function the education page uses (src/lib/timeline.ts), so the
 // online-courses phase sits before the university on paper exactly where the
 // timeline puts its node; the resume prints the institutions alone, as it
-// did. The courses arrive in the site's order, by date with the undated
-// last, which is what the node's period is read from.
+// did. The node's count and years are read from the course entries.
 const courses = certificates.filter((entry) => isCourse(entry.data)).map((entry) => entry.data);
 const timeline: TimelineItem<(typeof education)[number]>[] = resume
   ? education.map((entry) => ({ kind: 'education', entry }))
@@ -182,8 +181,10 @@ const link = 'text-primary underline underline-offset-4 hover:decoration-2';
 // so it prints whatever the reader's dialog is set to and the document stops
 // depending on that setting at all (tests/theme.spec.ts says so).
 //
-// Tracking stays at 0.025em here and on the name, because `pdftotext -layout`
-// turns wider tracking into spaces between the letters. `.cv-heading` carries
+// Tracking stays at 0.025em here and on the name, because a parser that
+// extracts text by layout, as `pdftotext -layout` does, turns wider tracking
+// into spaces between the letters; the dist check read the PDFs that way
+// until 2026-09-23, and a screener's parser still may. `.cv-heading` carries
 // no style of its own; it is what the compact print rules in global.css key
 // the gaps above and below a heading on.
 const heading =
