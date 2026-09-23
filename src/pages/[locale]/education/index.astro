@@ -1,5 +1,5 @@
 ---
-import { getCollection, getEntry, type CollectionEntry } from 'astro:content';
+import { getCollection, getEntry } from 'astro:content';
 import Base from '../../../layouts/Base.astro';
 import Card from '../../../components/Card.astro';
 import Certificate from '../../../components/Certificate.astro';
@@ -10,6 +10,7 @@ import { fill, formatPeriod, locales, plural, strings, type Locale } from '../..
 import { localized } from '../../../lib/localized';
 import { byDateAscending, byStartAscending } from '../../../lib/order';
 import { isCertification, isCourse } from '../../../lib/shown';
+import { educationTimeline } from '../../../lib/timeline';
 
 export function getStaticPaths() {
   return locales.map((l) => ({ params: { locale: l.code } }));
@@ -33,26 +34,22 @@ const courses = certificates.filter(({ data }) => isCourse(data));
 const certifications = certificates.filter(({ data }) => isCertification(data));
 
 // The timeline is the institutions in order of time, by their start, with one
-// node for the online-courses phase in the place the undated certificates used
-// to take: immediately before the most recent institution. So the page reads
-// high school, online courses, university, whatever dates the certificates
-// carry, and a phase that spans years needs no date to sit where it belongs.
-// src/content/README.md, "education/", says the same for whoever edits the content.
-type Item = { kind: 'education'; entry: CollectionEntry<'education'> } | { kind: 'courses' };
-
-const items: Item[] = education.map((entry): Item => ({ kind: 'education', entry }));
-if (courses.length > 0) items.splice(Math.max(items.length - 1, 0), 0, { kind: 'courses' });
-
+// node for the online-courses phase immediately before the most recent
+// institution, decided once in src/lib/timeline.ts for this page, the CV,
+// and the checks: the page reads high school, online courses, university,
+// whatever dates the certificates carry. src/content/README.md,
+// "education/", says the same for whoever edits the content.
+//
 // The node stands for the courses section, dated entries and undated alike:
 // it counts every course and runs from the earliest dated one to the latest.
 // The courses themselves are below the timeline, under the heading it links
 // to.
-const dated = courses.filter((entry) => entry.data.date);
-const period = dated.length > 0 ? { start: dated[0].data.date!, end: dated[dated.length - 1].data.date! } : undefined;
-const count = fill(t.education.onlineCourses.count, {
-  count: String(courses.length),
-  noun: plural(locale, courses.length, t.education.onlineCourses.noun),
-});
+const items = educationTimeline(
+  education,
+  courses.map((entry) => entry.data),
+);
+const countOf = (count: number) =>
+  fill(t.education.onlineCourses.count, { count: String(count), noun: plural(locale, count, t.education.onlineCourses.noun) });
 ---
 
 <Base
@@ -84,9 +81,13 @@ const count = fill(t.education.onlineCourses.count, {
               <Education locale={locale} entry={item.entry} />
             ) : (
               <Card href="#courses" data-courses-node>
-                {period && <p class="text-sm text-muted-foreground tabular-nums" data-period>{formatPeriod(locale, period)}</p>}
+                {item.period && (
+                  <p class="text-sm text-muted-foreground tabular-nums" data-period>
+                    {formatPeriod(locale, item.period)}
+                  </p>
+                )}
                 <h3 class="mt-1 text-lg font-semibold tracking-tight">{t.education.onlineCourses.name}</h3>
-                <p class="mt-1">{count}</p>
+                <p class="mt-1">{countOf(item.count)}</p>
                 <p class="mt-2 flex items-center gap-1.5 text-sm text-primary">
                   {t.education.onlineCourses.link}
                   <Icon name="chevron-down" class="size-4" />
@@ -118,22 +119,29 @@ const count = fill(t.education.onlineCourses.count, {
   </section>
 
   {/*
-    The certifications, the same grid of the same cards. Its heading keeps the
-    id the certificates section had, so an inbound link to #certificates still
-    lands on a credential rather than on nothing.
+    The certifications, the same grid of the same cards, rendered only while
+    an entry exists, the way the CV prints a section only where it holds
+    something: a heading over an empty grid would say "no credential" in so
+    many words. Its heading keeps the id the certificates section had, so an
+    inbound link to #certificates still lands on a credential; with none, the
+    anchor is absent rather than kept as an empty target.
   */}
-  <section aria-labelledby="certificates" class="mt-16">
-    <h2 id="certificates" class="text-xl font-semibold tracking-tight">{t.sections.certifications}</h2>
-    <ul data-grid="certifications" class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
-      {
-        certifications.map((entry) => (
-          <li>
-            <Certificate locale={locale} entry={entry} />
-          </li>
-        ))
-      }
-    </ul>
-  </section>
+  {
+    certifications.length > 0 && (
+      <section aria-labelledby="certificates" class="mt-16">
+        <h2 id="certificates" class="text-xl font-semibold tracking-tight">
+          {t.sections.certifications}
+        </h2>
+        <ul data-grid="certifications" class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
+          {certifications.map((entry) => (
+            <li>
+              <Certificate locale={locale} entry={entry} />
+            </li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
 
   {/* The one dialog every certificate card opens, outside main. */}
   <CertificateDialog locale={locale} slot="dialog" />

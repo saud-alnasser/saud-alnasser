@@ -98,6 +98,7 @@ Start at [[protocol]].
 | 23-degree-certificate-and-linkedin-profile | implemented | [[efforts/23-degree-certificate-and-linkedin-profile/spec]] | 0 | 0 | 3 |
 | 25-years-only-time-frames | implemented | [[efforts/25-years-only-time-frames/spec]] | 0 | 0 | 2 |
 | 27-the-linkedin-address-as-the-code | implemented | [[efforts/27-the-linkedin-address-as-the-code/spec]] | 0 | 0 | 2 |
+| 29-credentials-as-one-self-study-line | implemented | [[efforts/29-credentials-as-one-self-study-line/spec]] | 0 | 0 | 3 |
 | 3-site-redesign | implemented | [[efforts/3-site-redesign/spec]] | 0 | 1 | 8 |
 | 5-sections-and-resume | implemented | [[efforts/5-sections-and-resume/spec]] | 0 | 0 | 6 |
 | 7-document-downloads-and-contact-details | implemented | [[efforts/7-document-downloads-and-contact-details/spec]] | 1 | 0 | 6 |
@@ -149,6 +150,9 @@ Every task of every effort. The tracker carries the effort, never its tasks.
 | [[efforts/25-years-only-time-frames/tickets/02-the-university-dated-2022-to-2026]] feat(content): the university dated 2022 to 2026 | 25-years-only-time-frames | resolved | 01 |
 | [[efforts/27-the-linkedin-address-as-the-code/tickets/01-the-linkedin-code-and-the-checks-that-follow-it]] feat(cv): the LinkedIn address as the code, no profile on the contact line, and one function that says which profile is the code | 27-the-linkedin-address-as-the-code | resolved | — |
 | [[efforts/27-the-linkedin-address-as-the-code/tickets/02-nothing-still-says-the-code-is-githubs]] docs(cv): nothing still says the code is GitHub's | 27-the-linkedin-address-as-the-code | resolved | 01 |
+| [[efforts/29-credentials-as-one-self-study-line/tickets/01-the-typing-assessment-off-and-the-site-sections-conditional]] feat(site): the typing assessment off the record, and the certifications section and card only where one exists | 29-credentials-as-one-self-study-line | resolved | — |
+| [[efforts/29-credentials-as-one-self-study-line/tickets/02-the-course-completions-as-one-self-study-entry]] feat(cv): the course completions as one self-study entry in the CV's education section | 29-credentials-as-one-self-study-line | resolved | 01 |
+| [[efforts/29-credentials-as-one-self-study-line/tickets/03-nothing-still-says-the-cv-lists-the-courses]] docs(content): nothing still says the CV lists the courses and the certifications | 29-credentials-as-one-self-study-line | resolved | 02 |
 | [[efforts/3-site-redesign/tickets/01-foundation-and-header]] feat(site): card, icon, and fold components, the wider column, and the header controls with icons | 3-site-redesign | resolved | — |
 | [[efforts/3-site-redesign/tickets/02-home-page]] feat(site): lay the home page out as a hero, contact actions, skill cards, and section cards | 3-site-redesign | resolved | 01 |
 | [[efforts/3-site-redesign/tickets/03-work-page]] feat(site): render projects and experience as card grids with folded highlights | 3-site-redesign | resolved | 01 |

@@ -96,7 +96,7 @@ const en = {
     courses: 'Online courses completed, each with its certificate.',
     certifications: 'Credentials that are not course completions.',
     skills: 'What I work with, higher up this page.',
-    cv: 'The whole record: experience, education, projects, courses, certifications, and skills.',
+    cv: 'The whole record: experience, education and self-study, skills, languages, projects, and any certification held.',
     resume: 'The short one to send with an application: the summary, the work, and selected projects.',
     // What a section card says it holds: "19 projects", "26 courses". The
     // count comes from the collection the section renders, never from this
@@ -166,7 +166,7 @@ const en = {
   cv: {
     title: 'Curriculum vitae',
     description:
-      'The curriculum vitae of {name}: the whole record of experience, education, skills, certifications, courses, and projects, with PDF and JSON Resume downloads.',
+      'The curriculum vitae of {name}: the whole record of experience, education and self-study, skills, languages, projects, and any certification held, with PDF and JSON Resume downloads.',
     // The accessible name of the row a document page opens with, which holds
     // the one control that downloads that page's own document.
     documents: 'Documents',
@@ -198,7 +198,17 @@ const en = {
     skills: 'Key skills',
     languages: 'Languages',
     certifications: 'Certifications',
-    courses: 'Courses',
+    // The one entry the CV's education section prints for the online
+    // courses, in the timeline's place for them: the title, then `through`
+    // over the count of courses read from the content, the noun in the form
+    // the count takes from `education.onlineCourses.noun`, and the providers
+    // joined in the language's own way, then the authored topics under
+    // `topics`. What the entry says is src/content/self-study.yaml's.
+    selfStudy: {
+      title: 'Self-study',
+      through: '{count} online {noun} at {providers}',
+      topics: 'Topics',
+    },
   },
   // The resume page. Everything else it shows is the CV's, above.
   resume: {
@@ -263,7 +273,7 @@ const ar: Strings = {
     courses: 'دورات إلكترونية مكتملة، مع شهادة كل دورة.',
     certifications: 'شهادات ليست إتمام دورات.',
     skills: 'ما أعمل به، أعلى هذه الصفحة.',
-    cv: 'السجل الكامل: الخبرة العملية والتعليم والمشاريع والدورات والشهادات والمهارات.',
+    cv: 'السجل الكامل: الخبرة العملية والتعليم والتعلم الذاتي والمهارات واللغات والمشاريع وما يحمله من شهادات.',
     resume: 'النسخة المختصرة لمرافقة طلب التوظيف: الملخص والخبرة العملية ومشاريع مختارة.',
     counts: {
       line: '{count} {noun}',
@@ -324,7 +334,7 @@ const ar: Strings = {
   cv: {
     title: 'السيرة الذاتية',
     description:
-      'سيرة {name} الذاتية: السجل الكامل للخبرة العملية والتعليم والمهارات والشهادات والدورات والمشاريع، مع تنزيلها بصيغة PDF وبصيغة JSON Resume.',
+      'سيرة {name} الذاتية: السجل الكامل للخبرة العملية والتعليم والتعلم الذاتي والمهارات واللغات والمشاريع وما يحمله من شهادات، مع تنزيلها بصيغة PDF وبصيغة JSON Resume.',
     documents: 'المستندات',
     downloadPdf: 'تنزيل {document} بصيغة PDF',
     form: {
@@ -342,7 +352,13 @@ const ar: Strings = {
     skills: 'المهارات الأساسية',
     languages: 'اللغات',
     certifications: 'الشهادات',
-    courses: 'الدورات',
+    selfStudy: {
+      title: 'التعلم الذاتي',
+      // The counted noun takes the form Arabic gives each range, as the
+      // timeline node's does, and the adjective stays singular after it.
+      through: '{count} {noun} إلكترونية في {providers}',
+      topics: 'الموضوعات',
+    },
   },
   resume: {
     title: 'السيرة المختصرة',

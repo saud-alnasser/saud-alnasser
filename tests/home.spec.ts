@@ -102,12 +102,19 @@ const sections: {
     name: (locale) => strings[locale].sections.courses,
     counts: 'courses',
   },
-  {
-    section: 'certifications',
-    href: (locale) => `${at(`/${locale}/education/`)}#certificates`,
-    name: (locale) => strings[locale].sections.certifications,
-    counts: 'certifications',
-  },
+  // The certifications card exists only while the content has a
+  // certification, as the section it leads to does; with none, the page shows
+  // no card rather than one counting zero, and the case below says so.
+  ...(counted.certifications > 0
+    ? [
+        {
+          section: 'certifications',
+          href: (locale: Locale) => `${at(`/${locale}/education/`)}#certificates`,
+          name: (locale: Locale) => strings[locale].sections.certifications,
+          counts: 'certifications' as const,
+        },
+      ]
+    : []),
   {
     section: 'skills',
     href: (locale) => `${at(`/${locale}/`)}#skills`,
@@ -242,6 +249,19 @@ for (const locale of locales) {
       // read off the template.
       const order = await cards.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-section-card')));
       expect(order, `the section cards on /${locale}/`).toEqual(sections.map((section) => section.section));
+    });
+
+    test('shows a certifications card only while the content has a certification', async ({ page }) => {
+      await page.goto(at(`/${locale}/`));
+      const card = page.locator('[data-section-card="certifications"]');
+      await expect(card).toHaveCount(counted.certifications > 0 ? 1 : 0);
+      // Nothing on the page says "0 certifications": the count line a card
+      // would carry for zero, worded the way the page words it.
+      if (counted.certifications === 0) {
+        const t = strings[locale];
+        const zero = fill(t.home.counts.line, { count: '0', noun: plural(locale, 0, t.home.counts.nouns.certifications) });
+        expect(await page.locator('body').innerText(), `the zero count on /${locale}/`).not.toContain(zero);
+      }
     });
 
     test('leads each section card to its heading and counts what it holds', async ({ page }) => {

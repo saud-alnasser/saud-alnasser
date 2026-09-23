@@ -13,7 +13,7 @@ import { isCertification, isCourse } from '../src/lib/shown';
 // The two certificate grids and the one dialog their cards open: the card is
 // a link to its PDF, so a visitor with no script gets the document itself,
 // and the script turns the click into the dialog showing the preview with the
-// PDF one click away. What the page must not do is load any of the 27
+// PDF one click away. What the page must not do is load any of the
 // previews with itself, which is what the dialog's empty <img> and the
 // request count below assert.
 //
@@ -41,11 +41,20 @@ const certificates = readdirSync(path.join(content, 'certificates'))
 const documented = certificates.filter((entry) => entry.document);
 
 // One row per grid on the education page, with the entries it holds in the
-// order the site puts them in: by date, the undated last.
+// order the site puts them in: by date, the undated last. A kind with no
+// entries renders no grid and no heading, so the per-grid cases below run
+// over the grids the page renders, and one case asserts the absence of the
+// rest.
 const grids = [
-  { grid: 'courses', entries: certificates.filter(isCourse).sort(byDateAscending) },
-  { grid: 'certifications', entries: certificates.filter(isCertification).sort(byDateAscending) },
+  { grid: 'courses', heading: 'h2#courses', entries: certificates.filter(isCourse).sort(byDateAscending) },
+  {
+    grid: 'certifications',
+    heading: 'h2#certificates',
+    entries: certificates.filter(isCertification).sort(byDateAscending),
+  },
 ];
+const rendered = grids.filter(({ entries }) => entries.length > 0);
+const absent = grids.filter(({ entries }) => entries.length === 0);
 
 // Both grids' cards, whichever kind they are: the dialog serves them alike.
 const cards = ':is([data-entry="course"], [data-entry="certification"])';
@@ -68,7 +77,18 @@ for (const locale of locales) {
   const url = at(`/${locale}/education/`);
 
   test.describe(url, () => {
-    for (const { grid, entries } of grids) {
+    test('renders no grid and no heading for a kind with no entries', async ({ page }) => {
+      await page.goto(url);
+      for (const { grid, heading } of absent) {
+        await expect(page.locator(`[data-grid="${grid}"]`), `the ${grid} grid on ${url}`).toHaveCount(0);
+        await expect(page.locator(heading), `the ${grid} heading on ${url}`).toHaveCount(0);
+      }
+      for (const { grid, heading } of rendered) {
+        await expect(page.locator(heading), `the ${grid} heading on ${url}`).toHaveCount(1);
+      }
+    });
+
+    for (const { grid, entries } of rendered) {
       test(`shows every ${grid} entry as a card, with its issuer and its date`, async ({ page }) => {
         await page.goto(url);
         await expect(page.locator(`[data-grid="${grid}"] > li`)).toHaveCount(entries.length);
@@ -153,7 +173,7 @@ for (const locale of locales) {
     });
 
     // The dialog is one dialog for both grids, so it is opened from each.
-    for (const { grid, entries } of grids) {
+    for (const { grid, entries } of rendered) {
       if (!entries.some((entry) => entry.document)) continue;
       const documentedCards = `[data-grid="${grid}"] ${cards}[data-document]`;
 
@@ -239,7 +259,7 @@ for (const locale of locales) {
     test('lays both grids in one column and does not scroll sideways', async ({ page }) => {
       await page.goto(url);
       await page.evaluate(() => document.fonts.ready);
-      for (const { grid } of grids) {
+      for (const { grid } of rendered) {
         expect(await columnsOf(page, grid), `columns of the ${grid} grid on ${url}`).toBe(1);
       }
       const width = await page.evaluate(() => document.documentElement.scrollWidth);
@@ -252,7 +272,7 @@ for (const locale of locales) {
 
     test('lays both grids in two or more columns', async ({ page }) => {
       await page.goto(url);
-      for (const { grid } of grids) {
+      for (const { grid } of rendered) {
         expect(await columnsOf(page, grid), `columns of the ${grid} grid on ${url}`).toBeGreaterThanOrEqual(2);
       }
     });

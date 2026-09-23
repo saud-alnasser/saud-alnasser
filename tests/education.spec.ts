@@ -160,10 +160,14 @@ for (const locale of locales) {
       await expect(coursesHeading).toHaveText(t.sections.courses);
       await expect(page.locator(timeline).locator('h2#courses')).toHaveCount(0);
 
-      // The certifications heading keeps the id the certificates section had,
-      // so an inbound link to #certificates still lands on a credential.
+      // The certifications section exists only while the content has a
+      // certification, so that the page never shows a heading over nothing.
+      // Where it exists, its heading keeps the id the certificates section
+      // had, so an inbound link to #certificates still lands on a credential;
+      // where it does not, the anchor is absent too.
       const certificationsHeading = page.locator('h2#certificates');
-      await expect(certificationsHeading).toHaveText(t.sections.certifications);
+      await expect(certificationsHeading).toHaveCount(certifications.length > 0 ? 1 : 0);
+      if (certifications.length > 0) await expect(certificationsHeading).toHaveText(t.sections.certifications);
 
       // Each grid holds its own kind, in the order the site orders them: by
       // date, the undated last.
@@ -171,12 +175,13 @@ for (const locale of locales) {
         ['courses', courses],
         ['certifications', certifications],
       ] as const) {
+        // A kind with no entries renders no grid at all, not an empty one.
+        if (expected.length === 0) {
+          await expect(page.locator(`[data-grid="${grid}"]`), `the ${grid} grid on ${url}`).toHaveCount(0);
+          continue;
+        }
         const list = page.locator(`[data-grid="${grid}"] > li`);
         await expect(list, `the ${grid} grid on ${url}`).toHaveCount(expected.length);
-        // Reclassifying every entry of one kind empties that grid, which
-        // criterion 6 allows, and an empty grid has no first or last card to
-        // read. The count above is the whole assertion in that case.
-        if (expected.length === 0) continue;
         const ordered = [...expected].sort(byDateAscending);
         // The Arabic of a certificate's name is optional in the contract, so
         // the page falls back to the English and the expectation follows it.

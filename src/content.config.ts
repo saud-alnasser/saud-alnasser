@@ -233,4 +233,22 @@ const languages = defineCollection({
     .strict(),
 });
 
-export const collections = { profile, projects, experience, education, certificates, skills, languages };
+// What the CV says about the online courses in one entry rather than a list:
+// the providers, spelt as the certificate entries spell their issuers, and
+// the topics per language in the order the line prints them. The count and
+// the years are read from the course entries at build time and are not
+// authored here. A topic is a claim that a course taught it; the schema
+// cannot see another collection, so `pnpm check:dist` is what backs each
+// topic against a course's name and each provider against an issuer
+// (src/content/self-study.yaml says the rule).
+const selfStudy = defineCollection({
+  loader: file('./src/content/self-study.yaml'),
+  schema: z
+    .object({
+      providers: z.array(z.string().min(1)).min(1),
+      topics: z.array(localized).min(1),
+    })
+    .strict(),
+});
+
+export const collections = { profile, projects, experience, education, certificates, skills, languages, selfStudy };

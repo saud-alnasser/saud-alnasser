@@ -102,13 +102,20 @@ const sections = [
     description: t.home.courses,
     counts: [count(courses.length, 'courses')],
   },
-  {
-    section: 'certifications',
-    href: `${educationPage}#certificates`,
-    name: t.sections.certifications,
-    description: t.home.certifications,
-    counts: [count(certifications.length, 'certifications')],
-  },
+  // Only while a certification exists, as the education page renders the
+  // section only then: a card counting zero would say "no credential" in so
+  // many words, and the heading it would lead to is not there.
+  ...(certifications.length > 0
+    ? [
+        {
+          section: 'certifications',
+          href: `${educationPage}#certificates`,
+          name: t.sections.certifications,
+          description: t.home.certifications,
+          counts: [count(certifications.length, 'certifications')],
+        },
+      ]
+    : []),
   {
     section: 'skills',
     href: `${withBase(`/${locale}/`)}#skills`,

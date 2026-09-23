@@ -94,12 +94,6 @@ jobs:
       - name: '🌐 install chromium'
         run: pnpm exec playwright install --with-deps chromium
 
-      # pdftotext, which the dist check runs over the English PDF and over both
-      # PDFs for identifiers. Without it the check prints a notice and skips
-      # the extraction, so CI installs it to make the assertion real.
-      - name: '📄 install poppler'
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends poppler-utils
-
       - name: '📄 render the cv pdfs'
         run: pnpm render:pdf
 
