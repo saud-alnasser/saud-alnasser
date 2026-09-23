@@ -131,8 +131,12 @@ online-courses phase placed just before the most recent institution, so high
 school comes first, the online courses next, and university last. That node
 stands for the courses, dated or not: it counts them, runs from the earliest
 dated one to the latest, and leads to the courses grid below the timeline,
-where the certifications sit under their own heading beside it. The CV page
-keeps separate Education, Certifications, and Courses sections.
+where the certifications sit under their own heading beside it, while any
+exists. The CV's education section is the same timeline: the institutions
+with one self-study entry in the node's place, which is how the CV reads the
+courses (see `self-study.yaml` below), and its Certifications section prints
+only while a certification exists, like the site's section and the home
+page's card.
 
 | Field | Type | Per language | Meaning |
 | --- | --- | --- | --- |
@@ -150,9 +154,20 @@ One file per certificate, including online course completions. The `kind`
 field says which of the two an entry is: a **course** is an online course
 Saud completed, and its certificate is the proof of completion; a
 **certification** is a credential that is not a course, such as an
-assessment passed. The site lists the two kinds under their own headings and
-the timeline's online-courses node counts the courses; the CV lists both.
-Reclassifying an entry means changing this one field.
+assessment passed. The site lists the two kinds under their own headings,
+the certifications heading only while an entry of that kind exists, and the
+timeline's online-courses node counts the courses. The CV prints the
+certifications one per line, under a heading that exists only while one does,
+and never lists the courses one by one: it reads them as one self-study entry
+in its education section, whose topics and providers are `self-study.yaml`'s
+and whose count and years are read from the course entries here. The JSON
+Resume documents list every entry of both kinds. Reclassifying an entry means
+changing this one field.
+
+Adding a recognised credential, a cloud or security certification for
+instance, is therefore one entry of kind `certification` with its redacted
+PDF and preview: the CV's Certifications section, the education page's
+section, and the home page's card all return with it and no other edit.
 
 | Field | Type | Per language | Meaning |
 | --- | --- | --- | --- |
@@ -162,7 +177,7 @@ Reclassifying an entry means changing this one field.
 | `date` | date | no | optional. When it was issued |
 | `url` | URL | no | optional. Where it can be verified |
 | `document` | file path | no | optional. The certificate's PDF, relative to this folder, as `files/code-with-mosh-react.pdf`. The build refuses an entry whose PDF or preview does not exist, naming the file |
-| `resume` | `true` | no | optional. Marks the entry for the short resume; absent means it stays off. The CV lists every entry whatever this says |
+| `resume` | `true` | no | optional. Marks a certification for the short resume; absent means it stays off. The CV lists every certification whatever this says. On a course the marker does nothing: no document lists a course one by one, so the resume prints none whatever the entry marks |
 
 ### The certificate documents
 
@@ -191,6 +206,31 @@ layer for that scan to read, so such a document is read by eye for
 identifiers before it is added, and the dist check reports how many documents
 it could read.
 
+## `self-study.yaml`
+
+One file, `src/content/self-study.yaml`, with a single top-level key
+`selfStudy:`, holding what the CV says about the online courses. The CV
+prints them as one entry in its education section, in the timeline's place
+for the online-courses phase: "Self-study" with the years at the far edge,
+then the count of courses at the providers, then the topics. The count and
+the years are read from the course entries under `certificates/` at build
+time and are not authored here; a course added or removed moves them with no
+edit to this file. The education page's courses grid and the JSON Resume
+documents still carry every course. The resume prints no self-study entry.
+
+| Field | Type | Per language | Meaning |
+| --- | --- | --- | --- |
+| `providers` | list of text | no | who taught the courses, each spelt exactly as a course entry's `issuer` |
+| `topics` | list of text | yes, each item | what the courses taught, in the order the line prints them |
+
+**A topic is a claim that a course taught it, and it is checked.** Every
+topic's English must be contained, case-insensitively, in the English name
+of at least one course entry, and every provider must be some course's
+issuer; `pnpm check:dist` refuses the first that is not, naming it. The
+topics are also what the key skills lean on where no shown project backs a
+keyword (see `skills/` below), so a topic leaving this list is a keyword to
+reconsider.
+
 ## `skills/`
 
 One file per skill group.
@@ -198,7 +238,7 @@ One file per skill group.
 | Field | Type | Per language | Meaning |
 | --- | --- | --- | --- |
 | `name` | text | yes | the group, such as "Web development" |
-| `keywords` | list of text | no | the concrete items in the group. **A keyword names something a shown entry backs**: a language, framework, tool, or practice that a completed project, an experience entry, or a certificate on the CV names or plainly used. A word backed only by an entry that is `in-progress` or `hidden`, by a course with nothing built since, or by a bot's configuration is not a skill, and it leaves the list rather than waiting for a screener to check it and find nothing |
+| `keywords` | list of text | no | the concrete items in the group. **A keyword names something a shown entry backs**: a language, framework, tool, or practice that a completed project, an experience entry, a certification on the CV, or a topic of the CV's self-study entry (`self-study.yaml`) names or plainly used. A word backed only by an entry that is `in-progress` or `hidden`, by a course whose topic the self-study entry does not name and nothing was built with since, or by a bot's configuration is not a skill, and it leaves the list rather than waiting for a screener to check it and find nothing |
 | `level` | text | yes | optional. How well, such as "Working knowledge" |
 | `order` | whole number | no | optional. Lower numbers sort first |
 

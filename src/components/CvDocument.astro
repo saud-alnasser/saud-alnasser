@@ -489,10 +489,9 @@ const muted = 'text-sm text-muted-foreground';
             </ol>
           </section>
         ) : (
-          // A list of credentials: the certifications, the course
-          // completions, and on the resume whichever entries carry the
-          // marker. One line each, which is what a reader scans and what a
-          // parser reads.
+          // The certifications, one line each, which is what a reader scans
+          // and what a parser reads: every one on the CV, and on the resume
+          // whichever entries carry the marker.
           <section aria-labelledby={`cv-${section.id}`} data-cv-section={section.id}>
             <h2 id={`cv-${section.id}`} class={heading}>
               {section.heading}
