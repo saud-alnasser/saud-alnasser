@@ -48,6 +48,9 @@ import { readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
+import { parse as parseYaml } from 'yaml';
+// Node strips the types on import, as scripts/check-dist.mjs relies on.
+import { isCertification } from '../src/lib/shown.ts';
 
 const run = promisify(execFile);
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -265,10 +268,13 @@ async function assertCardUnopenable(certificate) {
 // be told from the fixture's effect, so it is asserted present instead and
 // the line says which reading applied.
 async function assertCertificationsShown(withFixture) {
+  // Read the way the build reads it, through the parser and the one
+  // predicate every output uses, so a quoted `kind` counts as the build
+  // counts it.
   const directory = path.join(root, contentDir, 'certificates');
   let real = false;
   for (const file of (await readdir(directory)).filter((name) => name.endsWith('.yaml') && !name.startsWith('fixture-'))) {
-    if (/^kind:\s*certification\b/m.test(await readFile(path.join(directory, file), 'utf8'))) real = true;
+    if (isCertification(parseYaml(await readFile(path.join(directory, file), 'utf8')))) real = true;
   }
   const expected = withFixture || real;
   const surfaces = [
