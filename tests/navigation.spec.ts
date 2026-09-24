@@ -6,14 +6,15 @@ import { at, belowHeader, locales, pages } from './pages';
 // The header as the way around the one page: it stays on screen however far
 // the page is scrolled, it names the home page's five sections on every page,
 // and each of its section links brings that section's heading up to just
-// below it, from the top of the page and from the foot, the last section
-// included. At a desktop size the links are in the header's row; at a phone
-// size they are in the phone menu, which is opened first.
+// below it, from the top of the page and from the foot. The last section is
+// as tall as it is, so its link may instead take the page to its foot, with
+// the heading still clear of the header. At a desktop size the links are in
+// the header's row; at a phone size they are in the phone menu, which is
+// opened first.
 //
 // With JavaScript disabled, because everything here is the page's own: the
-// sticky header, the anchors, the scroll padding that keeps a heading clear
-// of the header, and the last section's height, which lets its heading come
-// up at all.
+// sticky header, the anchors, and the scroll padding that keeps a heading
+// clear of the header.
 
 const sizes = [
   { width: 1440, height: 900, phone: false },
@@ -21,6 +22,22 @@ const sizes = [
 ] as const;
 
 const toFoot = (page: Page) => page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+
+const atFoot = (page: Page) =>
+  page.evaluate(() => window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2);
+
+// Where a section link leaves its heading: just below the header, or, when
+// the page ends before the heading can come up that far, anywhere below the
+// header with the page at its foot.
+async function arrived(page: Page, id: string) {
+  const gap = await belowHeader(page, id);
+  expect(gap, `#${id} below the header`).toBeGreaterThanOrEqual(0);
+  if (gap > 24) expect(await atFoot(page), `#${id} lower than just below the header only at the foot`).toBe(true);
+}
+
+// Whether a press on a section's link must move the page: always, except on
+// the last section's link at the foot, which is where that link leads.
+const moves = (id: string, from: 'top' | 'foot') => !(from === 'foot' && id === sections[sections.length - 1]);
 
 // The link to a section where the size puts it: in the header's row, or in the
 // phone menu, opened first.
@@ -57,12 +74,10 @@ for (const { width, height, phone } of sizes) {
             const before = await page.evaluate(() => window.scrollY);
             await (await sectionLink(page, phone, id)).click();
             await expect(page).toHaveURL(new RegExp(`#${id}$`));
-            const gap = await belowHeader(page, id);
-            expect(gap, `#${id} below the header`).toBeGreaterThanOrEqual(0);
-            expect(gap, `#${id} below the header`).toBeLessThanOrEqual(24);
-            // A press always moves the page: no section is ever where its
-            // link already leaves it, the last one included.
-            expect(await page.evaluate(() => window.scrollY), `the page moved to #${id}`).not.toBe(before);
+            await arrived(page, id);
+            if (moves(id, from)) {
+              expect(await page.evaluate(() => window.scrollY), `the page moved to #${id}`).not.toBe(before);
+            }
           });
         }
       }
@@ -77,9 +92,7 @@ for (const { width, height, phone } of sizes) {
           }
           await (await sectionLink(page, phone, 'skills')).click();
           await expect(page).toHaveURL(`${home}#skills`);
-          const gap = await belowHeader(page, 'skills');
-          expect(gap).toBeGreaterThanOrEqual(0);
-          expect(gap).toBeLessThanOrEqual(24);
+          await arrived(page, 'skills');
         });
       }
     }
@@ -121,10 +134,10 @@ for (const { width, height, phone } of sizes) {
             await (await sectionLink(page, phone, id)).click();
             await expect(page).toHaveURL(`${home}#${id}`);
             await expect(page.locator(`#${id}`)).toBeFocused();
-            const gap = await belowHeader(page, id);
-            expect(gap, `#${id} below the header`).toBeGreaterThanOrEqual(0);
-            expect(gap, `#${id} below the header`).toBeLessThanOrEqual(24);
-            expect(await page.evaluate(() => window.scrollY), `the page moved to #${id}`).not.toBe(before);
+            await arrived(page, id);
+            if (moves(id, from)) {
+              expect(await page.evaluate(() => window.scrollY), `the page moved to #${id}`).not.toBe(before);
+            }
             await expect.poll(() => current(page)).toEqual([`bar:${id}`, `menu:${id}`]);
             if (phone) await expect(page.locator('[data-site-menu]')).not.toHaveAttribute('open');
           });
@@ -211,9 +224,7 @@ for (const { width, height, phone } of sizes) {
         await (await sectionLink(page, phone, id)).click();
         await expect(page).toHaveURL(`${at('/en/')}#${id}`);
         await page.waitForTimeout(700);
-        const gap = await belowHeader(page, id);
-        expect(gap, `#${id} below the header`).toBeGreaterThanOrEqual(0);
-        expect(gap, `#${id} below the header`).toBeLessThanOrEqual(24);
+        await arrived(page, id);
       });
     }
   });
