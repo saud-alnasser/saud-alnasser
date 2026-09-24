@@ -200,3 +200,25 @@ test('keeps every element focused by Shift+Tab from the foot clear of the header
     expect(found.top, `${found.name} below the header`).toBeGreaterThanOrEqual(found.bottom - 1);
   }
 });
+
+// A document's header links open the home page at an anchor, with the page's
+// entrance and the reveal able to run. Neither may hold the section low as the
+// browser scrolls to it: each heading settles below the header, as a press on
+// the home page leaves it.
+for (const { width, height, phone } of sizes) {
+  test.describe(`at ${width} by ${height} with motion allowed`, () => {
+    test.use({ viewport: { width, height }, reducedMotion: 'no-preference' });
+
+    for (const id of sections) {
+      test(`/en/cv/ opens #${id} of the home page below the header`, async ({ page }) => {
+        await page.goto(at('/en/cv/'));
+        await (await sectionLink(page, phone, id)).click();
+        await expect(page).toHaveURL(`${at('/en/')}#${id}`);
+        await page.waitForTimeout(700);
+        const gap = await belowHeader(page, id);
+        expect(gap, `#${id} below the header`).toBeGreaterThanOrEqual(0);
+        expect(gap, `#${id} below the header`).toBeLessThanOrEqual(24);
+      });
+    }
+  });
+}

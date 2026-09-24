@@ -255,6 +255,17 @@ const link =
             });
           }
 
+          // A reader who scrolls during a glide takes the page back from it.
+          ['wheel', 'touchstart', 'keydown'].forEach(function (type) {
+            window.addEventListener(
+              type,
+              function () {
+                glide = null;
+              },
+              { passive: true },
+            );
+          });
+
           var queued = false;
           window.addEventListener(
             'scroll',
@@ -512,6 +523,10 @@ const link =
         // so wherever this does not run the tile simply shows it.
         function reveal() {
           if (typeof IntersectionObserver !== 'function') return;
+          // Opened at an anchor, the page is already where the reader asked
+          // to be, and a heading held low there would land under the header.
+          // Read from the address, since `:target` may not match yet here.
+          if (location.hash.length > 1 && document.getElementById(decodeURIComponent(location.hash.slice(1)))) return;
           if (!matchMedia('(prefers-reduced-motion: no-preference)').matches) return;
           var marked = document.querySelectorAll('[data-reveal]');
           if (!marked.length) return;

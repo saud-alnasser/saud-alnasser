@@ -12,8 +12,11 @@ import { at, forwards } from './pages';
 // with it shows the old anchor is dropped rather than followed.
 const oldAnchors: Record<string, string> = { experience: '#projects', education: '#courses' };
 
+// With motion allowed, so the page's entrance could be running when the
+// browser scrolls to the anchor; a page opened at an anchor skips it, and
+// the heading lands below the header rather than under it.
 test.describe('the old addresses with JavaScript disabled', () => {
-  test.use({ javaScriptEnabled: false });
+  test.use({ javaScriptEnabled: false, reducedMotion: 'no-preference' });
 
   for (const { locale, path, section } of forwards) {
     for (const anchor of ['', oldAnchors[section]!]) {
@@ -22,6 +25,13 @@ test.describe('the old addresses with JavaScript disabled', () => {
         await page.waitForURL(`**${at(`/${locale}/`)}#${section}`);
         await expect(page.locator('html')).toHaveAttribute('lang', locale);
         await expect(page.locator(`main #${section}`)).toBeInViewport();
+        await page.waitForTimeout(700);
+        const gap = await page.evaluate(
+          (id) => document.getElementById(id)!.getBoundingClientRect().top - document.querySelector('body > header')!.getBoundingClientRect().bottom,
+          section,
+        );
+        expect(gap, `#${section} below the header`).toBeGreaterThanOrEqual(0);
+        expect(gap, `#${section} below the header`).toBeLessThanOrEqual(24);
       });
     }
   }

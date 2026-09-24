@@ -245,6 +245,14 @@
   main > [data-hero] {
     animation: none;
   }
+  /* A page opened at an anchor, as the header's links open the home page
+     from a document and the old addresses forward to it, arrives without
+     the entrance: the browser scrolls to the anchor while the page is still
+     arriving, and a section held low by it would leave its heading under
+     the header once it settled. */
+  :root:has(:target) :is(main, [data-hero]) > * {
+    animation: none;
+  }
 
   /* A section heading or a grid's card below the first screen rises into
      place once, the first time it scrolls in. The hidden state applies only
