@@ -1456,7 +1456,6 @@ async function languagesWhereTheyBelong() {
 // page reads them. And nothing the sections replaced is left on any page: the
 // monogram, the timeline from study to work, and the grid of cards leading
 // to each section, each by the attribute on its element.
-
 async function onePage() {
   const name = 'one page';
   const lines = [];

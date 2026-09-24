@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { strings } from '../src/lib/i18n';
 import { sections } from '../src/lib/sections';
-import { at, locales, pages } from './pages';
+import { at, belowHeader, locales, pages } from './pages';
 
 // The header as the way around the one page: it stays on screen however far
 // the page is scrolled, it names the home page's five sections on every page,
@@ -19,14 +19,6 @@ const sizes = [
   { width: 1440, height: 900, phone: false },
   { width: 390, height: 844, phone: true },
 ] as const;
-
-// How far below the header's bottom edge a heading sits: zero where it
-// touches, negative where the header covers it.
-const belowHeader = (page: Page, id: string) =>
-  page.evaluate((id) => {
-    const header = document.querySelector('body > header')!.getBoundingClientRect();
-    return document.getElementById(id)!.getBoundingClientRect().top - header.bottom;
-  }, id);
 
 const toFoot = (page: Page) => page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
 

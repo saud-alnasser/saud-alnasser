@@ -7,4 +7,5 @@
 
 export const sections = ['about', 'experience', 'projects', 'education', 'skills'] as const;
 
+// One of them, as the forwards name the section each old address leads to.
 export type Section = (typeof sections)[number];

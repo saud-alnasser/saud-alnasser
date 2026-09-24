@@ -45,6 +45,14 @@ export const forwards = locales.flatMap((locale) =>
 
 export const otherLocale = (locale: Locale): Locale => (locale === 'en' ? 'ar' : 'en');
 
+// How far below the sticky header's bottom edge a heading sits: zero where
+// it touches, negative where the header covers it.
+export const belowHeader = (page: import('@playwright/test').Page, id: string) =>
+  page.evaluate((id) => {
+    const header = document.querySelector('body > header')!.getBoundingClientRect();
+    return document.getElementById(id)!.getBoundingClientRect().top - header.bottom;
+  }, id);
+
 // The `--background` token of each palette, as a browser reports it.
 export const background = {
   light: 'rgb(255, 255, 255)',

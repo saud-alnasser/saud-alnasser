@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { at, forwards } from './pages';
+import { at, belowHeader, forwards } from './pages';
 
 // The addresses that were pages before the portfolio became one page: each,
 // followed bare or with one of the anchors it used to carry, ends on the home
@@ -26,10 +26,7 @@ test.describe('the old addresses with JavaScript disabled', () => {
         await expect(page.locator('html')).toHaveAttribute('lang', locale);
         await expect(page.locator(`main #${section}`)).toBeInViewport();
         await page.waitForTimeout(700);
-        const gap = await page.evaluate(
-          (id) => document.getElementById(id)!.getBoundingClientRect().top - document.querySelector('body > header')!.getBoundingClientRect().bottom,
-          section,
-        );
+        const gap = await belowHeader(page, section);
         expect(gap, `#${section} below the header`).toBeGreaterThanOrEqual(0);
         expect(gap, `#${section} below the header`).toBeLessThanOrEqual(24);
       });

@@ -11,9 +11,11 @@
 // check holds it to this list. Like shown.ts, this file has no runtime
 // import: the config and the scripts load it with Node stripping the types.
 
+import type { Section } from './sections';
+
 export const forwards = [
   { route: '/work/', section: 'experience' },
   { route: '/education/', section: 'education' },
-] as const;
+] as const satisfies readonly { route: string; section: Section }[];
 
 export type Forwarded = (typeof forwards)[number]['section'];
