@@ -438,10 +438,12 @@ for (const locale of locales) {
         await expect(page.locator(`main a[href$="resume.json"]`)).toHaveCount(0);
         await expect(page.locator(`main a[href="${at(`/${locale}/${other}/`)}"]`)).toHaveCount(0);
 
-        // The header's first list is the site's routes; the second holds the
-        // language menu, whose own links to this route in the other language
-        // are not what carries a reader between the two documents.
-        const nav = page.getByRole('navigation', { name: strings[locale].nav.label }).locator('ul').first();
+        // The header's documents group, not the language menu, whose own
+        // links to this route in the other language are not what carries a
+        // reader between the two documents.
+        const nav = page
+          .getByRole('navigation', { name: strings[locale].nav.label })
+          .getByRole('list', { name: strings[locale].nav.documents });
         await expect(nav.locator(`a[href="${at(`/${locale}/cv/`)}"]`)).toHaveCount(1);
         await expect(nav.locator(`a[href="${at(`/${locale}/resume/`)}"]`)).toHaveCount(1);
       });

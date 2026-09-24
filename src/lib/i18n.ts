@@ -43,14 +43,20 @@ export function localeInfo(locale: Locale) {
 
 const en = {
   skipToContent: 'Skip to content',
+  // The header: the navigation's accessible name, the five sections of the
+  // home page, the two documents and the name of their group, the phone
+  // menu's accessible name, and the language menu's.
   nav: {
     label: 'Site',
-    home: 'Home',
-    work: 'Work',
+    about: 'About',
+    experience: 'Experience',
+    projects: 'Projects',
     education: 'Education',
+    skills: 'Skills',
+    documents: 'Documents',
     cv: 'CV',
     resume: 'Resume',
-    // The language menu's accessible name.
+    menu: 'Menu',
     language: 'Language',
   },
   theme: {
@@ -235,11 +241,15 @@ const ar: Strings = {
   skipToContent: 'انتقل إلى المحتوى',
   nav: {
     label: 'الموقع',
-    home: 'الرئيسية',
-    work: 'الأعمال',
+    about: 'نبذة',
+    experience: 'الخبرة',
+    projects: 'المشاريع',
     education: 'التعليم',
+    skills: 'المهارات',
+    documents: 'المستندات',
     cv: 'السيرة الذاتية',
     resume: 'السيرة المختصرة',
+    menu: 'القائمة',
     language: 'اللغة',
   },
   theme: {

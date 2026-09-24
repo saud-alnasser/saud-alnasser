@@ -59,6 +59,10 @@ export const icons = {
     kind: 'stroke',
     body: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
   },
+  menu: {
+    kind: 'stroke',
+    body: '<path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/>',
+  },
   check: {
     kind: 'stroke',
     body: '<path d="M20 6 9 17l-5-5"/>',

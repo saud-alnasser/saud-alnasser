@@ -1,0 +1,106 @@
+import { expect, test, type Page } from '@playwright/test';
+import { strings } from '../src/lib/i18n';
+import { at, locales, pages } from './pages';
+
+// The header as the way around the one page: it stays on screen however far
+// the page is scrolled, it names the home page's five sections on every page,
+// and each of its section links brings that section's heading up to just
+// below it, from the top of the page and from the foot, the last section
+// included. At a desktop size the links are in the header's row; at a phone
+// size they are in the phone menu, which is opened first.
+//
+// With JavaScript disabled, because everything here is the page's own: the
+// sticky header, the anchors, the scroll padding that keeps a heading clear
+// of the header, and the last section's height, which lets its heading come
+// up at all.
+
+const sections = ['about', 'experience', 'projects', 'education', 'skills'] as const;
+
+const sizes = [
+  { width: 1440, height: 900, phone: false },
+  { width: 390, height: 844, phone: true },
+] as const;
+
+// How far below the header's bottom edge a heading sits: zero where it
+// touches, negative where the header covers it.
+const belowHeader = (page: Page, id: string) =>
+  page.evaluate((id) => {
+    const header = document.querySelector('body > header')!.getBoundingClientRect();
+    return document.getElementById(id)!.getBoundingClientRect().top - header.bottom;
+  }, id);
+
+const toFoot = (page: Page) => page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+
+// The link to a section where the size puts it: in the header's row, or in the
+// phone menu, opened first.
+async function sectionLink(page: Page, phone: boolean, id: string) {
+  if (!phone) return page.locator(`body > header > div > nav a[data-section-link="${id}"]`);
+  const menu = page.locator('[data-site-menu]');
+  if ((await menu.getAttribute('open')) === null) await menu.locator('summary').click();
+  return menu.locator(`a[data-section-link="${id}"]`);
+}
+
+for (const { width, height, phone } of sizes) {
+  test.describe(`at ${width} by ${height} with JavaScript disabled`, () => {
+    test.use({ viewport: { width, height }, javaScriptEnabled: false });
+
+    for (const path of pages) {
+      test(`${path} keeps the header in view at its foot`, async ({ page }) => {
+        await page.goto(path);
+        await toFoot(page);
+        expect(await page.evaluate(() => window.scrollY), `${path} scrolls`).toBeGreaterThan(0);
+        const header = (await page.locator('body > header').boundingBox())!;
+        expect(header.y, `the header's top on ${path}`).toBe(0);
+        await expect(page.locator('body > header')).toBeInViewport();
+      });
+    }
+
+    for (const locale of locales) {
+      const home = at(`/${locale}/`);
+
+      for (const id of sections) {
+        for (const from of ['top', 'foot'] as const) {
+          test(`${home} brings #${id} up under the header from the ${from}`, async ({ page }) => {
+            await page.goto(home);
+            if (from === 'foot') await toFoot(page);
+            const before = await page.evaluate(() => window.scrollY);
+            await (await sectionLink(page, phone, id)).click();
+            await expect(page).toHaveURL(new RegExp(`#${id}$`));
+            const gap = await belowHeader(page, id);
+            expect(gap, `#${id} below the header`).toBeGreaterThanOrEqual(0);
+            expect(gap, `#${id} below the header`).toBeLessThanOrEqual(24);
+            // A press always moves the page: no section is ever where its
+            // link already leaves it, the last one included.
+            expect(await page.evaluate(() => window.scrollY), `the page moved to #${id}`).not.toBe(before);
+          });
+        }
+      }
+
+      // The same links on the two documents lead back to the home page's
+      // sections, and the document's own link is the current page.
+      for (const document of ['cv', 'resume'] as const) {
+        test(`/${locale}/${document}/ leads to each section of the home page`, async ({ page }) => {
+          await page.goto(at(`/${locale}/${document}/`));
+          for (const id of sections) {
+            await expect(await sectionLink(page, phone, id)).toHaveAttribute('href', `${home}#${id}`);
+          }
+          await (await sectionLink(page, phone, 'skills')).click();
+          await expect(page).toHaveURL(`${home}#skills`);
+          const gap = await belowHeader(page, 'skills');
+          expect(gap).toBeGreaterThanOrEqual(0);
+          expect(gap).toBeLessThanOrEqual(24);
+        });
+      }
+    }
+  });
+}
+
+// The links name the sections in the page's language, in the order the page
+// holds them.
+test('names the five sections in each language, in order', async ({ page }) => {
+  for (const locale of locales) {
+    const t = strings[locale];
+    await page.goto(at(`/${locale}/`));
+    await expect(page.locator('body > header > div > nav a[data-section-link]')).toHaveText(sections.map((id) => t.nav[id]));
+  }
+});

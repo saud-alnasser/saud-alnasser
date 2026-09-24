@@ -400,7 +400,7 @@ test.describe('the page crossfade with motion allowed', () => {
       });
     });
     await page.goto(at('/en/'));
-    await page.locator(`body > header nav a[href="${at('/en/cv/')}"]`).click();
+    await page.locator(`body > header > div > nav a[href="${at('/en/cv/')}"]`).click();
     await page.waitForURL(`**${at('/en/cv/')}`);
     const crossfade = await page.waitForFunction(() => (window as unknown as { crossfade?: string[] }).crossfade);
     const parts = (await crossfade.jsonValue()) as string[];

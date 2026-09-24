@@ -7,6 +7,7 @@ import { absolute, withBase } from '../lib/paths';
 import { credits } from '../lib/technologies';
 import Icon from '../components/Icon.astro';
 import LanguageMenu from '../components/LanguageMenu.astro';
+import SiteMenu from '../components/SiteMenu.astro';
 import ThemeToggle from '../components/ThemeToggle.astro';
 
 interface Props {
@@ -19,7 +20,8 @@ interface Props {
   path: string;
   // The width of the page: `grid` for a page laying cards in columns, 64rem;
   // `document` for the CV, which reads as one column of text, 48rem. The
-  // header and the content share it.
+  // content and the footer take it; the header's row is 64rem on every page,
+  // because the whole row fits in nothing narrower.
   column: 'document' | 'grid';
 }
 
@@ -50,13 +52,21 @@ const fonts = [
 
 const logoCredits = credits();
 
-const nav = [
-  { href: home, label: t.nav.home, current: path === '/' },
-  { href: withBase(`/${locale}/work/`), label: t.nav.work, current: path === '/work/' },
-  { href: withBase(`/${locale}/education/`), label: t.nav.education, current: path === '/education/' },
+// The header's links, the same on every page: the five sections of the home
+// page, each by the anchor its heading carries, so from a document they lead
+// back to the section; and the two documents, the one being read marked as
+// the current page.
+const sections = (['about', 'experience', 'projects', 'education', 'skills'] as const).map((id) => ({
+  id,
+  href: `${home}#${id}`,
+  label: t.nav[id],
+}));
+const documents = [
   { href: withBase(`/${locale}/cv/`), label: t.nav.cv, current: path === '/cv/' },
   { href: withBase(`/${locale}/resume/`), label: t.nav.resume, current: path === '/resume/' },
 ];
+const link =
+  'relative inline-flex min-h-6 min-w-6 items-center gap-1.5 py-2 whitespace-nowrap text-muted-foreground hover:text-primary motion-safe:transition-colors';
 ---
 
 <!doctype html>
@@ -492,56 +502,68 @@ const nav = [
   <body class="min-h-dvh bg-background text-foreground antialiased motion-safe:transition-colors motion-safe:duration-300">
     <a
       href="#content"
-      class="sr-only focus:not-sr-only focus:absolute focus:start-4 focus:top-4 focus:z-10 focus:rounded-md focus:bg-background focus:px-3 focus:py-2"
+      class="sr-only focus:not-sr-only focus:absolute focus:start-4 focus:top-4 focus:z-30 focus:rounded-md focus:bg-background focus:px-3 focus:py-2"
     >
       {t.skipToContent}
     </a>
 
     <!--
-      On a phone the header is two rows: the name at the start and the two
-      controls at the end, then the navigation across the whole width, spaced
-      evenly and never wrapping. From `sm` up it is one row, the navigation
-      beside the controls. The source order is the wide one, name, navigation,
-      controls, which is also the order a keyboard reaches them in; on a phone
-      the navigation is moved last by `order` alone.
+      The header stays on screen as the page scrolls: a bar of its own height
+      (`--header-height`, which the stylesheet also scrolls every jump clear
+      of), on the page's background, with a border under it. One row, in the
+      order a keyboard reaches it: the name, leading to the top of the home
+      page; the five sections; the two documents, set apart as a group of
+      their own with the file icon; and the language and theme controls.
 
-      The current page is underlined by a bar in the accent as well as marked
-      `aria-current`, so which page this is does not rest on a text colour.
-      Every link and button here is at least 24 pixels each way.
+      Below `lg` the row cannot hold all of it in either language, so the
+      sections and the documents fold into the phone menu, a native
+      disclosure at the end of the row that needs no script to open, close,
+      or lead anywhere.
+
+      The current link carries `aria-current` and a bar in the accent, so it
+      does not rest on a text colour: a document's own link on that document,
+      and on the home page the section being read, which the inline script
+      marks. Every link and button here is at least 24 pixels each way.
     -->
-    <header class:list={['mx-auto w-full px-6 pt-8 sm:pt-12', width]}>
-      <div class="flex flex-wrap items-center justify-between gap-x-5 gap-y-2">
-        <a href={home} class="inline-flex min-h-6 items-center py-1 text-base font-semibold tracking-tight hover:text-primary">
+    <header class="sticky top-0 z-20 border-b border-border bg-background">
+      <div class="mx-auto flex h-(--header-height) w-full max-w-5xl items-center gap-x-4 px-6">
+        <a href={home} class="inline-flex min-h-6 items-center py-1 text-base font-semibold tracking-tight whitespace-nowrap hover:text-primary">
           {siteName}
         </a>
-        <nav aria-label={t.nav.label} class="order-last w-full text-sm sm:order-none sm:ms-auto sm:w-auto">
-          <ul class="flex justify-between sm:justify-start sm:gap-x-5">
+        <nav aria-label={t.nav.label} class="ms-auto hidden items-center text-sm lg:flex">
+          <ul class="flex items-center gap-x-5">
             {
-              nav.map((item) => (
+              sections.map((section) => (
                 <li>
-                  <a
-                    href={item.href}
-                    aria-current={item.current ? 'page' : undefined}
-                    class:list={[
-                      'relative inline-flex min-h-6 min-w-6 items-center justify-center py-2 whitespace-nowrap hover:text-primary motion-safe:transition-colors',
-                      item.current
-                        ? 'text-foreground after:absolute after:inset-x-0 after:bottom-0.5 after:h-0.5 after:rounded-full after:bg-primary'
-                        : 'text-muted-foreground',
-                    ]}
-                  >
-                    {item.label}
+                  <a href={section.href} data-nav-link data-section-link={section.id} class={link}>
+                    {section.label}
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+          <ul aria-label={t.nav.documents} class="ms-5 flex items-center gap-x-4 border-s border-border ps-5">
+            {
+              documents.map((document) => (
+                <li>
+                  <a href={document.href} data-nav-link aria-current={document.current ? 'page' : undefined} class={link}>
+                    <Icon name="file-text" class="size-4" />
+                    {document.label}
                   </a>
                 </li>
               ))
             }
           </ul>
         </nav>
-        <ul class="flex items-center gap-x-1">
+        <ul class="ms-auto flex items-center gap-x-1 lg:ms-0">
           <li>
             <LanguageMenu locale={locale} path={path} />
           </li>
           <li>
             <ThemeToggle locale={locale} />
+          </li>
+          <li class="lg:hidden">
+            <SiteMenu locale={locale} sections={sections} documents={documents} />
           </li>
         </ul>
       </div>
