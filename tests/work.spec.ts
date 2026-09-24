@@ -393,3 +393,95 @@ test.describe('the featured project', () => {
     });
   }
 });
+
+// The filter: one chip per technology two or more shown projects name, the
+// featured one among them, most used first and then by name, after "All".
+// A press leaves exactly the grid's projects naming the technology, marks the
+// chip pressed and no other, and announces how many shown projects name it.
+// The featured card is never filtered. With no script there is no row.
+const uses = new Map<string, number>();
+for (const entry of projects) for (const technology of new Set(entry.technologies)) uses.set(technology, (uses.get(technology) ?? 0) + 1);
+const chipNames = [...uses]
+  .filter(([, count]) => count >= 2)
+  .sort(([a, x], [b, y]) => y - x || a.localeCompare(b, 'en'))
+  .map(([technology]) => technology);
+
+const announced = (locale: Locale, count: number) =>
+  fill(strings[locale].filter.status, { count: String(count), noun: plural(locale, count, strings[locale].home.counts.nouns.projects) });
+
+// The grid's visible projects, as the technologies each names.
+const visibleGrid = (page: Page) =>
+  page.locator('[data-grid="projects"] > li').evaluateAll((items) =>
+    items.filter((item) => !(item as HTMLElement).hidden && (item as HTMLElement).offsetParent !== null).map((item) => item.getAttribute('data-technologies')!.split('|')),
+  );
+
+test.describe('the project filter', () => {
+  for (const locale of locales) {
+    const url = at(`/${locale}/work/`);
+    const t = strings[locale];
+
+    test(`${url} offers a chip per technology two projects share`, async ({ page }) => {
+      expect(chipNames.length, 'the content has technologies to filter by').toBeGreaterThan(0);
+      await page.goto(url);
+      const group = page.getByRole('group', { name: t.filter.label });
+      await expect(group).toBeVisible();
+      await expect(group.locator('button')).toHaveText([t.filter.all, ...chipNames]);
+      await expect(group.locator('button[aria-pressed="true"]')).toHaveText([t.filter.all]);
+    });
+
+    for (const how of ['mouse', 'keyboard'] as const) {
+      test(`${url} narrows the grid by ${how}`, async ({ page }) => {
+        await page.goto(url);
+        const group = page.getByRole('group', { name: t.filter.label });
+        const status = page.locator('[data-filter-status]');
+        await expect(status).toHaveAttribute('role', 'status');
+        for (const [index, name] of [...chipNames, ''].entries()) {
+          const chip = name === '' ? group.getByRole('button', { name: t.filter.all, exact: true }) : group.getByRole('button', { name, exact: true });
+          if (how === 'mouse') await chip.click();
+          else {
+            await chip.focus();
+            await page.keyboard.press(index % 2 === 0 ? 'Enter' : 'Space');
+          }
+          await expect(chip).toHaveAttribute('aria-pressed', 'true');
+          await expect(group.locator('button[aria-pressed="true"]')).toHaveCount(1);
+          const visible = await visibleGrid(page);
+          const expected = gridProjects.filter((entry) => name === '' || entry.technologies.includes(name)).map((entry) => entry.technologies);
+          expect(visible, `the grid under ${name || 'All'}`).toEqual(expected);
+          await expect(status).toHaveText(announced(locale, name === '' ? projects.length : uses.get(name)!));
+          if (featured) await expect(page.locator('[data-featured-project]')).toBeVisible();
+        }
+      });
+    }
+
+    test(`${url} keeps the chips reachable, sized, and filling from the reading start`, async ({ page }) => {
+      await page.goto(url);
+      const group = page.getByRole('group', { name: t.filter.label });
+      const boxes = await group.locator('button').evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().toJSON()));
+      for (const box of boxes) {
+        expect(box.width).toBeGreaterThanOrEqual(24);
+        expect(box.height).toBeGreaterThanOrEqual(24);
+      }
+      const row = (await group.boundingBox())!;
+      const first = boxes[0]!;
+      if (locale === 'ar') expect(row.x + row.width - (first.x + first.width), 'the first chip at the right edge').toBeLessThanOrEqual(1);
+      else expect(first.x - row.x, 'the first chip at the left edge').toBeLessThanOrEqual(1);
+    });
+  }
+});
+
+test.describe('the project filter with JavaScript disabled', () => {
+  test.use({ javaScriptEnabled: false });
+
+  for (const locale of locales) {
+    const url = at(`/${locale}/work/`);
+
+    test(`${url} shows no chips and every project`, async ({ page }) => {
+      await page.goto(url);
+      await expect(page.locator('[data-filter]')).toBeHidden();
+      const items = page.locator('[data-grid="projects"] > li');
+      await expect(items).toHaveCount(gridProjects.length);
+      for (const item of await items.all()) await expect(item).toBeVisible();
+      if (featured) await expect(page.locator('[data-featured-project]')).toBeVisible();
+    });
+  }
+});

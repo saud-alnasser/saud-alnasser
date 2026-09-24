@@ -167,7 +167,7 @@ Every task of every effort. The tracker carries the effort, never its tasks.
 | [[efforts/31-portfolio-rework/tickets/03-reveal-and-one-origin]] feat(site): sections revealing once as they scroll in, and a dist check that refuses any request to another origin | 31-portfolio-rework | resolved | 02 |
 | [[efforts/31-portfolio-rework/tickets/04-technology-badges]] feat(site): technologies as badges with their marks where a mark's licence allows it, and a footer that credits them | 31-portfolio-rework | resolved | 03 |
 | [[efforts/31-portfolio-rework/tickets/05-the-featured-project]] feat(content): one project marked featured, shown as a wider card at the head of the work page | 31-portfolio-rework | resolved | 04 |
-| [[efforts/31-portfolio-rework/tickets/06-the-project-filter]] feat(site): the project grid filtered by technology, announcing how many projects remain | 31-portfolio-rework | open | 05 |
+| [[efforts/31-portfolio-rework/tickets/06-the-project-filter]] feat(site): the project grid filtered by technology, announcing how many projects remain | 31-portfolio-rework | resolved | 05 |
 | [[efforts/31-portfolio-rework/tickets/07-one-timeline-from-study-to-work]] feat(site): one timeline on the home page from study to work, each node leading to its detail | 31-portfolio-rework | open | 01 |
 | [[efforts/31-portfolio-rework/tickets/08-the-first-screen]] feat(site): a first screen with a monogram, stat tiles counted from the content, and icons on every section | 31-portfolio-rework | open | 05, 07 |
 | [[efforts/5-sections-and-resume/tickets/01-contract-and-predicate]] feat(content): a completion status on projects, a kind on certificates, a resume marker, and the one predicate every output reads | 5-sections-and-resume | resolved | — |

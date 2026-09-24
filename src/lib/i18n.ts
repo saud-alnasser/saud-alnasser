@@ -139,6 +139,14 @@ const en = {
     // The label over the one project the work page puts forward.
     featured: 'Featured',
   },
+  // The chips above the project grid: the group's accessible name, the chip
+  // that restores every project, and the line the page announces after each
+  // press, with the project noun from `home.counts.nouns`.
+  filter: {
+    label: 'Filter projects by technology',
+    all: 'All',
+    status: 'Showing {count} {noun}',
+  },
   experience: {
     training: 'Practical training',
     highlights: 'Highlights',
@@ -326,6 +334,13 @@ const ar: Strings = {
     live: 'الموقع المنشور',
     technologies: 'التقنيات',
     featured: 'مشروع مميز',
+  },
+  filter: {
+    label: 'تصفية المشاريع حسب التقنية',
+    all: 'الكل',
+    // Said as a label and its number, which reads correctly at every count,
+    // where a verb and a counted noun would need the noun in the accusative.
+    status: 'المشاريع المعروضة: {count}',
   },
   experience: {
     training: 'تدريب عملي',

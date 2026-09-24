@@ -98,14 +98,16 @@ const nav = [
       paint, so the page never flashes the other palette, wires the theme
       control once the document is parsed, closes the language menu on Escape
       and on a click outside it, rises the headings and cards below the first
-      screen into place as they scroll in, opens a certificate card in the
-      page's dialog, and turns a document page's download control into the
-      form that fills the contact line and prints, which it does only where
-      the page's address carries the marker. The last four all work without
-      it: the menu opens and closes on its own, nothing is ever hidden for the
-      reveal to undo, a certificate card is the link to its PDF that it already
-      is, and the download control is the link to the published PDF that it
-      already is, which is what every unmarked click gets too.
+      screen into place as they scroll in, runs the work page's technology
+      filter, opens a certificate card in the page's dialog, and turns a
+      document page's download control into the form that fills the contact
+      line and prints, which it does only where the page's address carries
+      the marker. The last five all work without it: the menu opens and
+      closes on its own, nothing is ever hidden for the reveal to undo, the
+      filter's row stays hidden and every project shows, a certificate card is
+      the link to its PDF that it already is, and the download control is the
+      link to the published PDF that it already is, which is what every
+      unmarked click gets too.
     -->
     <script is:inline>
       (function () {
@@ -394,10 +396,38 @@ const nav = [
           root.setAttribute('data-reveal', '');
         }
 
+        // Shows the work page's technology chips and runs them: a press marks
+        // that chip pressed and every other not, hides the grid's projects
+        // that do not name its technology, and writes the chip's own line,
+        // counted and declined when the page was built, into the status
+        // region, which a screen reader announces. The empty technology is
+        // "All". Without this the row stays hidden and every project shows.
+        function filter() {
+          var group = document.querySelector('[data-filter]');
+          var status = document.querySelector('[data-filter-status]');
+          if (!group || !status) return;
+          var chips = group.querySelectorAll('[data-filter-chip]');
+          var items = document.querySelectorAll('[data-grid="projects"] > [data-technologies]');
+          group.hidden = false;
+          group.addEventListener('click', function (event) {
+            var chip = event.target.closest ? event.target.closest('[data-filter-chip]') : null;
+            if (!chip) return;
+            var chosen = chip.getAttribute('data-filter-chip');
+            Array.prototype.forEach.call(chips, function (other) {
+              other.setAttribute('aria-pressed', other === chip ? 'true' : 'false');
+            });
+            Array.prototype.forEach.call(items, function (item) {
+              item.hidden = chosen !== '' && item.getAttribute('data-technologies').split('|').indexOf(chosen) === -1;
+            });
+            status.textContent = chip.getAttribute('data-status');
+          });
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
           document.addEventListener('click', dismiss);
           document.addEventListener('keydown', dismiss);
           reveal();
+          filter();
           certificates();
           documents();
 

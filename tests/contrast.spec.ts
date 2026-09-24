@@ -99,3 +99,39 @@ for (const locale of ['en', 'ar'] as const) {
     }
   });
 }
+
+// The filter's chips, at rest and pressed: every label at AA on its own
+// chip, and the pressed chip's fill at 3:1 or better against a chip at rest,
+// so the pressed state does not rest on a text colour.
+for (const locale of ['en', 'ar'] as const) {
+  const page = at(`/${locale}/work/`);
+
+  test(`the filter chips on ${page} meet WCAG AA at rest and pressed`, async ({ page: browser, colorScheme }) => {
+    await browser.goto(page);
+    const chips = browser.locator('[data-filter] button');
+    await chips.nth(1).click();
+    await expect(chips.nth(1)).toHaveAttribute('aria-pressed', 'true');
+    const failures = await browser.evaluate(lowContrastPairs);
+    expect(failures, `${colorScheme} palette on ${page} with a chip pressed`).toEqual([]);
+    const ratio = await browser.evaluate(() => {
+      const [rest, pressed] = [
+        document.querySelector('[data-filter] button[aria-pressed="false"]')!,
+        document.querySelector('[data-filter] button[aria-pressed="true"]')!,
+      ].map((node) => (getComputedStyle(node).backgroundColor.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number));
+      const luminance = (rgb: number[]) => {
+        const [r, g, b] = rgb.map((v) => {
+          const c = v / 255;
+          return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+        });
+        return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
+      };
+      const [a, b] = [luminance(rest!), luminance(pressed!)];
+      return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+    });
+    expect(ratio, `a pressed chip against one at rest on ${page}`).toBeGreaterThanOrEqual(3);
+    if (locale === 'en') {
+      const results = await new AxeBuilder({ page: browser }).withTags(['wcag2a', 'wcag2aa']).analyze();
+      expect(results.violations.map((violation) => `${violation.id}: ${violation.help}`)).toEqual([]);
+    }
+  });
+}
