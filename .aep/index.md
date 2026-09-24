@@ -102,7 +102,7 @@ Start at [[protocol]].
 | 3-site-redesign | implemented | [[efforts/3-site-redesign/spec]] | 0 | 1 | 8 |
 | 31-portfolio-rework | implemented | [[efforts/31-portfolio-rework/spec]] | 3 | 0 | 8 |
 | 33-one-page-portfolio | implemented | [[efforts/33-one-page-portfolio/spec]] | 0 | 1 | 6 |
-| 35-the-owners-review | accepted | [[efforts/35-the-owners-review/spec]] | 0 | 0 | 5 |
+| 35-the-owners-review | accepted | [[efforts/35-the-owners-review/spec]] | 0 | 0 | 6 |
 | 5-sections-and-resume | implemented | [[efforts/5-sections-and-resume/spec]] | 0 | 0 | 6 |
 | 7-document-downloads-and-contact-details | implemented | [[efforts/7-document-downloads-and-contact-details/spec]] | 1 | 0 | 6 |
 
@@ -183,6 +183,7 @@ Every task of every effort. The tracker carries the effort, never its tasks.
 | [[efforts/35-the-owners-review/tickets/03-the-whole-stack-on-every-card]] feat(site): every project card shows its whole stack | 35-the-owners-review | resolved | 02 |
 | [[efforts/35-the-owners-review/tickets/04-the-courses-inside-the-timeline]] feat(site): the online courses open inside the education timeline, and the courses grid goes | 35-the-owners-review | resolved | 03 |
 | [[efforts/35-the-owners-review/tickets/05-the-name-once-and-a-footer]] feat(site): the header's name follows the reader past the first screen, and a footer that carries the copyright, the profiles, and the source | 35-the-owners-review | resolved | 04 |
+| [[efforts/35-the-owners-review/tickets/06-the-guides-that-still-say-otherwise]] docs: the repository guides name the skills test, the course list, and the source link | 35-the-owners-review | resolved | 05 |
 | [[efforts/5-sections-and-resume/tickets/01-contract-and-predicate]] feat(content): a completion status on projects, a kind on certificates, a resume marker, and the one predicate every output reads | 5-sections-and-resume | resolved | — |
 | [[efforts/5-sections-and-resume/tickets/02-sections]] feat(site): experience before projects, courses and certifications as their own grids, and the home page's section index | 5-sections-and-resume | resolved | 01 |
 | [[efforts/5-sections-and-resume/tickets/03-documents]] feat(cv): one document component rendering the CV and a one-page resume, each as a page and a PDF | 5-sections-and-resume | resolved | 01 |
