@@ -153,6 +153,18 @@ async function jsonResume() {
       counts.push(`${section} ${found}`);
     }
 
+    // The certificates in time as every list in time reads: newest first,
+    // the undated after them.
+    const dates = (resume.certificates ?? []).map((certificate) => certificate.date);
+    const dated = dates.filter((date) => date !== undefined);
+    const undatedFrom = dates.findIndex((date) => date === undefined);
+    if (dated.some((date, index) => index > 0 && String(date) > String(dated[index - 1]))) {
+      throw new CheckFailure(name, `${locale}: certificates are not newest first: ${dated.join(', ')}`);
+    }
+    if (undatedFrom !== -1 && dates.slice(undatedFrom).some((date) => date !== undefined)) {
+      throw new CheckFailure(name, `${locale}: a dated certificate follows an undated one`);
+    }
+
     for (const project of resume.projects ?? []) {
       if (described.includes(project.name) && 'url' in project) {
         throw new CheckFailure(name, `${locale}: described project "${project.name}" carries a url key`);
@@ -205,7 +217,7 @@ async function jsonResume() {
       throw new CheckFailure(name, `${locale}: meta.canonical is ${JSON.stringify(resume.meta?.canonical)}, expected ${canonical}`);
     }
 
-    lines.push(`${locale}/resume.json: valid, ${counts.join(', ')}`);
+    lines.push(`${locale}/resume.json: valid, ${counts.join(', ')}, certificates newest first`);
   }
   return lines;
 }

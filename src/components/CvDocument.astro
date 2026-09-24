@@ -4,7 +4,7 @@ import { fill, formatDate, formatPeriod, plural, strings, type Locale } from '..
 import { levelLine } from '../lib/languages';
 import { localized } from '../lib/localized';
 import {
-  byDateAscending,
+  byDateDescending,
   byOrderThenName,
   byOrderThenStartDescending,
   byStartAscending,
@@ -90,7 +90,7 @@ const experience = (await getCollection('experience')).sort((a, b) => byStartDes
 const education = (await getCollection('education')).sort((a, b) => byStartAscending(a.data, b.data));
 const skills = (await getCollection('skills')).sort((a, b) => byOrderThenName(a.data, b.data));
 const languages = (await getCollection('languages')).sort((a, b) => byOrderThenName(a.data, b.data));
-const certificates = (await getCollection('certificates')).sort((a, b) => byDateAscending(a.data, b.data));
+const certificates = (await getCollection('certificates')).sort((a, b) => byDateDescending(a.data, b.data));
 const shownProjects = (await getCollection('projects', ({ data }) => isShown(data))).sort((a, b) =>
   byOrderThenStartDescending(a.data, b.data),
 );
