@@ -49,14 +49,11 @@ const node = entries('certificates').some((entry) => isCourse(entry) && entry.da
 // How many periods each route prints, read from the content so that a
 // template dropping its marker fails here rather than shrinking the sweep:
 // each prints one per entry it lists (src/components/CvDocument.astro,
-// src/lib/shown.ts), and the home page lists everything the work and
-// education pages do. The CV's education section carries the timeline's node
+// src/lib/shown.ts). The CV's education section carries the timeline's node
 // as the self-study entry, dated the same way, and the resume's does not
 // (src/lib/timeline.ts).
 const printing = {
   '/': experience + projects.length + education + node,
-  '/work/': experience + projects.length,
-  '/education/': education + node,
   '/cv/': experience + education + node + projects.length,
   '/resume/': experience + education + projects.filter(onResume).length,
 } as const;

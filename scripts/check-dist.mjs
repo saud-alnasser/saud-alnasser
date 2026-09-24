@@ -24,6 +24,7 @@ import { readmeWithProfile } from './readme-profile.mjs';
 import { fill, formatPeriod, localeInfo, plural, strings } from '../src/lib/i18n.ts';
 import { levelLine } from '../src/lib/languages.ts';
 import { gapReport, pick } from '../src/lib/localized.ts';
+import { forwards } from '../src/lib/forwards.ts';
 import { codedProfile } from '../src/lib/networks.ts';
 import { byDateAscending, byOrderThenName, byStartAscending, byStartDescending } from '../src/lib/order.ts';
 import { joinBase } from '../src/lib/paths.ts';
@@ -755,8 +756,9 @@ async function walk(directory, prefix = '') {
   return files;
 }
 
-// The routes one language publishes, as "/", "/work/", and so on: every
-// index.html under dist/<locale>/, without the locale prefix.
+// The routes one language publishes, as "/", "/cv/", and so on: every
+// index.html under dist/<locale>/, without the locale prefix. The forwards
+// are among them; `isForward` tells them apart.
 async function routes(locale) {
   const files = await walk(path.join(context.dist, locale));
   return files
@@ -795,6 +797,14 @@ function metaContent(html, key, value) {
 // sitemap leave it out, on purpose.
 function isNoindex(html) {
   return metaContent(html, 'name', 'robots')?.includes('noindex') ?? false;
+}
+
+// A page that only sends the reader on: an address that was a page before the
+// portfolio became one, recognised by its meta refresh (src/lib/forwards.ts).
+// It is held to the `forwards` check below rather than the checks of a page
+// a reader stays on.
+function isForward(html) {
+  return metaContent(html, 'http-equiv', 'refresh') !== null;
 }
 
 // Every route of one language exists in the other, and each page's <html>
@@ -1010,13 +1020,19 @@ async function sitemap() {
   }
 
   const expected = new Set();
+  const forwarded = new Set();
   for (const locale of context.locales) {
-    for (const route of await routes(locale)) expected.add(`${context.siteRoot}${locale}${route}`);
+    for (const route of await routes(locale)) {
+      const html = await readFile(path.join(context.dist, locale, route, 'index.html'), 'utf8');
+      (isForward(html) ? forwarded : expected).add(`${context.siteRoot}${locale}${route}`);
+    }
   }
+  if (forwarded.size === 0) throw new CheckFailure(name, 'no page under dist/ forwards; were the old addresses dropped?');
   for (const url of expected) {
     if (!listed.has(url)) throw new CheckFailure(name, `${url} is a page but no sitemap under dist/${indexFile} lists it`);
   }
   for (const url of listed) {
+    if (forwarded.has(url)) throw new CheckFailure(name, `a sitemap under dist/${indexFile} lists ${url}, which only forwards`);
     if (!expected.has(url)) throw new CheckFailure(name, `a sitemap under dist/${indexFile} lists ${url}, which is not a page`);
   }
 
@@ -1034,9 +1050,12 @@ async function sitemap() {
     if (!aliased.has(url)) throw new CheckFailure(name, `${url} is a page but dist/${aliasFile} does not list it`);
   }
   for (const url of aliased) {
+    if (forwarded.has(url)) throw new CheckFailure(name, `dist/${aliasFile} lists ${url}, which only forwards`);
     if (!expected.has(url)) throw new CheckFailure(name, `dist/${aliasFile} lists ${url}, which is not a page`);
   }
-  return [`sitemap: ${sitemaps.length} sitemap(s) listing all ${expected.size} pages, and ${aliasFile} lists them all`];
+  return [
+    `sitemap: ${sitemaps.length} sitemap(s) listing all ${expected.size} pages, and ${aliasFile} lists them all; neither lists any of the ${forwarded.size} forwards`,
+  ];
 }
 
 // robots.txt permits indexing: no line disallows the whole site.
@@ -1466,6 +1485,47 @@ async function onePage() {
   return lines;
 }
 
+// Each address in src/lib/forwards.ts, in each language, is a forward and
+// nothing else: a meta refresh to its section of that language's home page
+// under the base path, a canonical link to that home page, `noindex`, and no
+// script or stylesheet, since it has to forward wherever a page can load. And
+// no other page carries a refresh, so a forward is never mistaken for a page
+// or the other way round.
+async function forwardsLand() {
+  const name = 'forwards';
+  const lines = [];
+  const expected = new Map(
+    context.locales.flatMap((locale) => forwards.map(({ route, section }) => [`${locale}${route}`, { locale, section }])),
+  );
+  for (const locale of context.locales) {
+    for (const route of await routes(locale)) {
+      const file = `dist/${locale}${route}index.html`;
+      const html = await readFile(path.join(context.root, file), 'utf8');
+      const forward = expected.get(`${locale}${route}`);
+      if (!forward) {
+        if (isForward(html)) throw new CheckFailure(name, `${file} carries a meta refresh, and src/lib/forwards.ts names no forward there`);
+        continue;
+      }
+      if (!isForward(html)) throw new CheckFailure(name, `${file} is a page; src/lib/forwards.ts says it forwards to #${forward.section}`);
+      const target = `${context.prefix}${locale}/#${forward.section}`;
+      const refresh = metaContent(html, 'http-equiv', 'refresh');
+      if (refresh !== `0;url=${target}`) throw new CheckFailure(name, `${file} refreshes with "${refresh}", expected "0;url=${target}"`);
+      const canonical = [...html.matchAll(/<link\b([^>]*)>/gi)]
+        .map(([tag]) => attributesOf(tag, 'link'))
+        .find((attributes) => attributes?.rel === 'canonical')?.href;
+      const home = `${context.siteRoot}${locale}/`;
+      if (canonical !== home) throw new CheckFailure(name, `${file} names ${canonical ?? 'no canonical address'}, expected ${home}`);
+      if (!isNoindex(html)) throw new CheckFailure(name, `${file} has no <meta name="robots" content="noindex">`);
+      if (/<script\b/i.test(html)) throw new CheckFailure(name, `${file} carries a <script>; a forward works without one`);
+      if (/<link\b[^>]*rel=["']?stylesheet|<style\b/i.test(html)) throw new CheckFailure(name, `${file} carries a stylesheet`);
+      expected.delete(`${locale}${route}`);
+      lines.push(`forwards: ${file} refreshes to ${target}, canonical ${home}, noindex, no script`);
+    }
+  }
+  for (const [route] of expected) throw new CheckFailure(name, `dist/${route}index.html does not exist; src/lib/forwards.ts names a forward there`);
+  return lines;
+}
+
 async function readmeProfile() {
   const name = 'readme profile';
   const { current, next } = await readmeWithProfile();
@@ -1479,7 +1539,7 @@ async function readmeProfile() {
 // alone, and a topic or provider with no witness would otherwise surface
 // first as a reading-order failure over a PDF, named for the line rather
 // than the cause.
-const checks = [jsonResume, selfStudy, documentPdfs, qrCode, resumePages, localeTwins, hrefs, basePaths, oneOrigin, metadata, sitemap, robots, identifiers, noContactDetails, nationalityWhereItBelongs, languagesWhereTheyBelong, gaps, noOverclaim, documentHazards, onePage, readmeProfile];
+const checks = [jsonResume, selfStudy, documentPdfs, qrCode, resumePages, localeTwins, hrefs, basePaths, oneOrigin, metadata, sitemap, robots, identifiers, noContactDetails, nationalityWhereItBelongs, languagesWhereTheyBelong, gaps, noOverclaim, documentHazards, onePage, forwardsLand, readmeProfile];
 
 for (const check of checks) {
   try {

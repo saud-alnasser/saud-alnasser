@@ -82,15 +82,12 @@ const en = {
   titleSeparator: ' - ',
   // Between items of an inline list: technologies, courses, keywords.
   listSeparator: ', ',
-  pages: {
-    work: {
-      title: 'Work',
-      description: 'Projects and work experience of {name}.',
-    },
-    education: {
-      title: 'Education',
-      description: 'Studies and certificates of {name}.',
-    },
+  // The page an old address serves (src/components/Forward.astro): its title
+  // and the one link it shows a browser that does not follow the refresh.
+  // {section} is the heading of the section it sends the reader to.
+  forward: {
+    title: '{section} on the home page',
+    link: 'Go to {section}',
   },
   home: {
     contact: 'Contact',
@@ -117,7 +114,6 @@ const en = {
   sections: {
     projects: 'Projects',
     experience: 'Experience',
-    studies: 'Studies',
     courses: 'Courses',
     certifications: 'Certifications',
     skills: 'Skills',
@@ -269,15 +265,9 @@ const ar: Strings = {
   },
   titleSeparator: ' - ',
   listSeparator: '، ',
-  pages: {
-    work: {
-      title: 'الأعمال',
-      description: 'مشاريع {name} وخبراته العملية.',
-    },
-    education: {
-      title: 'التعليم',
-      description: 'دراسة {name} وشهاداته.',
-    },
+  forward: {
+    title: '{section} في الصفحة الرئيسية',
+    link: 'الانتقال إلى {section}',
   },
   home: {
     contact: 'التواصل',
@@ -301,7 +291,6 @@ const ar: Strings = {
   sections: {
     projects: 'المشاريع',
     experience: 'الخبرة العملية',
-    studies: 'الدراسة',
     courses: 'الدورات',
     certifications: 'الشهادات',
     skills: 'المهارات',

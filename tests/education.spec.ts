@@ -13,9 +13,7 @@ import { educationTimeline } from '../src/lib/timeline';
 
 // The education section: the timeline of institutions with one node for the
 // online-courses phase, then the courses and the certifications, each under
-// its own heading below it. It is on the home page, and on the education page
-// for as long as that is a page of its own, so every case runs on both, each
-// with the timeline where that page holds it.
+// its own heading below it, all on the home page.
 //
 // What the page shows is read from src/content/ here, the way
 // scripts/check-dist.mjs reads it, so an expectation is the content rather
@@ -87,14 +85,11 @@ const period = { start: String(dated[0].date), end: String(dated[dated.length - 
 
 const node = '[data-courses-node]';
 
-const where = [
-  { route: '/', timeline: 'section[aria-labelledby="education"] > ol > li' },
-  { route: '/education/', timeline: 'section[aria-labelledby="studies"] ol > li' },
-] as const;
+const timeline = 'section[aria-labelledby="education"] > ol > li';
 
-for (const locale of locales) for (const { route, timeline } of where) {
+for (const locale of locales) {
   const t = strings[locale];
-  const url = at(`/${locale}${route}`);
+  const url = at(`/${locale}/`);
 
   test.describe(url, () => {
     test('shows the university as a card with its courses folded', async ({ page }) => {

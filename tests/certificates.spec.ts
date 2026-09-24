@@ -40,10 +40,6 @@ const certificates = readdirSync(path.join(content, 'certificates'))
 
 const documented = certificates.filter((entry) => entry.document);
 
-// Both grids are on the home page, and on the education page for as long as
-// that is a page of its own, so every case runs on both.
-const routes = ['/', '/education/'] as const;
-
 // One row per grid, with the entries it holds in the
 // order the site puts them in: by date newest first, the undated last. A kind with no
 // entries renders no grid and no heading, so the per-grid cases below run
@@ -79,8 +75,8 @@ const columnsOf = (page: Page, grid: string) =>
 // keeps a click steady if a test asks for motion back.
 const settled = (page: Page) => page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished)));
 
-for (const locale of locales) for (const route of routes) {
-  const url = at(`/${locale}${route}`);
+for (const locale of locales) {
+  const url = at(`/${locale}/`);
 
   test.describe(url, () => {
     test('renders no grid and no heading for a kind with no entries', async ({ page }) => {
@@ -304,19 +300,17 @@ for (const locale of locales) for (const route of routes) {
 test.describe('at 1440 pixels wide', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
-  for (const route of routes) {
-    test(`the Arabic course grid on ${route} fills from the right and the English from the left`, async ({ page }) => {
-      const firstTwo = async (path: string) => {
-        await page.goto(path);
-        const card = page.locator(`[data-grid="courses"] ${cards}`);
-        return { first: (await card.nth(0).boundingBox())!, second: (await card.nth(1).boundingBox())! };
-      };
+  test('the Arabic course grid fills from the right and the English from the left', async ({ page }) => {
+    const firstTwo = async (path: string) => {
+      await page.goto(path);
+      const card = page.locator(`[data-grid="courses"] ${cards}`);
+      return { first: (await card.nth(0).boundingBox())!, second: (await card.nth(1).boundingBox())! };
+    };
 
-      const arabic = await firstTwo(at(`/ar${route}`));
-      expect(arabic.first.x, 'the first Arabic certificate sits right of the second').toBeGreaterThan(arabic.second.x);
+    const arabic = await firstTwo(at('/ar/'));
+    expect(arabic.first.x, 'the first Arabic certificate sits right of the second').toBeGreaterThan(arabic.second.x);
 
-      const english = await firstTwo(at(`/en${route}`));
-      expect(english.first.x, 'the first English certificate sits left of the second').toBeLessThan(english.second.x);
-    });
-  }
+    const english = await firstTwo(at('/en/'));
+    expect(english.first.x, 'the first English certificate sits left of the second').toBeLessThan(english.second.x);
+  });
 });

@@ -14,8 +14,8 @@ interface Props {
   title: string;
   description: string;
   // The route without its locale prefix, with the trailing slash: "/",
-  // "/work/", "/cv/". The layout builds the canonical address, the language
-  // menu, and the alternates from it.
+  // "/cv/", "/resume/". The layout builds the canonical address, the
+  // language menu, and the alternates from it.
   path: string;
   // The width of the page: `grid` for a page laying cards in columns, 64rem;
   // `document` for the CV, which reads as one column of text, 48rem. The
@@ -98,7 +98,7 @@ const nav = [
       control once the document is parsed, closes the language menu on Escape
       and on a click outside it, rises the headings and cards below the first
       screen into place as they scroll in and counts the home page's numbers
-      up as they first show, runs the work page's technology filter, opens a
+      up as they first show, runs the projects' technology filter, opens a
       certificate card in the page's dialog, and turns a document page's
       download control into the form that fills the contact line and prints,
       which it does only where the page's address carries the marker. The

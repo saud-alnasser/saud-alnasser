@@ -342,21 +342,19 @@ for (const locale of locales) {
       }
     });
 
-    // Every section heading on the pages that list entries, the subsections
-    // of Education among them, carries its icon, hidden where the text names
-    // the thing; the tiles' icons are asserted above.
+    // Every section heading, the subsections of Education among them, carries
+    // its icon, hidden where the text names the thing; the tiles' icons are
+    // asserted above.
     test('puts an icon on every section heading', async ({ page }) => {
-      for (const route of ['/', '/work/', '/education/']) {
-        await page.goto(at(`/${locale}${route}`));
-        const headings = await page.locator('main :is(h2:not(.sr-only), h3#courses, h3#certificates)').evaluateAll((nodes) =>
-          nodes.map((node) => ({
-            text: node.textContent?.trim(),
-            icon: node.querySelector('svg[data-icon]')?.getAttribute('aria-hidden') ?? null,
-          })),
-        );
-        expect(headings.length, `headings on ${route}`).toBeGreaterThan(0);
-        for (const heading of headings) expect(heading.icon, `the icon on "${heading.text}" on ${route}`).toBe('true');
-      }
+      await page.goto(at(`/${locale}/`));
+      const headings = await page.locator('main :is(h2:not(.sr-only), h3#courses, h3#certificates)').evaluateAll((nodes) =>
+        nodes.map((node) => ({
+          text: node.textContent?.trim(),
+          icon: node.querySelector('svg[data-icon]')?.getAttribute('aria-hidden') ?? null,
+        })),
+      );
+      expect(headings.length, `headings on /${locale}/`).toBeGreaterThan(0);
+      for (const heading of headings) expect(heading.icon, `the icon on "${heading.text}" on /${locale}/`).toBe('true');
     });
   });
 

@@ -1,0 +1,40 @@
+---
+// A page that is no longer one: the whole document an old address serves,
+// sending the reader to its section of the home page in the same language
+// (src/lib/forwards.ts). It does not use the layout. It holds a meta refresh,
+// a canonical link to that language's home page so a search engine files the
+// address under it, `noindex` so none lists the forward itself, and one
+// link for a browser that ignores the refresh. No script and no stylesheet,
+// so it forwards wherever a page can load.
+
+import { fill, localeInfo, strings, type Locale } from '../lib/i18n';
+import type { Forwarded } from '../lib/forwards';
+import { absolute, withBase } from '../lib/paths';
+
+interface Props {
+  locale: Locale;
+  section: Forwarded;
+}
+
+const { locale, section } = Astro.props;
+const t = strings[locale];
+
+const target = `${withBase(`/${locale}/`)}#${section}`;
+const canonical = absolute(`/${locale}/`, Astro.site!);
+const name = { experience: t.sections.experience, education: t.nav.education }[section];
+---
+
+<!doctype html>
+<html lang={locale} dir={localeInfo(locale).dir}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fill(t.forward.title, { section: name })}</title>
+    <meta http-equiv="refresh" content={`0;url=${target}`} />
+    <link rel="canonical" href={canonical} />
+    <meta name="robots" content="noindex" />
+  </head>
+  <body>
+    <a href={target}>{fill(t.forward.link, { section: name })}</a>
+  </body>
+</html>

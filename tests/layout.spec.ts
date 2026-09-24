@@ -169,7 +169,7 @@ for (const { path, route } of pageList) {
     await page.goto(path);
     const current = page.locator('body > header nav a[aria-current="page"]');
     await expect(current).toHaveCount(1);
-    const expected = { '/': 0, '/work/': 1, '/education/': 2, '/cv/': 3, '/resume/': 4 }[route];
+    const expected = { '/': 0, '/cv/': 3, '/resume/': 4 }[route];
     expect(await page.locator('body > header nav a').nth(expected).getAttribute('aria-current')).toBe('page');
     const bar = await current.evaluate((link) => {
       const style = getComputedStyle(link, '::after');

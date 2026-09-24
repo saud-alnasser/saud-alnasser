@@ -375,7 +375,7 @@ test.describe('the curves with motion allowed', () => {
 
 // The crossfade itself, read while it runs. Its pseudo-elements exist only
 // during a navigation, so the sweeps above never meet them: this follows a
-// link from the home page to the work page and, as the new page is revealed,
+// link from the home page to the CV and, as the new page is revealed,
 // reads every animation the transition runs, the header's group among them.
 test.describe('the page crossfade with motion allowed', () => {
   test.use({ reducedMotion: 'no-preference' });
@@ -400,8 +400,8 @@ test.describe('the page crossfade with motion allowed', () => {
       });
     });
     await page.goto(at('/en/'));
-    await page.locator('body > header nav a').nth(1).click();
-    await page.waitForURL(`**${at('/en/work/')}`);
+    await page.locator(`body > header nav a[href="${at('/en/cv/')}"]`).click();
+    await page.waitForURL(`**${at('/en/cv/')}`);
     const crossfade = await page.waitForFunction(() => (window as unknown as { crossfade?: string[] }).crossfade);
     const parts = (await crossfade.jsonValue()) as string[];
     expect(parts.some((part) => part.includes('(site-header)')), 'the header takes part').toBe(true);
