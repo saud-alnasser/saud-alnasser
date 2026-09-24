@@ -8,10 +8,19 @@ role:
 summary:
   en: "An npm package: a cache that persists to the file system between runs. Archived."
   ar: "حزمة npm: ذاكرة تخزين مؤقت تُحفظ في نظام الملفات بين تشغيلات البرنامج. مؤرشفة."
+# The manifest also depends on zod, and tests with vitest (read on 2026-09-24).
+# The manifest also depends on zod, and tests with vitest (read on 2026-09-24).
+# The manifest also depends on zod, and tests with vitest (read on 2026-09-24).
 technologies:
   - "TypeScript"
   - "Node.js"
   - "npm"
+  - "Zod"
+  - "Vitest"
+  - "Zod"
+  - "Vitest"
+  - "Zod"
+  - "Vitest"
 links:
   repository: https://github.com/saud-alnasser/cachescribe
 visibility: public
