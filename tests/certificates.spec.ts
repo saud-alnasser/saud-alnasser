@@ -7,7 +7,7 @@ import { parse as parseYaml } from 'yaml';
 import { lowContrastPairs } from './contrast';
 import { at, locales } from './pages';
 import { formatDate, strings } from '../src/lib/i18n';
-import { byDateAscending } from '../src/lib/order';
+import { byDateDescending } from '../src/lib/order';
 import { isCertification, isCourse } from '../src/lib/shown';
 
 // The two certificate grids and the one dialog their cards open: the card is
@@ -41,16 +41,16 @@ const certificates = readdirSync(path.join(content, 'certificates'))
 const documented = certificates.filter((entry) => entry.document);
 
 // One row per grid on the education page, with the entries it holds in the
-// order the site puts them in: by date, the undated last. A kind with no
+// order the site puts them in: by date newest first, the undated last. A kind with no
 // entries renders no grid and no heading, so the per-grid cases below run
 // over the grids the page renders, and one case asserts the absence of the
 // rest.
 const grids = [
-  { grid: 'courses', heading: 'h2#courses', entries: certificates.filter(isCourse).sort(byDateAscending) },
+  { grid: 'courses', heading: 'h2#courses', entries: certificates.filter(isCourse).sort(byDateDescending) },
   {
     grid: 'certifications',
     heading: 'h2#certificates',
-    entries: certificates.filter(isCertification).sort(byDateAscending),
+    entries: certificates.filter(isCertification).sort(byDateDescending),
   },
 ];
 const rendered = grids.filter(({ entries }) => entries.length > 0);
@@ -112,12 +112,12 @@ for (const locale of locales) {
           expect(card.kind, `card ${index} of the ${grid} grid on ${url}`).toBe(kind);
         }
 
-        // In date order, with the undated last: the dates the cards carry, in
+        // Newest first, with the undated last: the dates the cards carry, in
         // the order they are laid out, are the dates the content sorts into.
         const dateOf = (name: string) => entries.find((entry) => (entry.name[locale] ?? entry.name.en) === name)?.date;
         expect(
           found.map((card) => dateOf(card.name)),
-          `the ${grid} cards on ${url} in date order, the undated last`,
+          `the ${grid} cards on ${url} newest first, the undated last`,
         ).toEqual(entries.map((entry) => entry.date));
 
         // What a card says: its name, its issuer, and its date where the

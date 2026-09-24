@@ -100,14 +100,15 @@ const shownProjects = (await getCollection('projects', ({ data }) => isShown(dat
 // resume can never name a project the content source dropped.
 const projects = resume ? shownProjects.filter((entry) => onResume(entry.data)) : shownProjects;
 
-// The education section's items. The CV lays the record out in time through
-// the same function the education page uses (src/lib/timeline.ts), so the
-// online-courses phase sits before the university on paper exactly where the
-// timeline puts its node; the resume prints the institutions alone, as it
-// did. The node's count and years are read from the course entries.
+// The education section's items, newest first. The CV lays the record out in
+// time through the same function the education page uses
+// (src/lib/timeline.ts), so the online-courses phase sits after the
+// university on paper exactly where the timeline puts its node; the resume
+// prints the institutions alone, newest first by their start. The node's
+// count and years are read from the course entries.
 const courses = certificates.filter((entry) => isCourse(entry.data)).map((entry) => entry.data);
 const timeline: TimelineItem<(typeof education)[number]>[] = resume
-  ? education.map((entry) => ({ kind: 'education', entry }))
+  ? [...education].sort((a, b) => byStartDescending(a.data, b.data)).map((entry) => ({ kind: 'education', entry }))
   : educationTimeline(education, courses);
 
 // What the self-study entry says: the count of courses in the noun's form

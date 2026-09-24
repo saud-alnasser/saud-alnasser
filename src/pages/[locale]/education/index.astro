@@ -8,7 +8,7 @@ import Education from '../../../components/Education.astro';
 import Icon from '../../../components/Icon.astro';
 import { fill, formatPeriod, locales, plural, strings, type Locale } from '../../../lib/i18n';
 import { localized } from '../../../lib/localized';
-import { byDateAscending, byStartAscending } from '../../../lib/order';
+import { byDateDescending, byStartAscending } from '../../../lib/order';
 import { isCertification, isCourse } from '../../../lib/shown';
 import { educationTimeline } from '../../../lib/timeline';
 
@@ -26,17 +26,17 @@ const education = (await getCollection('education')).sort((a, b) => byStartAscen
 
 // The certificates collection is two sections of this page, told apart by the
 // one field its entries carry (src/lib/shown.ts): a course completion and a
-// credential that is not one. Both are sorted the same way, by date with the
-// undated last, so reclassifying an entry moves its card between the grids
-// and changes nothing else.
-const certificates = (await getCollection('certificates')).sort((a, b) => byDateAscending(a.data, b.data));
+// credential that is not one. Both are sorted the same way, by date newest
+// first with the undated last, so reclassifying an entry moves its card
+// between the grids and changes nothing else.
+const certificates = (await getCollection('certificates')).sort((a, b) => byDateDescending(a.data, b.data));
 const courses = certificates.filter(({ data }) => isCourse(data));
 const certifications = certificates.filter(({ data }) => isCertification(data));
 
-// The timeline is the institutions in order of time, by their start, with one
-// node for the online-courses phase immediately before the most recent
+// The timeline is the institutions newest first, by their start, with one
+// node for the online-courses phase immediately after the most recent
 // institution, decided once in src/lib/timeline.ts for this page, the CV,
-// and the checks: the page reads high school, online courses, university,
+// and the checks: the page reads university, online courses, high school,
 // whatever dates the certificates carry. src/content/README.md,
 // "education/", says the same for whoever edits the content.
 //

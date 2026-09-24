@@ -126,14 +126,14 @@ One file per job or placement.
 
 ## `education/`
 
-One file per institution attended. The education page is one timeline in
-order of time: the institutions by `period.start`, with one node for the
-online-courses phase placed just before the most recent institution, so high
-school comes first, the online courses next, and university last. That node
-stands for the courses, dated or not: it counts them, runs from the earliest
-dated one to the latest, and leads to the courses grid below the timeline,
-where the certifications sit under their own heading beside it, while any
-exists. The CV's education section is the same timeline: the institutions
+One file per institution attended. The education page is one timeline,
+newest first: the institutions by `period.start`, with one node for the
+online-courses phase placed just after the most recent institution, so
+university comes first, the online courses next, and high school last. That
+node stands for the courses, dated or not: it counts them, runs from the
+earliest dated one to the latest, and leads to the courses grid below the
+timeline, newest first with the undated last, where the certifications sit
+under their own heading beside it, while any exists. The CV's education section is the same timeline: the institutions
 with one self-study entry in the node's place, which is how the CV reads the
 courses (see `self-study.yaml` below), and its Certifications section prints
 only while a certification exists, like the site's section and the home

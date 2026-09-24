@@ -333,18 +333,19 @@ async function documentPdfs() {
   const education = (await visibleEntries('education')).map((entry) => entry.data).sort(byStartAscending);
   const languages = (await visibleEntries('languages')).map((entry) => entry.data).sort(byOrderThenName);
   // The education section is the timeline the CV prints (src/lib/timeline.ts):
-  // the institutions with the online-courses node before the most recent one,
-  // rendered as the self-study entry, whose title with its years is one group
-  // and whose providers line is another, built from the same strings the
-  // component fills; the topics line is not asserted, because it wraps on
-  // paper and the browser case reads it whole instead. The resume prints the
-  // institutions alone, so its expectation holds no node.
+  // the institutions newest first with the online-courses node after the most
+  // recent one, rendered as the self-study entry, whose title with its years
+  // is one group and whose providers line is another, built from the same
+  // strings the component fills; the topics line is not asserted, because it
+  // wraps on paper and the browser case reads it whole instead. The resume
+  // prints the institutions alone, newest first, so its expectation holds no
+  // node.
   const courses = (await visibleEntries('certificates')).map((entry) => entry.data).filter(isCourse).sort(byDateAscending);
   const selfStudy = parseYaml(await readFile(path.join(context.content, 'self-study.yaml'), 'utf8')).selfStudy;
   const providers = new Intl.ListFormat(locale, { type: 'conjunction' }).format(selfStudy.providers);
   const timeline = {
     cv: educationTimeline(education, courses),
-    resume: education.map((entry) => ({ kind: 'education', entry })),
+    resume: [...education].sort(byStartDescending).map((entry) => ({ kind: 'education', entry })),
   };
   const expectedFor = (document) => {
     const expected = [
