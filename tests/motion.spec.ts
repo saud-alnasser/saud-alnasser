@@ -330,3 +330,45 @@ test.describe('the reveal with JavaScript disabled', () => {
     });
   }
 });
+
+// The curves: every transition and animation that runs for any time moves on
+// one of the two the stylesheet names, Material 3's standard curve for a
+// change of state and its emphasized deceleration for an arrival. Read from
+// each element's computed style, pseudo-elements included, as the durations
+// are above; one list entry per transitioned or animated property.
+test.describe('the curves with motion allowed', () => {
+  test.use({ reducedMotion: 'no-preference' });
+
+  for (const path of pages) {
+    test(`every easing on ${path} is one of the two curves`, async ({ page }) => {
+      await page.goto(path);
+      const found = await page.evaluate(() => {
+        const allowed = ['cubic-bezier(0.2, 0, 0, 1)', 'cubic-bezier(0.05, 0.7, 0.1, 1)'];
+        const split = (value: string) => value.split(/,(?![^(]*\))/).map((part) => part.trim());
+        const seconds = (value: string) => (value.endsWith('ms') ? Number.parseFloat(value) : Number.parseFloat(value) * 1000);
+        const wrong: string[] = [];
+        let read = 0;
+        for (const element of document.querySelectorAll('*')) {
+          const sources: [string, CSSStyleDeclaration][] = [['', getComputedStyle(element)]];
+          if (element.localName === 'details') sources.push(['::details-content', getComputedStyle(element, '::details-content')]);
+          if (element.localName === 'dialog') sources.push(['::backdrop', getComputedStyle(element, '::backdrop')]);
+          for (const [pseudo, style] of sources) {
+            const pairs: [string[], string[]][] = [[split(style.transitionDuration), split(style.transitionTimingFunction)]];
+            if (style.animationName !== 'none') pairs.push([split(style.animationDuration), split(style.animationTimingFunction)]);
+            for (const [durations, easings] of pairs) {
+              durations.forEach((duration, index) => {
+                if (seconds(duration) === 0) return;
+                const easing = easings[index % easings.length]!;
+                read += 1;
+                if (!allowed.includes(easing)) wrong.push(`${easing} on ${element.localName}${pseudo}`);
+              });
+            }
+          }
+        }
+        return { read, wrong: [...new Set(wrong)] };
+      });
+      expect(found.read, `something moves on ${path}`).toBeGreaterThan(0);
+      expect(found.wrong, `curves on ${path}`).toEqual([]);
+    });
+  }
+});

@@ -133,6 +133,12 @@
 }
 
 @theme inline {
+  /* The curve and length every transition utility takes when it names
+     neither, so a bare motion-safe:transition-colors moves on the site's own
+     standard curve rather than Tailwind's. */
+  --default-transition-timing-function: var(--ease-standard);
+  --default-transition-duration: var(--duration-short);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
@@ -263,7 +269,7 @@
     opacity: 0;
     transition:
       opacity var(--duration-medium) var(--ease-standard),
-      content-visibility var(--duration-medium) allow-discrete;
+      content-visibility var(--duration-medium) var(--ease-standard) allow-discrete;
   }
   details[open]::details-content {
     opacity: 1;
@@ -293,8 +299,8 @@
     transition:
       opacity var(--duration-medium) var(--ease-standard),
       scale var(--duration-medium) var(--ease-standard),
-      overlay var(--duration-medium) allow-discrete,
-      display var(--duration-medium) allow-discrete;
+      overlay var(--duration-medium) var(--ease-standard) allow-discrete,
+      display var(--duration-medium) var(--ease-standard) allow-discrete;
   }
   dialog:not([open]) {
     opacity: 0;
