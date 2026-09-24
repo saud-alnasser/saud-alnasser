@@ -105,16 +105,19 @@ const link =
     <!--
       The only script on the site. It applies a stored theme before first
       paint, so the page never flashes the other palette, wires the theme
-      control once the document is parsed, closes the language menu on Escape
-      and on a click outside it, rises the headings and cards below the first
-      screen into place as they scroll in and counts the home page's numbers
-      up as they first show, runs the projects' technology filter, opens a
-      certificate card in the page's dialog, and turns a document page's
-      download control into the form that fills the contact line and prints,
-      which it does only where the page's address carries the marker. The
-      last five all work without it: the menu opens and closes on its own,
-      nothing is ever hidden for the reveal to undo and every number is
-      already its final figure, the filter's row stays hidden and every
+      control once the document is parsed, closes the language menu and the
+      phone menu on Escape and on a click outside them, glides the home page
+      to a section when a header link is pressed and marks the section being
+      read, rises the headings and cards below the first screen into place as
+      they scroll in and counts the home page's numbers up as they first
+      show, runs the projects' technology filter, opens a certificate card in
+      the page's dialog, and turns a document page's download control into
+      the form that fills the contact line and prints, which it does only
+      where the page's address carries the marker. All but the theme work
+      without it: the menus open and close on their own, a section link
+      jumps to its heading and the scroll padding keeps it clear of the
+      header, nothing is ever hidden for the reveal to undo and every number
+      is already its final figure, the filter's row stays hidden and every
       project shows, a certificate card is the link to its PDF that it
       already is, and the download control is the link to the published PDF
       that it already is, which is what every unmarked click gets too.
@@ -135,19 +138,137 @@ const link =
           );
         }
 
-        // Closes the open language menu when the event landed outside it or
-        // was Escape, and puts focus back on its summary in the second case.
+        // Closes an open menu, the language menu or the phone menu, when the
+        // event landed outside it or was Escape, and puts focus back on its
+        // summary in the second case.
         function dismiss(event) {
-          var menu = document.querySelector('[data-language-menu][open]');
-          if (!menu) return;
-          if (event.type === 'keydown') {
-            if (event.key !== 'Escape') return;
-            menu.removeAttribute('open');
-            var summary = menu.querySelector('summary');
-            if (summary) summary.focus();
-          } else if (!menu.contains(event.target)) {
-            menu.removeAttribute('open');
+          var menus = document.querySelectorAll('[data-language-menu][open], [data-site-menu][open]');
+          Array.prototype.forEach.call(menus, function (menu) {
+            if (event.type === 'keydown') {
+              if (event.key !== 'Escape') return;
+              menu.removeAttribute('open');
+              var summary = menu.querySelector('summary');
+              if (summary) summary.focus();
+            } else if (!menu.contains(event.target)) {
+              menu.removeAttribute('open');
+            }
+          });
+        }
+
+        // The home page's sections and the header's links to them. The link
+        // for the section being read carries `aria-current="location"`, in
+        // the header's row and in the phone menu alike: the last section
+        // whose heading has reached the line a jump leaves a heading on, the
+        // first before any has, and the last at the foot of the page. It is
+        // read from the headings' positions once per frame while the page
+        // scrolls, so it is a function of where the page is and nothing else.
+        //
+        // A plain press on a section link whose section is on this page
+        // glides there instead of jumping: 350ms on the entrance curve, to
+        // where the jump would have left the heading, the scroll padding
+        // below the header. Under reduced motion it goes there in one step.
+        // Either way the address then takes the anchor, through pushState so
+        // the browser does not jump again, and focus moves to the heading, so
+        // the next Tab starts from the section. A modified press, and a press
+        // on a document page, whose sections are on another page, are left to
+        // the browser. The phone menu closes on the press.
+        //
+        // Without this the links are the anchors they already are: the jump
+        // lands in the same place, and only the glide and the mark are lost.
+        function sections() {
+          var headings = document.querySelectorAll('[data-section]');
+          var links = document.querySelectorAll('[data-section-link]');
+          var header = document.querySelector('body > header');
+          var glide = null;
+
+          document.addEventListener('click', function (event) {
+            var link = event.target.closest ? event.target.closest('[data-section-link]') : null;
+            if (!link) return;
+            var menu = link.closest('[data-site-menu]');
+            if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+            if (menu) menu.removeAttribute('open');
+            if (!headings.length || link.pathname !== location.pathname) return;
+            var heading = document.getElementById(link.getAttribute('data-section-link'));
+            if (!heading) return;
+            event.preventDefault();
+            go(heading);
+          });
+
+          if (!headings.length) return;
+
+          // The line a jump leaves a heading on: the scroll padding, which is
+          // the header's height and a step more.
+          function line() {
+            return parseFloat(getComputedStyle(root).scrollPaddingTop) || header.getBoundingClientRect().bottom;
           }
+
+          // Where the page stands with a heading on the line. Measured through
+          // the heading's section rather than the heading itself, which may be
+          // mid-reveal and moved by it.
+          function stop(heading) {
+            var box = (heading.closest('section') || heading).getBoundingClientRect();
+            var end = document.documentElement.scrollHeight - window.innerHeight;
+            return Math.max(0, Math.min(end, window.scrollY + box.top - line()));
+          }
+
+          function arrive(heading) {
+            glide = null;
+            history.pushState(null, '', '#' + heading.id);
+            heading.setAttribute('tabindex', '-1');
+            heading.focus({ preventScroll: true });
+            mark();
+          }
+
+          function go(heading) {
+            var from = window.scrollY;
+            var to = stop(heading);
+            if (!matchMedia('(prefers-reduced-motion: no-preference)').matches || from === to) {
+              window.scrollTo(0, to);
+              arrive(heading);
+              return;
+            }
+            var start = null;
+            var token = {};
+            glide = token;
+            function step(now) {
+              if (glide !== token) return;
+              if (start === null) start = now;
+              var progress = Math.min((now - start) / 350, 1);
+              window.scrollTo(0, from + (to - from) * enter(progress));
+              if (progress < 1) requestAnimationFrame(step);
+              else arrive(heading);
+            }
+            requestAnimationFrame(step);
+          }
+
+          function mark() {
+            var reach = line() + 8;
+            var current = headings[0];
+            var foot = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
+            Array.prototype.forEach.call(headings, function (heading) {
+              if ((heading.closest('section') || heading).getBoundingClientRect().top <= reach) current = heading;
+            });
+            if (foot) current = headings[headings.length - 1];
+            Array.prototype.forEach.call(links, function (link) {
+              if (link.getAttribute('data-section-link') === current.id) link.setAttribute('aria-current', 'location');
+              else link.removeAttribute('aria-current');
+            });
+          }
+
+          var queued = false;
+          window.addEventListener(
+            'scroll',
+            function () {
+              if (queued) return;
+              queued = true;
+              requestAnimationFrame(function () {
+                queued = false;
+                mark();
+              });
+            },
+            { passive: true },
+          );
+          mark();
         }
 
         // Turns a click on a certificate card into the page's dialog: the
@@ -481,6 +602,7 @@ const link =
         document.addEventListener('DOMContentLoaded', function () {
           document.addEventListener('click', dismiss);
           document.addEventListener('keydown', dismiss);
+          sections();
           reveal();
           filter();
           certificates();

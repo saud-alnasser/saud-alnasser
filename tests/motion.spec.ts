@@ -207,6 +207,56 @@ test.describe('with motion allowed', () => {
   });
 });
 
+// A section link glides: the page is between where it was and the section
+// part of the way through, and settled on the section by 400ms. Sampled every
+// frame from the press, in the page, so the samples are the page's own.
+const glide = (page: Page, id: string) =>
+  page.evaluate(
+    (id) =>
+      new Promise<{ start: number; samples: { t: number; y: number }[] }>((resolve) => {
+        const link = document.querySelector<HTMLElement>(`body > header > div > nav a[data-section-link="${id}"]`)!;
+        const samples: { t: number; y: number }[] = [];
+        const start = window.scrollY;
+        const from = performance.now();
+        const step = () => {
+          const t = performance.now() - from;
+          samples.push({ t, y: window.scrollY });
+          if (t < 500) requestAnimationFrame(step);
+          else resolve({ start, samples });
+        };
+        link.click();
+        requestAnimationFrame(step);
+      }),
+    id,
+  );
+
+test.describe('the glide to a section', () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  test('passes between its start and its end, and settles by 400ms', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.goto(at('/en/'));
+    await settled(page);
+    const { start, samples } = await glide(page, 'education');
+    const end = samples.at(-1)!.y;
+    expect(end, 'the page moved').toBeGreaterThan(start);
+    expect(samples.some(({ y }) => y > start && y < end), 'a frame between the start and the end').toBe(true);
+    for (const { t, y } of samples.filter(({ t }) => t >= 400)) expect(y, `scrollY at ${Math.round(t)}ms`).toBe(end);
+    const gap = await page.evaluate(() => document.getElementById('education')!.getBoundingClientRect().top - document.querySelector('body > header')!.getBoundingClientRect().bottom);
+    expect(gap).toBeGreaterThanOrEqual(0);
+    expect(gap).toBeLessThanOrEqual(24);
+  });
+
+  test('is one step under reduced motion', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto(at('/en/'));
+    const { start, samples } = await glide(page, 'education');
+    const end = samples.at(-1)!.y;
+    expect(end).toBeGreaterThan(start);
+    expect(samples[0]!.y, 'the first frame after the press is at the section').toBe(end);
+  });
+});
+
 test.describe('with reduced motion', () => {
   test.use({ reducedMotion: 'reduce' });
 

@@ -268,3 +268,57 @@ test.describe('with JavaScript disabled', () => {
     });
   }
 });
+
+// With the script, the phone menu closes the way the language menu does, and
+// on a link press as well: the panel would otherwise stay over the section it
+// just led to.
+test.describe('the phone menu closing at 360 by 740', () => {
+  test.use({ viewport: { width: 360, height: 740 } });
+
+  for (const locale of locales) {
+    const t = strings[locale];
+    const open = async (page: Page) => {
+      await page.goto(at(`/${locale}/`));
+      const details = page.locator('[data-site-menu]');
+      await details.locator('summary').click();
+      await expect(details).toHaveAttribute('open', '');
+      return details;
+    };
+
+    test(`/${locale}/ closes on a link press`, async ({ page }) => {
+      const details = await open(page);
+      await details.locator('a[data-section-link="education"]').click();
+      await expect(details).not.toHaveAttribute('open');
+      await expect(page).toHaveURL(new RegExp('#education$'));
+    });
+
+    test(`/${locale}/ closes on Escape and returns focus to the button`, async ({ page }) => {
+      const details = await open(page);
+      await page.keyboard.press('Escape');
+      await expect(details).not.toHaveAttribute('open');
+      await expect(details.locator('summary')).toBeFocused();
+      await expect(details.locator('summary')).toHaveAccessibleName(t.nav.menu);
+    });
+
+    test(`/${locale}/ closes on a press outside`, async ({ page }) => {
+      const details = await open(page);
+      await page.mouse.click(180, 700);
+      await expect(details).not.toHaveAttribute('open');
+    });
+
+    test(`/${locale}/ keeps the language menu closing the same way`, async ({ page }) => {
+      await page.goto(at(`/${locale}/`));
+      const language = page.locator(menu);
+      await language.locator('summary').click();
+      await expect(language).toHaveAttribute('open', '');
+      await page.keyboard.press('Escape');
+      await expect(language).not.toHaveAttribute('open');
+      await expect(language.locator('summary')).toBeFocused();
+      // Opening one menu closes the other.
+      await language.locator('summary').click();
+      await page.locator('[data-site-menu] summary').click();
+      await expect(language).not.toHaveAttribute('open');
+      await expect(page.locator('[data-site-menu]')).toHaveAttribute('open', '');
+    });
+  }
+});

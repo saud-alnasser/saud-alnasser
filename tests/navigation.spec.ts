@@ -104,3 +104,99 @@ test('names the five sections in each language, in order', async ({ page }) => {
     await expect(page.locator('body > header > div > nav a[data-section-link]')).toHaveText(sections.map((id) => t.nav[id]));
   }
 });
+
+// With the script: a press glides (here, under the suite's reduced motion,
+// in one step) to the same place the jump lands, marks exactly that
+// section's link current in the header's row and the phone menu alike, puts
+// the anchor in the address, and moves focus to the heading.
+const current = (page: Page) =>
+  page.locator('[data-section-link][aria-current="location"]').evaluateAll((links) =>
+    links.map((link) => `${link.closest('[data-site-menu]') ? 'menu' : 'bar'}:${link.getAttribute('data-section-link')}`),
+  );
+
+for (const { width, height, phone } of sizes) {
+  test.describe(`at ${width} by ${height} with the script`, () => {
+    test.use({ viewport: { width, height } });
+
+    for (const locale of locales) {
+      const home = at(`/${locale}/`);
+
+      for (const id of sections) {
+        for (const from of ['top', 'foot'] as const) {
+          test(`${home} takes #${id} up under the header from the ${from} and marks it`, async ({ page }) => {
+            await page.goto(home);
+            if (from === 'foot') await toFoot(page);
+            const before = await page.evaluate(() => window.scrollY);
+            await (await sectionLink(page, phone, id)).click();
+            await expect(page).toHaveURL(`${home}#${id}`);
+            await expect(page.locator(`#${id}`)).toBeFocused();
+            const gap = await belowHeader(page, id);
+            expect(gap, `#${id} below the header`).toBeGreaterThanOrEqual(0);
+            expect(gap, `#${id} below the header`).toBeLessThanOrEqual(24);
+            expect(await page.evaluate(() => window.scrollY), `the page moved to #${id}`).not.toBe(before);
+            await expect.poll(() => current(page)).toEqual([`bar:${id}`, `menu:${id}`]);
+            if (phone) await expect(page.locator('[data-site-menu]')).not.toHaveAttribute('open');
+          });
+        }
+      }
+
+      test(`${home} marks each section as it is scrolled to by hand, and Skills at the foot`, async ({ page }) => {
+        await page.goto(home);
+        await expect.poll(() => current(page)).toEqual(['bar:about', 'menu:about']);
+        for (const id of sections) {
+          await page.evaluate((id) => {
+            const padding = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop);
+            const top = document.getElementById(id)!.closest('section')!.getBoundingClientRect().top + window.scrollY;
+            window.scrollTo(0, top - padding);
+          }, id);
+          await expect.poll(() => current(page), { message: `scrolled to #${id}` }).toEqual([`bar:${id}`, `menu:${id}`]);
+        }
+        await toFoot(page);
+        await expect.poll(() => current(page)).toEqual(['bar:skills', 'menu:skills']);
+      });
+    }
+  });
+}
+
+test.describe('what the script leaves to the browser', () => {
+  test('a modified press on a section link', async ({ page }) => {
+    await page.goto(at('/en/'));
+    await page.evaluate(() => {
+      document.addEventListener('click', (event) => {
+        (window as unknown as { prevented: boolean }).prevented = event.defaultPrevented;
+        event.preventDefault();
+      });
+    });
+    await page.locator('body > header > div > nav a[data-section-link="skills"]').click({ modifiers: ['Shift'] });
+    expect(await page.evaluate(() => (window as unknown as { prevented: boolean }).prevented)).toBe(false);
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+  });
+
+  test('a press on a section link on a document page', async ({ page }) => {
+    await page.goto(at('/en/cv/'));
+    await page.locator('body > header > div > nav a[data-section-link="projects"]').click();
+    await expect(page).toHaveURL(`${at('/en/')}#projects`);
+    const gap = await belowHeader(page, 'projects');
+    expect(gap).toBeGreaterThanOrEqual(0);
+    expect(gap).toBeLessThanOrEqual(24);
+  });
+});
+
+// Tabbing backward from the foot of the home page: whatever takes focus is
+// scrolled clear of the header, never left under it.
+test('keeps every element focused by Shift+Tab from the foot clear of the header', async ({ page }) => {
+  await page.goto(at('/en/'));
+  await page.locator('footer summary').focus();
+  for (let press = 0; press < 60; press += 1) {
+    await page.keyboard.press('Shift+Tab');
+    const found = await page.evaluate(() => {
+      const element = document.activeElement as HTMLElement | null;
+      if (!element || element === document.body || element.closest('body > header')) return null;
+      const box = element.getBoundingClientRect();
+      const header = document.querySelector('body > header')!.getBoundingClientRect();
+      return { name: `${element.localName} ${(element.textContent ?? '').trim().slice(0, 30)}`, top: box.top, bottom: header.bottom };
+    });
+    if (!found) continue;
+    expect(found.top, `${found.name} below the header`).toBeGreaterThanOrEqual(found.bottom - 1);
+  }
+});
