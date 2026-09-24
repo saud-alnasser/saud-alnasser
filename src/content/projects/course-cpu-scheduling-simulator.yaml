@@ -10,5 +10,5 @@ summary:
   ar: "محاكي لجدولة المعالج بُني لمقرر أنظمة التشغيل (CS351)."
 technologies:
   - "Java"
-visibility: described
+visibility: hidden
 status: completed

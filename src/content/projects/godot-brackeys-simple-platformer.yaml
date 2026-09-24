@@ -13,5 +13,5 @@ technologies:
   - "GDScript"
 links:
   repository: https://github.com/saud-alnasser/godot-brackeys-simple-platformer
-visibility: public
+visibility: hidden
 status: completed

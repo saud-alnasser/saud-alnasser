@@ -65,6 +65,17 @@ test('the credits list exactly the marks whose licence asks for attribution', ()
   assert.ok(expected.length > 0, 'at least one mark asks for attribution today');
 });
 
+// Given the names a page shows, the footer credits only the marks those names
+// draw: each mark that asks for credit, alone, credits itself and nothing
+// else, and no names credit nothing.
+test('given the names a site shows, the credits cover only the marks those names draw', () => {
+  assert.deepEqual(credits([]), []);
+  for (const credit of credits()) {
+    const name = mapped.find(({ mark }) => mark.title === credit.name).name;
+    assert.deepEqual(credits([name]), [credit], `${name} alone credits ${credit.name} and nothing else`);
+  }
+});
+
 // A mark whose guidelines the package records is mapped only once they have
 // been read, and what they allow is written beside the mapping.
 test('every mapped mark with recorded guidelines has had them read', () => {
@@ -74,9 +85,23 @@ test('every mapped mark with recorded guidelines has had them read', () => {
   }
 });
 
-test('a name with no mark, and a name nowhere in the mapping, both draw the name alone', () => {
+test('a name with no mark, and a name nowhere in the mapping, both have no mark', () => {
   assert.equal(technologyMark('Java'), undefined);
   assert.equal(technologyMark('SvelteKit'), undefined);
   assert.equal(technologyMark('Refactoring'), undefined);
   assert.ok(technologyMark('TypeScript'));
+});
+
+// The five mapped on 2026-09-24 for the stack read from Saud's repositories,
+// each with the title its package entry gives it.
+test('tRPC, Zod, Vite, Vitest, and SQLite draw their own marks', () => {
+  for (const [name, title] of [
+    ['tRPC', 'tRPC'],
+    ['Zod', 'Zod'],
+    ['Vite', 'Vite'],
+    ['Vitest', 'Vitest'],
+    ['SQLite', 'SQLite'],
+  ]) {
+    assert.equal(technologyMark(name)?.title, title, `${name} maps to the mark titled ${title}`);
+  }
 });

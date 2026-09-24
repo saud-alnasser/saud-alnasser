@@ -18,6 +18,9 @@ role:
 summary:
   en: "A centralised e-ticketing and fan loyalty platform for Saudi football: match browsing and seat selection, QR-code tickets validated at the stadium, and a points-based loyalty programme, in English and Arabic, developed with Scrum."
   ar: "منصة مركزية للتذاكر الإلكترونية وولاء المشجعين لكرة القدم السعودية: تصفح المباريات واختيار المقاعد، وتذاكر برموز QR يُتحقق منها عند الملعب، وبرنامج ولاء قائم على النقاط، بالعربية والإنجليزية، طُورت وفق منهجية Scrum."
+# The stack as the repository's manifest names it, read on 2026-09-24: it
+# depends on @trpc/server, zod, vite, vitest, and better-sqlite3, and its
+# drizzle.config.ts uses the sqlite dialect for the local database.
 technologies:
   - "Svelte"
   - "SvelteKit"
@@ -25,7 +28,12 @@ technologies:
   - "Tailwind CSS"
   - "Supabase"
   - "PostgreSQL"
+  - "SQLite"
   - "Drizzle ORM"
+  - "tRPC"
+  - "Zod"
+  - "Vite"
+  - "Vitest"
 visibility: described
 status: completed
 order: 2

@@ -174,7 +174,10 @@ test.describe('what the script leaves to the browser', () => {
 });
 
 // Tabbing backward from the foot of the home page: whatever takes focus is
-// scrolled clear of the header, never left under it.
+// scrolled clear of the header, never left under it. The walk ends where
+// focus leaves the page's content for the header, or for the skip link,
+// which shows over the header by design; with fewer cards than presses it
+// gets there before the presses run out.
 test('keeps every element focused by Shift+Tab from the foot clear of the header', async ({ page }) => {
   await page.goto(at('/en/'));
   await page.locator('footer summary').focus();
@@ -182,11 +185,13 @@ test('keeps every element focused by Shift+Tab from the foot clear of the header
     await page.keyboard.press('Shift+Tab');
     const found = await page.evaluate(() => {
       const element = document.activeElement as HTMLElement | null;
-      if (!element || element === document.body || element.closest('body > header')) return null;
+      if (!element || element === document.body) return null;
+      if (element.closest('body > header') || element.matches('a[href="#content"]')) return 'left';
       const box = element.getBoundingClientRect();
       const header = document.querySelector('body > header')!.getBoundingClientRect();
       return { name: `${element.localName} ${(element.textContent ?? '').trim().slice(0, 30)}`, top: box.top, bottom: header.bottom };
     });
+    if (found === 'left') break;
     if (!found) continue;
     expect(found.top, `${found.name} below the header`).toBeGreaterThanOrEqual(found.bottom - 1);
   }
@@ -224,4 +229,143 @@ test('a malformed anchor leaves the page working', async ({ page }) => {
   await page.locator('[data-theme-toggle]').click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', /light|dark/);
   expect(errors).toEqual([]);
+});
+
+// The header's name on the home page, which the first screen's heading
+// already says: hidden while that heading is in view, shown once it has gone
+// under the header, and hidden again when it comes back. Hidden means unseen,
+// unreachable by Tab, and absent from the accessibility tree, which is what
+// `visibility: hidden` gives. Everywhere the script does not take it over,
+// with no script, under reduced motion, and on a document page, it shows.
+const homeName = 'body > header [data-home-name]';
+
+// Whether the name can be seen and reached: its computed visibility and
+// opacity, read as they are; the cases poll it until a fade has settled.
+async function nameState(page: Page) {
+  return page.locator(homeName).evaluate((element) => {
+    const style = getComputedStyle(element);
+    return { visibility: style.visibility, opacity: style.opacity };
+  });
+}
+
+const shown = { visibility: 'visible', opacity: '1' };
+const hidden = { visibility: 'hidden', opacity: '0' };
+
+for (const { width, height } of sizes) {
+  test.describe(`the header's name at ${width} by ${height} with motion allowed`, () => {
+    test.use({ viewport: { width, height }, reducedMotion: 'no-preference' });
+
+    for (const locale of locales) {
+      const home = at(`/${locale}/`);
+
+      test(`${home} hides the name at the top, shows it past the heading, and hides it again on return`, async ({
+        page,
+      }) => {
+        await page.goto(home);
+        await expect.poll(() => nameState(page)).toEqual(hidden);
+
+        // Nothing at the top reaches it by Tab: the first stops pass it by.
+        await page.locator('body').click({ position: { x: 1, y: 1 } });
+        for (let press = 0; press < 3; press += 1) {
+          await page.keyboard.press('Tab');
+          expect(await page.evaluate(() => document.activeElement?.hasAttribute('data-home-name')), 'Tab reaches the hidden name').toBe(
+            false,
+          );
+        }
+
+        await page.locator('h2#experience').evaluate((element) => element.scrollIntoView());
+        await expect.poll(() => nameState(page)).toEqual(shown);
+
+        await page.evaluate(() => window.scrollTo(0, 0));
+        await expect.poll(() => nameState(page)).toEqual(hidden);
+      });
+    }
+
+    test(`${at('/en/cv/')} shows the name at the top`, async ({ page }) => {
+      await page.goto(at('/en/cv/'));
+      await expect.poll(() => nameState(page)).toEqual(shown);
+    });
+  });
+}
+
+test.describe('the header name where the script does not take it over', () => {
+  test.describe('under reduced motion', () => {
+    test.use({ reducedMotion: 'reduce' });
+    test(`${at('/en/')} shows the name at the top`, async ({ page }) => {
+      await page.goto(at('/en/'));
+      expect(await nameState(page)).toEqual(shown);
+    });
+  });
+
+  test.describe('with JavaScript disabled', () => {
+    test.use({ javaScriptEnabled: false, reducedMotion: 'no-preference' });
+    test(`${at('/en/')} shows the name at the top`, async ({ page }) => {
+      await page.goto(at('/en/'));
+      const style = await page.locator(homeName).evaluate((element) => getComputedStyle(element).visibility);
+      expect(style).toBe('visible');
+    });
+  });
+});
+
+test.describe('the header name before the page has finished loading, with motion allowed', () => {
+  test.use({ reducedMotion: 'no-preference' });
+
+  // A slow page paints long before it has parsed, so the name is hidden
+  // from the head, before the body exists, rather than when the script
+  // that follows it runs.
+  test(`${at('/en/')} marks the name to follow before the document is parsed`, async ({ page }) => {
+    await page.addInitScript(() => {
+      document.addEventListener('readystatechange', () => {
+        if (document.readyState === 'interactive') {
+          (window as unknown as { followsAtParse: boolean }).followsAtParse =
+            document.documentElement.hasAttribute('data-name-follows');
+        }
+      });
+    });
+    await page.goto(at('/en/'));
+    expect(await page.evaluate(() => (window as unknown as { followsAtParse: boolean }).followsAtParse)).toBe(true);
+    await expect.poll(() => nameState(page)).toEqual(hidden);
+  });
+
+  test(`${at('/en/cv/')} marks nothing, since it has no first screen to follow`, async ({ page }) => {
+    await page.goto(at('/en/cv/'));
+    await expect(page.locator('html')).not.toHaveAttribute('data-name-follows');
+  });
+
+  // A reader who has tabbed to the name and then scrolls back to the top
+  // keeps it, and keeps focus on it.
+  test(`${at('/en/')} keeps the name while it holds focus`, async ({ page }) => {
+    await page.goto(at('/en/'));
+    await page.locator('h2#experience').evaluate((element) => element.scrollIntoView());
+    await expect.poll(() => nameState(page)).toEqual(shown);
+    await page.locator(homeName).focus();
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.waitForTimeout(400);
+    expect(await nameState(page)).toEqual(shown);
+    await expect(page.locator(homeName)).toBeFocused();
+  });
+});
+
+// Opened at a section below the first screen, the page shows the name from
+// the start, rather than hiding it until the script has read where the
+// heading is, and still hides it once the reader goes up to the heading.
+test.describe('the header name on a page opened at a section, with motion allowed', () => {
+  test.use({ reducedMotion: 'no-preference' });
+
+  test(`${at('/en/')}#projects shows the name from the parse, and follows from there`, async ({ page }) => {
+    await page.addInitScript(() => {
+      document.addEventListener('readystatechange', () => {
+        if (document.readyState === 'interactive') {
+          (window as unknown as { followsAtParse: boolean }).followsAtParse =
+            document.documentElement.hasAttribute('data-name-follows');
+        }
+      });
+    });
+    await page.goto(`${at('/en/')}#projects`);
+    expect(await page.evaluate(() => (window as unknown as { followsAtParse: boolean }).followsAtParse)).toBe(false);
+    await expect.poll(() => nameState(page)).toEqual(shown);
+    await expect(page.locator('html')).toHaveAttribute('data-name-follows', '');
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await expect.poll(() => nameState(page)).toEqual(hidden);
+  });
 });

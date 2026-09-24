@@ -10,8 +10,9 @@ import { formatDate, strings } from '../src/lib/i18n';
 import { byDateDescending } from '../src/lib/order';
 import { isCertification, isCourse } from '../src/lib/shown';
 
-// The two certificate grids and the one dialog their cards open: the card is
-// a link to its PDF, so a visitor with no script gets the document itself,
+// The courses, listed inside the education timeline's online-courses node,
+// the certifications grid, and the one dialog both open: a course or a card
+// is a link to its PDF, so a visitor with no script gets the document itself,
 // and the script turns the click into the dialog showing the preview with the
 // PDF one click away. What the page must not do is load any of the
 // previews with itself, which is what the dialog's empty <img> and the
@@ -20,8 +21,8 @@ import { isCertification, isCourse } from '../src/lib/shown';
 // Which entries are courses and which are certifications, how many of each,
 // and how many name a document is read from src/content/ the way
 // tests/education.spec.ts reads it, so the numbers are the content rather
-// than numbers typed twice, and reclassifying an entry moves its card between
-// the grids here as well as on the page.
+// than numbers typed twice, and reclassifying an entry moves it between the
+// list and the grid here as well as on the page.
 
 const content = fileURLToPath(new URL('../src/content/', import.meta.url));
 
@@ -40,15 +41,24 @@ const certificates = readdirSync(path.join(content, 'certificates'))
 
 const documented = certificates.filter((entry) => entry.document);
 
-// One row per grid, with the entries it holds in the
-// order the site puts them in: by date newest first, the undated last. A kind with no
-// entries renders no grid and no heading, so the per-grid cases below run
-// over the grids the page renders, and one case asserts the absence of the
-// rest.
+// One row per place a kind is shown, with the entries it holds in the order
+// the site puts them in: by date newest first, the undated last. `list` is
+// the element whose children are the entries, the courses node's list or the
+// certifications grid, and `heading` the id an inbound link lands on. A kind
+// with no entries renders no list and no anchor, so the per-kind cases below
+// run over what the page renders, and one case asserts the absence of the
+// rest. Only the certifications are a grid of cards: the courses are rows of
+// a list inside a disclosure, which a case opens before it clicks one.
 const grids = [
-  { grid: 'courses', heading: '#courses', entries: certificates.filter(isCourse).sort(byDateDescending) },
+  {
+    grid: 'courses',
+    list: '[data-course-list]',
+    heading: '#courses',
+    entries: certificates.filter(isCourse).sort(byDateDescending),
+  },
   {
     grid: 'certifications',
+    list: '[data-grid="certifications"]',
     heading: '#certificates',
     entries: certificates.filter(isCertification).sort(byDateDescending),
   },
@@ -56,8 +66,9 @@ const grids = [
 const rendered = grids.filter(({ entries }) => entries.length > 0);
 const absent = grids.filter(({ entries }) => entries.length === 0);
 
-// Both grids' cards, whichever kind they are: the dialog serves them alike.
+// Every course and every certification card: the dialog serves them alike.
 const cards = ':is([data-entry="course"], [data-entry="certification"])';
+const node = '[data-courses-node]';
 const dialog = '[data-certificate-dialog]';
 const image = '[data-certificate-image]';
 const link = '[data-certificate-link]';
@@ -75,14 +86,22 @@ const columnsOf = (page: Page, grid: string) =>
 // keeps a click steady if a test asks for motion back.
 const settled = (page: Page) => page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished)));
 
+// Opens the courses node, where the courses are, so a course can be clicked.
+const openCourses = async (page: Page) => {
+  const details = page.locator(node);
+  if ((await details.getAttribute('open')) === null) await details.locator('summary').click();
+  await expect(details).toHaveAttribute('open', '');
+  await settled(page);
+};
+
 for (const locale of locales) {
   const url = at(`/${locale}/`);
 
   test.describe(url, () => {
     test('renders no grid and no heading for a kind with no entries', async ({ page }) => {
       await page.goto(url);
-      for (const { grid, heading } of absent) {
-        await expect(page.locator(`[data-grid="${grid}"]`), `the ${grid} grid on ${url}`).toHaveCount(0);
+      for (const { grid, list, heading } of absent) {
+        await expect(page.locator(list), `the ${grid} list on ${url}`).toHaveCount(0);
         await expect(page.locator(heading), `the ${grid} heading on ${url}`).toHaveCount(0);
       }
       for (const { grid, heading } of rendered) {
@@ -90,15 +109,15 @@ for (const locale of locales) {
       }
     });
 
-    for (const { grid, entries } of rendered) {
-      test(`shows every ${grid} entry as a card, with its issuer and its date`, async ({ page }) => {
+    for (const { grid, list, entries } of rendered) {
+      test(`shows every ${grid} entry, with its issuer and its date`, async ({ page }) => {
         await page.goto(url);
-        await expect(page.locator(`[data-grid="${grid}"] > li`)).toHaveCount(entries.length);
+        await expect(page.locator(`${list} > li`)).toHaveCount(entries.length);
 
-        const found = await page.locator(`[data-grid="${grid}"] [data-entry]`).evaluateAll((nodes) =>
+        const found = await page.locator(`${list} [data-entry]`).evaluateAll((nodes) =>
           nodes.map((node) => ({
             kind: node.getAttribute('data-entry'),
-            name: node.querySelector('h3, h4')?.textContent?.trim() ?? '',
+            name: node.querySelector('[data-certificate-name]')?.textContent?.trim() ?? '',
             text: node.textContent?.replace(/\s+/g, ' ').trim() ?? '',
           })),
         );
@@ -174,14 +193,17 @@ for (const locale of locales) {
       expect(previews, `previews requested by ${url}`).toEqual([]);
     });
 
-    // The dialog is one dialog for both grids, so it is opened from each.
-    for (const { grid, entries } of rendered) {
+    // The dialog is one dialog for the courses and the certifications, so it
+    // is opened from each.
+    for (const { grid, list, entries } of rendered) {
       if (!entries.some((entry) => entry.document)) continue;
-      const documentedCards = `[data-grid="${grid}"] ${cards}[data-document]`;
+      const documentedCards = `${list} ${cards}[data-document]`;
+      const reach = (page: Page) => (grid === 'courses' ? openCourses(page) : settled(page));
 
-      test(`opens the dialog on a click in the ${grid} grid, with the preview and the PDF`, async ({ page }) => {
+      test(`opens the dialog on a click in the ${grid}, with the preview and the PDF`, async ({ page }) => {
         await page.goto(url);
         await settled(page);
+        await reach(page);
         const card = page.locator(documentedCards).first();
         const expected = {
           preview: await card.getAttribute('data-preview'),
@@ -212,9 +234,10 @@ for (const locale of locales) {
         await expect(page).toHaveURL(new RegExp(`${url.replace(/\//g, '\\/')}$`));
       });
 
-      test(`closes on Escape and returns focus to the ${grid} card that opened it`, async ({ page }) => {
+      test(`closes on Escape and returns focus to the ${grid} entry that opened it`, async ({ page }) => {
         await page.goto(url);
         await settled(page);
+        await reach(page);
         const openable = page.locator(documentedCards);
         const card = (await openable.count()) > 1 ? openable.nth(1) : openable.first();
         await card.click();
@@ -224,9 +247,10 @@ for (const locale of locales) {
         await expect(card).toBeFocused();
       });
 
-      test(`closes on the close control and returns focus to the ${grid} card`, async ({ page }) => {
+      test(`closes on the close control and returns focus to the ${grid} entry`, async ({ page }) => {
         await page.goto(url);
         await settled(page);
+        await reach(page);
         const card = page.locator(documentedCards).first();
         await card.click();
         await expect(page.locator(`${dialog} ${close}`)).toHaveAccessibleName(strings[locale].certificate.close);
@@ -249,6 +273,8 @@ for (const locale of locales) {
       };
 
       await audit('closed');
+      await openCourses(page);
+      await audit('closed with the courses open');
       await page.locator(`${cards}[data-document]`).first().click();
       await expect(page.locator(dialog)).toHaveAttribute('open', '');
       await audit('open');
@@ -258,23 +284,24 @@ for (const locale of locales) {
   test.describe(`${url} at 360 pixels wide`, () => {
     test.use({ viewport: { width: 360, height: 780 } });
 
-    test('lays both grids in one column and does not scroll sideways', async ({ page }) => {
+    test('lays the certifications in one column and does not scroll sideways with the courses open', async ({ page }) => {
       await page.goto(url);
       await page.evaluate(() => document.fonts.ready);
-      for (const { grid } of rendered) {
+      for (const { grid } of rendered.filter(({ grid }) => grid !== 'courses')) {
         expect(await columnsOf(page, grid), `columns of the ${grid} grid on ${url}`).toBe(1);
       }
+      await openCourses(page);
       const width = await page.evaluate(() => document.documentElement.scrollWidth);
-      expect(width, `scrollWidth of ${url}`).toBeLessThanOrEqual(360);
+      expect(width, `scrollWidth of ${url} with the courses open`).toBeLessThanOrEqual(360);
     });
   });
 
   test.describe(`${url} at 1440 pixels wide`, () => {
     test.use({ viewport: { width: 1440, height: 900 } });
 
-    test('lays both grids in two or more columns', async ({ page }) => {
+    test('lays the certifications in two or more columns', async ({ page }) => {
       await page.goto(url);
-      for (const { grid } of rendered) {
+      for (const { grid } of rendered.filter(({ grid }) => grid !== 'courses')) {
         expect(await columnsOf(page, grid), `columns of the ${grid} grid on ${url}`).toBeGreaterThanOrEqual(2);
       }
     });
@@ -283,8 +310,11 @@ for (const locale of locales) {
   test.describe(`${url} with JavaScript disabled`, () => {
     test.use({ javaScriptEnabled: false, reducedMotion: 'reduce' });
 
-    test('leaves every card the link to its PDF', async ({ page }) => {
+    test('opens the courses node and leaves every course and card the link to its PDF', async ({ page }) => {
       await page.goto(url);
+      await page.locator(`${node} summary`).click();
+      await expect(page.locator(node)).toHaveAttribute('open', '');
+      await expect(page.locator('[data-course-list] > li').first()).toBeVisible();
       const found = await page.locator(`${cards}[data-document]`).evaluateAll((nodes) =>
         nodes.map((node) => ({ tag: node.tagName.toLowerCase(), href: node.getAttribute('href') })),
       );
@@ -300,17 +330,23 @@ for (const locale of locales) {
 test.describe('at 1440 pixels wide', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
-  test('the Arabic course grid fills from the right and the English from the left', async ({ page }) => {
-    const firstTwo = async (path: string) => {
+  test('an Arabic course reads from the right and an English one from the left', async ({ page }) => {
+    // A course's name leads its row and its issuer and date follow, so the
+    // name sits at the start of the reading direction.
+    const firstRow = async (path: string) => {
       await page.goto(path);
-      const card = page.locator(`[data-grid="courses"] ${cards}`);
-      return { first: (await card.nth(0).boundingBox())!, second: (await card.nth(1).boundingBox())! };
+      await openCourses(page);
+      const row = page.locator(`[data-course-list] ${cards}`).first();
+      return {
+        name: (await row.locator('[data-certificate-name]').boundingBox())!,
+        details: (await row.locator('[data-certificate-name] + span').boundingBox())!,
+      };
     };
 
-    const arabic = await firstTwo(at('/ar/'));
-    expect(arabic.first.x, 'the first Arabic certificate sits right of the second').toBeGreaterThan(arabic.second.x);
+    const arabic = await firstRow(at('/ar/'));
+    expect(arabic.name.x, 'the Arabic course name sits right of its details').toBeGreaterThan(arabic.details.x);
 
-    const english = await firstTwo(at('/en/'));
-    expect(english.first.x, 'the first English certificate sits left of the second').toBeLessThan(english.second.x);
+    const english = await firstRow(at('/en/'));
+    expect(english.name.x, 'the English course name sits left of its details').toBeLessThan(english.details.x);
   });
 });

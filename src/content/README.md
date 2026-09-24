@@ -97,7 +97,7 @@ One file per project.
 | `period` | `start`, optional `end` | no | when the work happened |
 | `role` | text | yes | Saud's role, such as "Sole developer" |
 | `summary` | text | yes | what the project is, in a sentence or two |
-| `technologies` | list of text | no | languages, frameworks, and tools used. Each shows on the site as a badge, with its logo where `src/lib/technologies.ts` maps the name exactly as written here, and as the name alone otherwise. A new name is a badge without a logo until it is mapped there, which is also where its licence is checked |
+| `technologies` | list of text | no | languages, frameworks, and tools used. Each shows on the site as a badge, with its logo where `src/lib/technologies.ts` maps the name exactly as written here, and with the site's generic code glyph otherwise. A new name is a badge with that glyph until it is mapped there, which is also where its licence is checked |
 | `links` | `repository`, `live` | no | optional. Either key may be absent; omit `links` entirely for a project with no public link |
 | `visibility` | one of `public`, `described`, `hidden` | no | `public` shows the entry with its links; `described` shows the name and summary without links, for private work; `hidden` keeps the file but shows nothing anywhere |
 | `status` | one of `completed`, `in-progress` | no | whether the work is finished. Only a `completed` project is shown: an `in-progress` one stays in the file and appears in no output, not in the home page's projects, not in its count, not in the CV, the resume, or the JSON Resume document. A project whose state is not known is `in-progress` until it is |
@@ -129,10 +129,11 @@ One file per institution attended. The home page's education section is one
 timeline, newest first: the institutions by `period.start`, with one node for
 the online-courses phase placed just after the most recent institution, so
 university comes first, the online courses next, and high school last. That
-node stands for the courses, dated or not: it counts them, runs from the
-earliest dated one to the latest, and leads to the courses grid below the
-timeline, newest first with the undated last, where the certifications sit
-under their own heading beside it, while any exists. The CV's education section
+node holds the courses, dated or not: it counts them, runs from the
+earliest dated one to the latest, and opens in place to list every one,
+newest first with the undated last, each opening its certificate in the
+page's dialog. The certifications sit under their own heading below the
+timeline, while any exists. The CV's education section
 is the same timeline: the institutions with one self-study entry in the node's
 place, which is how the CV reads the courses (see `self-study.yaml` below), and
 its Certifications section prints only while a certification exists, like the
@@ -215,7 +216,7 @@ for the online-courses phase: "Self-study" with the years at the far edge,
 then the count of courses at the providers, then the topics. The count and
 the years are read from the course entries under `certificates/` at build
 time and are not authored here; a course added or removed moves them with no
-edit to this file. The home page's courses grid and the JSON Resume
+edit to this file. The home page's courses node and the JSON Resume
 documents still carry every course. The resume prints no self-study entry.
 
 | Field | Type | Per language | Meaning |
@@ -238,7 +239,7 @@ One file per skill group.
 | Field | Type | Per language | Meaning |
 | --- | --- | --- | --- |
 | `name` | text | yes | the group, such as "Web development" |
-| `keywords` | list of text | no | the concrete items in the group. **A keyword names something a shown entry backs**: a language, framework, tool, or practice that a completed project, an experience entry, a certification on the CV, or a topic of the CV's self-study entry (`self-study.yaml`) names or plainly used. A word backed only by an entry that is `in-progress` or `hidden`, by a course whose topic the self-study entry does not name and nothing was built with since, or by a bot's configuration is not a skill, and it leaves the list rather than waiting for a screener to check it and find nothing |
+| `keywords` | list of text | no | the concrete items in the group. **A keyword names something a shown entry backs**: a language, framework, tool, or practice that a completed project, an experience entry, a certification on the CV, or a topic of the CV's self-study entry (`self-study.yaml`) names or plainly used. A word backed only by an entry that is `in-progress` or `hidden`, by a course whose topic the self-study entry does not name and nothing was built with since, or by a bot's configuration is not a skill, and it leaves the list rather than waiting for a screener to check it and find nothing. `pnpm test:content` holds every keyword to the rule (`tests/skills.test.mjs`): a shown project names it among its technologies, spelled the same, or it is a self-study topic, or the backing table in that test names the shown entries that plainly used it and how. The table is for what no card names and no course title covers, a practice such as "Lexers and parsers"; a keyword with none of the three fails the run by name |
 | `level` | text | yes | optional. How well, such as "Working knowledge" |
 | `order` | whole number | no | optional. Lower numbers sort first |
 

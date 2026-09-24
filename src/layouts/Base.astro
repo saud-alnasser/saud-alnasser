@@ -1,10 +1,12 @@
 ---
 import '../styles/global.css';
-import { getEntry } from 'astro:content';
-import { localeInfo, otherLocale, strings, type Locale } from '../lib/i18n';
+import { getCollection, getEntry } from 'astro:content';
+import { fill, localeInfo, otherLocale, strings, type Locale } from '../lib/i18n';
 import { localized } from '../lib/localized';
-import { absolute, withBase } from '../lib/paths';
+import { profileIcon } from '../lib/networks';
+import { absolute, repository, withBase } from '../lib/paths';
 import { sections as sectionIds } from '../lib/sections';
+import { isShown } from '../lib/shown';
 import { credits } from '../lib/technologies';
 import Icon from '../components/Icon.astro';
 import LanguageMenu from '../components/LanguageMenu.astro';
@@ -51,7 +53,22 @@ const fonts = [
   ...(locale === 'ar' ? ['NotoNaskhArabic-Regular', 'NotoNaskhArabic-Bold'] : []),
 ];
 
-const logoCredits = credits();
+// The credits the marks on the site ask for: only the marks a shown
+// project's technologies or a skill keyword draw.
+const drawn = [
+  ...(await getCollection('projects', ({ data }) => isShown(data))).flatMap(({ data }) => data.technologies),
+  ...(await getCollection('skills')).flatMap(({ data }) => data.keywords),
+];
+const logoCredits = credits(drawn);
+
+// The footer's line: the copyright in the year the site was built, which is
+// the year of its latest change, since every change rebuilds it; then every
+// profile the content lists, with its network's mark, and the source.
+const copyright = fill(t.footer.copyright, { year: String(new Date().getFullYear()), name: siteName });
+const elsewhere = [
+  ...profile.data.profiles.map((entry) => ({ href: entry.url, icon: profileIcon(entry.network), label: entry.network })),
+  { href: repository, icon: 'code' as const, label: t.footer.sourceCode },
+];
 
 // The header's links, the same on every page: the five sections of the home
 // page, each by the anchor its heading carries, so from a document they lead
@@ -71,7 +88,7 @@ const link =
 ---
 
 <!doctype html>
-<html lang={locale} dir={dir}>
+<html lang={locale} dir={dir} data-home-page={path === '/' ? '' : undefined}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -131,6 +148,17 @@ const link =
           stored = localStorage.getItem('theme');
         } catch (error) {}
         if (stored === 'light' || stored === 'dark') root.setAttribute('data-theme', stored);
+
+        // The home page's header name starts hidden, before anything is
+        // painted, since the page opens at its first screen, where the heading
+        // says the name; `follow` then reads where the heading really is.
+        // Only where it will run: on the home page, with motion allowed, and
+        // not when the address names a section below the first screen, where
+        // the page will open and the name belongs in the header.
+        var below = location.hash.length > 1 && location.hash !== '#about';
+        if (root.hasAttribute('data-home-page') && !below && matchMedia('(prefers-reduced-motion: no-preference)').matches) {
+          root.setAttribute('data-name-follows', '');
+        }
 
         function current() {
           return (
@@ -281,6 +309,57 @@ const link =
             { passive: true },
           );
           mark();
+        }
+
+        // The header's name on the home page, where the first screen's
+        // heading already says it: hidden while that heading shows below the
+        // header, shown once it has gone under it. Read from the two boxes
+        // once per frame while the page scrolls or resizes, as the current
+        // section is, and first in a frame rather than at DOMContentLoaded,
+        // which can run before the stylesheet has laid the header out; a
+        // frame waits for it. `data-name-follows` on the root is what lets the
+        // stylesheet hide the name. The head sets it before the first paint
+        // when the page opens at its first screen, since a slow page paints
+        // long before it has parsed; this sets it after the first reading
+        // otherwise, so a page opened at a section below shows the name from
+        // the start, and takes it off where there is nothing to follow. The
+        // fade comes on a frame after the first reading, through
+        // `data-name-moving`, so nothing fades at load. With no script, under
+        // reduced motion, and on the documents, the name shows.
+        function follow() {
+          var name = document.querySelector('[data-home-name]');
+          var heading = document.querySelector('h1#about');
+          var header = document.querySelector('body > header');
+          var motion = matchMedia('(prefers-reduced-motion: no-preference)').matches;
+          if (!name || !heading || !header || !motion) {
+            root.removeAttribute('data-name-follows');
+            return;
+          }
+
+          function read() {
+            if (heading.getBoundingClientRect().bottom <= header.getBoundingClientRect().bottom) name.setAttribute('data-name-shown', '');
+            else name.removeAttribute('data-name-shown');
+          }
+
+          var queued = false;
+          function queue() {
+            if (queued) return;
+            queued = true;
+            requestAnimationFrame(function () {
+              queued = false;
+              read();
+            });
+          }
+
+          requestAnimationFrame(function () {
+            read();
+            root.setAttribute('data-name-follows', '');
+            window.addEventListener('scroll', queue, { passive: true });
+            window.addEventListener('resize', queue);
+            requestAnimationFrame(function () {
+              root.setAttribute('data-name-moving', '');
+            });
+          });
         }
 
         // Turns a click on a certificate card into the page's dialog: the
@@ -623,6 +702,8 @@ const link =
         document.addEventListener('DOMContentLoaded', function () {
           document.addEventListener('click', dismiss);
           document.addEventListener('keydown', dismiss);
+          // First, since the head hid the name and only this shows it again.
+          follow();
           sections();
           reveal();
           filter();
@@ -658,6 +739,13 @@ const link =
       page; the five sections; the two documents, set apart as a group of
       their own with the file icon; and the language and theme controls.
 
+      On the home page the name is the first screen's heading too, so where
+      the script runs and motion is allowed, the header's name waits hidden
+      until that heading has gone under the header, and fades in then. Hidden
+      is `visibility: hidden`, so it takes no focus and nothing reads it.
+      With no script, under reduced motion, and on the documents, it simply
+      shows.
+
       Below `lg` the row cannot hold all of it in either language, so the
       sections and the documents fold into the phone menu, a native
       disclosure at the end of the row that needs no script to open, close,
@@ -670,7 +758,11 @@ const link =
     -->
     <header class="sticky top-0 z-20 border-b border-border bg-background">
       <div class="mx-auto flex h-(--header-height) w-full max-w-5xl items-center gap-x-4 px-6">
-        <a href={home} class="inline-flex min-h-6 items-center py-1 text-base font-semibold tracking-tight whitespace-nowrap hover:text-primary">
+        <a
+          href={home}
+          data-home-name
+          class="inline-flex min-h-6 items-center py-1 text-base font-semibold tracking-tight whitespace-nowrap hover:text-primary"
+        >
           {siteName}
         </a>
         <nav aria-label={t.nav.label} class="ms-auto hidden items-center text-sm lg:flex">
@@ -717,8 +809,10 @@ const link =
     </main>
 
     <!--
-      The foot of every page: the site's name, and the attribution the
-      technology marks' licences ask for, folded behind one native control
+      The foot of every page: the copyright with the site's name, then a
+      list of the profiles and the source, each with its mark, and the
+      attribution the technology marks' licences ask for, for the marks the
+      site draws, folded behind one native control
       so it is there for whoever looks and out of the way of everyone else.
       One line per mark: its name, its licence, and a link to where it is
       from, under the note the licences ask for that each mark was changed.
@@ -726,7 +820,21 @@ const link =
     -->
     <footer class:list={['mx-auto w-full px-6 pb-12 text-sm text-muted-foreground', width]}>
       <div class="flex flex-wrap items-start justify-between gap-x-8 gap-y-3 border-t border-border pt-6">
-        <p>{siteName}</p>
+        <div class="flex flex-wrap items-center gap-x-5 gap-y-2">
+          <p data-copyright>{copyright}</p>
+          <ul aria-label={t.footer.links} class="flex flex-wrap items-center gap-x-4 gap-y-1">
+            {
+              elsewhere.map((entry) => (
+                <li>
+                  <a href={entry.href} class="inline-flex min-h-6 items-center gap-1.5 hover:text-primary motion-safe:transition-colors">
+                    <Icon name={entry.icon} class="size-4" />
+                    {entry.label}
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </div>
         {
           logoCredits.length > 0 && (
             <details data-logo-credits>

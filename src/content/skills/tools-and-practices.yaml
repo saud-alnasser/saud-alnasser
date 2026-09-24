@@ -5,8 +5,10 @@ keywords:
   - "Git"
   - "GitHub Actions"
   - "Docker"
+  - "Vite"
+  - "Vitest"
   - "Unit testing"
   - "Design patterns"
   - "Refactoring"
-  - "Data structures"
+  - "Data structures and algorithms"
 order: 5

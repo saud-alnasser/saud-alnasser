@@ -13,6 +13,12 @@ export function joinBase(base: string, path: string): string {
   return `${prefix}${path.startsWith('/') ? '' : '/'}${path}`;
 }
 
+// The repository the site is built from, which the footer links as its
+// source. GitHub Pages serves a project site under the repository's name, so
+// astro.config.mjs derives `base` from this address rather than writing the
+// name a second time.
+export const repository = 'https://github.com/saud-alnasser/saud-alnasser';
+
 // A path on the site, under the base the build was given.
 export function withBase(path: string): string {
   return joinBase(import.meta.env.BASE_URL, path);

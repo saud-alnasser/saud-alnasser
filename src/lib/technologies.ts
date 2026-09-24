@@ -14,7 +14,8 @@
 //
 // - no licence recorded, or MIT or BSD: mapped;
 // - CC BY or CC BY-SA: mapped, and credited by name, licence, and source in
-//   the footer, which reads `credits()`;
+//   the footer wherever a shown project or a skill keyword draws it, which
+//   the footer asks `credits()` for with those names;
 // - any NC or ND licence: not mapped, so the name stands alone;
 // - absent from the set: not mapped, and a mark is never borrowed from
 //   another product, since a badge drawing it would name the wrong thing;
@@ -24,7 +25,11 @@
 //   whose package entry links guidelines.
 //
 // A name not listed at all, a practice such as "Refactoring" or a technology
-// only a hidden project names, is a badge with no mark.
+// only a hidden project names, has no mark. The badge and the filter chip
+// then draw the site's own code glyph (`code` in src/lib/icons.ts) in its
+// place, the same for every such name, so a row reads as one kind of thing
+// and no badge borrows a mark. The glyph is theirs to draw, not a mark:
+// `technologyMark` still answers undefined for these names.
 
 import {
   siBevy,
@@ -39,11 +44,16 @@ import {
   siPhp,
   siRust,
   siSolid,
+  siSqlite,
   siSupabase,
   siSvelte,
   siTailwindcss,
+  siTrpc,
   siTurso,
   siTypescript,
+  siVite,
+  siVitest,
+  siZod,
 } from 'simple-icons';
 import type { SimpleIcon } from 'simple-icons';
 
@@ -62,11 +72,16 @@ export const marks: Record<string, SimpleIcon | null> = {
   PHP: siPhp,
   Rust: siRust,
   SolidJS: siSolid,
+  SQLite: siSqlite,
   Supabase: siSupabase,
   Svelte: siSvelte,
   'Tailwind CSS': siTailwindcss,
+  tRPC: siTrpc,
   Turso: siTurso,
   TypeScript: siTypescript,
+  Vite: siVite,
+  Vitest: siVitest,
+  Zod: siZod,
   // CC BY-NC-ND 4.0, which a portfolio's use does not clearly fall inside.
   Tauri: null,
   // Guidelines that rule out a one-colour reference: Node.js's forbid
@@ -108,14 +123,18 @@ export function technologyMark(name: string): { path: string; title: string } | 
 // "CC-BY-SA-4.0" is "CC BY-SA 4.0".
 const licenceName = (type: string) => type.replace(/^CC-/, 'CC ').replace(/-(\d)/, ' $1');
 
-// The attribution every mapped mark's licence asks for, one per mark, in the
+// The attribution a mapped mark's licence asks for, one per mark, in the
 // order of the marks' titles: the mark's name, its licence, and where it is
 // from. Marks with no licence recorded, or under MIT or BSD, ask for none.
-export function credits(): { name: string; licence: string; source: string }[] {
+// Given the names the site shows, only the marks those names draw are
+// credited, so the footer never credits a logo that appears nowhere; with
+// none given, every mapped mark is, which is what the licence test reads.
+export function credits(shown?: Iterable<string>): { name: string; licence: string; source: string }[] {
+  const names = shown ? new Set(shown) : undefined;
   const seen = new Set<string>();
   const lines: { name: string; licence: string; source: string }[] = [];
-  for (const mark of Object.values(marks)) {
-    if (!mark || seen.has(mark.slug)) continue;
+  for (const [name, mark] of Object.entries(marks)) {
+    if (!mark || seen.has(mark.slug) || (names && !names.has(name))) continue;
     seen.add(mark.slug);
     const type = mark.license?.type;
     if (type && /^CC-BY(-SA)?-[\d.]+$/.test(type)) lines.push({ name: mark.title, licence: licenceName(type), source: mark.source });

@@ -179,7 +179,7 @@ test.describe('with motion allowed', () => {
     await settled(page);
     const card = '[data-courses-node]';
     const before = await style(card);
-    await page.locator(card).focus();
+    await page.locator(`${card} > summary`).focus();
     await settled(page);
     const focused = await style(card);
     expect(focused.shadow, 'the shadow on focus').not.toBe(before.shadow);

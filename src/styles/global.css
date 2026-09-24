@@ -206,6 +206,23 @@
  * none of it outside a no-preference query.
  */
 @media (prefers-reduced-motion: no-preference) {
+  /* The header's name on the home page, while the first screen's heading
+     below it says the same (src/layouts/Base.astro, `follow`). Hidden only
+     under `data-name-follows`, which the script sets; the fade only under
+     `data-name-moving`, a frame later, so the load itself fades nothing.
+     Visibility steps at the far end of a fade out and the near end of a fade
+     in, so the name is never focusable while it cannot be seen, and a name
+     that holds focus stays, so scrolling back up never takes focus away. */
+  html[data-name-follows] [data-home-name]:not([data-name-shown], :focus) {
+    opacity: 0;
+    visibility: hidden;
+  }
+  html[data-name-moving] [data-home-name] {
+    transition:
+      opacity var(--duration-medium) var(--ease-standard),
+      visibility var(--duration-medium) var(--ease-standard);
+  }
+
   /* The page arriving: each child of `main` enters a step after the one
      before, 60ms apart, and the steps stop at the sixth so the last child is
      settled within 650ms however long the page. The home page's first screen

@@ -5,9 +5,10 @@ import { expect, test, type Page } from '@playwright/test';
 import { parse as parseYaml } from 'yaml';
 import { fill, strings } from '../src/lib/i18n';
 import { profileIcon } from '../src/lib/networks';
+import { repository } from '../src/lib/paths';
 import { sections as sectionIds } from '../src/lib/sections';
 import { isShown } from '../src/lib/shown';
-import { technologyMark } from '../src/lib/technologies';
+import { credits, technologyMark } from '../src/lib/technologies';
 import { at, locales, type Locale } from './pages';
 
 // The home page, which holds the whole portfolio: the first screen with the
@@ -87,8 +88,7 @@ const reading = [
   '[data-grid="projects"]',
   'h2#education',
   '[data-courses-node]',
-  '#courses',
-  '[data-grid="courses"]',
+  '[data-course-list]',
   'h2#skills',
   '[data-skill-grid]',
 ];
@@ -118,6 +118,29 @@ for (const locale of locales) {
       expect(text, `the email address anywhere on /${locale}/`).not.toContain(profile.email);
       await expect(page.locator('a[href^="mailto:"]')).toHaveCount(0);
     });
+
+    // The foot of every page: the copyright in the build's year over the
+    // name, every profile with its network's mark, the source with the code
+    // glyph, and the logo credits the marks' licences ask for.
+    for (const route of ['/', '/cv/', '/resume/']) {
+      test(`closes ${route} with the copyright, the profiles, the source, and the credits`, async ({ page }) => {
+        await page.goto(at(`/${locale}${route}`));
+        const footer = page.locator('body > footer');
+        await expect(footer.locator('[data-copyright]')).toHaveText(`© ${new Date().getFullYear()} ${profile.name[locale]}`);
+        for (const entry of profile.profiles) {
+          const link = footer.locator(`a[href="${entry.url}"]`);
+          await expect(link, `the ${entry.network} link`).toHaveText(entry.network);
+          await expect(link.locator('svg')).toHaveAttribute('data-icon', profileIcon(entry.network));
+        }
+        const source = footer.locator(`a[href="${repository}"]`);
+        await expect(source).toHaveText(strings[locale].footer.sourceCode);
+        await expect(source.locator('svg')).toHaveAttribute('data-icon', 'code');
+        // Only the marks a shown project or a skill keyword draws are
+        // credited (tests/technologies.test.mjs holds the function to it).
+        const drawn = [...shownProjects.flatMap((entry) => entry.technologies), ...skillEntries.flatMap((entry) => entry.keywords)];
+        await expect(footer.locator('[data-logo-credits] li')).toHaveCount(credits(drawn).length);
+      });
+    }
 
     test('offers the contact actions with icons and names', async ({ page }) => {
       await page.goto(at(`/${locale}/`));
@@ -176,17 +199,22 @@ for (const locale of locales) {
       for (const entry of skillEntries) {
         const card = cards.filter({ has: page.getByRole('heading', { name: entry.name[locale], exact: true }) });
         await expect(card, `the card for ${entry.name.en}`).toHaveCount(1);
-        // Every keyword a badge, in the content's order and spelling, with a
-        // mark exactly where src/lib/technologies.ts has one, drawn in the
-        // text colour and hidden from assistive technology.
+        // Every keyword a badge, in the content's order and spelling, with
+        // exactly one drawing: the mark where src/lib/technologies.ts has one,
+        // in the text colour, and the code glyph where it has none, both
+        // hidden from assistive technology.
         const badges = await card.locator('[data-badge]').evaluateAll((nodes) =>
           nodes.map((node) => {
-            const svg = node.querySelector('svg');
-            return { name: node.textContent?.trim(), mark: svg ? `${svg.getAttribute('aria-hidden')} ${svg.getAttribute('fill')}` : null };
+            const svgs = node.querySelectorAll('svg');
+            const svg = svgs[0];
+            return {
+              name: node.textContent?.trim(),
+              mark: svgs.length === 1 ? `${svg.getAttribute('aria-hidden')} ${svg.getAttribute('data-icon') ?? svg.getAttribute('fill')}` : `${svgs.length} svgs`,
+            };
           }),
         );
         expect(badges, `the badges on ${entry.name.en}`).toEqual(
-          entry.keywords.map((name: string) => ({ name, mark: technologyMark(name) ? 'true currentColor' : null })),
+          entry.keywords.map((name: string) => ({ name, mark: technologyMark(name) ? 'true currentColor' : 'true code' })),
         );
         if (entry.level) await expect(card).toContainText(entry.level[locale]);
       }
@@ -209,11 +237,11 @@ for (const locale of locales) {
         const name = (await page.locator(`#${id}`).innerText()).trim();
         await expect(page.getByRole('region', { name, exact: true }), `the ${id} landmark`).toHaveCount(1);
       }
-      // The courses and the certifications are subsections of Education, a
-      // level down, so their cards are a level below that.
-      await expect(page.locator('section[aria-labelledby="education"] h3#courses')).toHaveCount(1);
-      await expect(page.locator('[data-grid="courses"] h3')).toHaveCount(0);
-      expect(await page.locator('[data-grid="courses"] h4').count()).toBeGreaterThan(0);
+      // The courses node is a timeline item of Education, a level down, and
+      // the courses it lists are rows rather than headings.
+      await expect(page.locator('section[aria-labelledby="education"] [data-courses-node]#courses h3')).toHaveCount(1);
+      await expect(page.locator('[data-course-list] :is(h3, h4)')).toHaveCount(0);
+      expect(await page.locator('[data-course-list] > li').count()).toBeGreaterThan(0);
     });
 
     test('keeps every entry id an address can name', async ({ page }) => {
@@ -344,7 +372,7 @@ for (const locale of locales) {
     // asserted above.
     test('puts an icon on every section heading', async ({ page }) => {
       await page.goto(at(`/${locale}/`));
-      const headings = await page.locator('main :is(h2:not(.sr-only), h3#courses, h3#certificates)').evaluateAll((nodes) =>
+      const headings = await page.locator('main :is(h2:not(.sr-only), h3#certificates)').evaluateAll((nodes) =>
         nodes.map((node) => ({
           text: node.textContent?.trim(),
           icon: node.querySelector('svg[data-icon]')?.getAttribute('aria-hidden') ?? null,
