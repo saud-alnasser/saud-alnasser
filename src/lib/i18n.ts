@@ -106,32 +106,11 @@ const en = {
       spoken: '{count} {label}',
     },
     location: 'Location',
-    sections: 'On this site',
-    // One line per section card, saying what that section holds. The card
-    // for a section that lives on another page leads to its heading there;
-    // the skills card leads to the skills higher up this page, which is why
-    // its line says where it is going.
-    experience: 'Employment and practical training.',
-    projects: 'Finished projects and what they are built with.',
-    education: 'Schools and university, in order of time.',
-    courses: 'Online courses completed, each with its certificate.',
-    certifications: 'Credentials that are not course completions.',
-    skills: 'What I work with, higher up this page.',
-    cv: 'The whole record: experience, education and self-study, skills, languages, projects, and any certification held.',
-    resume: 'The short one to send with an application: the summary, the work, and selected projects.',
-    // What a section card says it holds: "19 projects", "26 courses". The
-    // count comes from the collection the section renders, never from this
-    // file. {count} is the number and {noun} the form of the section's noun
-    // that goes with it, from `nouns`.
+    // The noun the filter's announcement counts the projects in, in the
+    // form the number takes.
     counts: {
-      line: '{count} {noun}',
       nouns: {
         projects: { one: 'project', other: 'projects' } as PluralForms,
-        experience: { one: 'position', other: 'positions' } as PluralForms,
-        education: { one: 'institution', other: 'institutions' } as PluralForms,
-        courses: { one: 'course', other: 'courses' } as PluralForms,
-        certifications: { one: 'certification', other: 'certifications' } as PluralForms,
-        skills: { one: 'skill group', other: 'skill groups' } as PluralForms,
       },
     },
   },
@@ -147,18 +126,8 @@ const en = {
     repository: 'Repository',
     live: 'Live site',
     technologies: 'Technologies',
-    // The label over the one project the work page puts forward.
+    // The label over the one project the home page puts forward.
     featured: 'Featured',
-  },
-  // The home page's timeline from study to work: its heading, and the kind
-  // of each node, which its icon shows and a screen reader is told.
-  journey: {
-    heading: 'From study to work',
-    kinds: {
-      experience: 'Work',
-      education: 'Study',
-      courses: 'Online courses',
-    },
   },
   // The chips above the project grid: the group's accessible name, the chip
   // that restores every project, and the line the page announces after each
@@ -321,32 +290,11 @@ const ar: Strings = {
       spoken: '{label}: {count}',
     },
     location: 'الموقع الجغرافي',
-    sections: 'في هذا الموقع',
-    experience: 'الوظائف والتدريب العملي.',
-    projects: 'المشاريع المكتملة وما بُنيت به.',
-    education: 'المدارس والجامعة بترتيب الزمن.',
-    courses: 'دورات إلكترونية مكتملة، مع شهادة كل دورة.',
-    certifications: 'شهادات ليست إتمام دورات.',
-    skills: 'ما أعمل به، أعلى هذه الصفحة.',
-    cv: 'السجل الكامل: الخبرة العملية والتعليم والتعلم الذاتي والمهارات واللغات والمشاريع وما يحمله من شهادات.',
-    resume: 'النسخة المختصرة لمرافقة طلب التوظيف: الملخص والخبرة العملية ومشاريع مختارة.',
     counts: {
-      line: '{count} {noun}',
-      // The counted noun of each section, in the forms Arabic gives each
-      // range: one, two, three to ten, eleven to ninety-nine, and the rest.
+      // The forms Arabic gives each range: one, two, three to ten, eleven to
+      // ninety-nine, and the rest.
       nouns: {
         projects: { one: 'مشروع', two: 'مشروعان', few: 'مشاريع', many: 'مشروعاً', other: 'مشروع' },
-        experience: { one: 'وظيفة', two: 'وظيفتان', few: 'وظائف', many: 'وظيفة', other: 'وظيفة' },
-        education: { one: 'جهة تعليمية', two: 'جهتان تعليميتان', few: 'جهات تعليمية', many: 'جهة تعليمية', other: 'جهة تعليمية' },
-        courses: { one: 'دورة', two: 'دورتان', few: 'دورات', many: 'دورةً', other: 'دورة' },
-        certifications: { one: 'شهادة', two: 'شهادتان', few: 'شهادات', many: 'شهادةً', other: 'شهادة' },
-        skills: {
-          one: 'مجموعة مهارات',
-          two: 'مجموعتا مهارات',
-          few: 'مجموعات مهارات',
-          many: 'مجموعة مهارات',
-          other: 'مجموعة مهارات',
-        },
       },
     },
   },
@@ -363,14 +311,6 @@ const ar: Strings = {
     live: 'الموقع المنشور',
     technologies: 'التقنيات',
     featured: 'مشروع مميز',
-  },
-  journey: {
-    heading: 'من الدراسة إلى العمل',
-    kinds: {
-      experience: 'العمل',
-      education: 'الدراسة',
-      courses: 'مقررات عبر الإنترنت',
-    },
   },
   filter: {
     label: 'تصفية المشاريع حسب التقنية',

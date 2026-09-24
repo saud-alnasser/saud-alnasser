@@ -1,19 +1,30 @@
 ---
 import { getCollection, getEntry } from 'astro:content';
 import Base from '../../layouts/Base.astro';
+import Card from '../../components/Card.astro';
+import Certificate from '../../components/Certificate.astro';
+import CertificateDialog from '../../components/CertificateDialog.astro';
+import Education from '../../components/Education.astro';
+import Experience from '../../components/Experience.astro';
 import FeaturedProject from '../../components/FeaturedProject.astro';
 import Icon from '../../components/Icon.astro';
-import Journey from '../../components/Journey.astro';
-import Monogram from '../../components/Monogram.astro';
-import SectionCard from '../../components/SectionCard.astro';
+import Project from '../../components/Project.astro';
 import Skills from '../../components/Skills.astro';
 import StatTile from '../../components/StatTile.astro';
-import { fill, locales, plural, strings, type Locale, type Strings } from '../../lib/i18n';
+import { fill, formatPeriod, locales, plural, strings, type Locale } from '../../lib/i18n';
 import { localized } from '../../lib/localized';
 import { profileIcon, type ProfileIcon } from '../../lib/networks';
-import { byOrderThenName } from '../../lib/order';
+import {
+  byDateDescending,
+  byOrderThenName,
+  byOrderThenStartDescending,
+  byStartAscending,
+  byStartDescending,
+} from '../../lib/order';
 import { withBase } from '../../lib/paths';
 import { featuredProject, isCertification, isCourse, isShown } from '../../lib/shown';
+import { technologyMark } from '../../lib/technologies';
+import { educationTimeline } from '../../lib/timeline';
 import type { IconName } from '../../lib/icons';
 
 export function getStaticPaths() {
@@ -52,29 +63,29 @@ const actions: { key: string; href: string; icon: 'file-text' | ProfileIcon; lab
   })),
 ];
 
-// Skills sit on the home page, above the sections, because they are the
-// fastest read for a visitor deciding whether to open the work page.
-const skills = (await getCollection('skills')).sort((a, b) => byOrderThenName(a.data, b.data));
-
-// Every count a section card shows is the length of the collection that
-// section renders, read here and never written by hand, so a card cannot
-// drift from the content source. The filters are the ones every output reads
+// The collections the sections below lay out, each in the order every output
+// reads (src/lib/order.ts), through the filters every output reads
 // (src/lib/shown.ts): a hidden or unfinished project stays in the source and
-// out of every output, this count included, and a certificate belongs to the
-// courses section or to the certifications section by its own field.
-const projects = await getCollection('projects', ({ data }) => isShown(data));
-const experience = await getCollection('experience');
-const education = await getCollection('education');
-const courses = await getCollection('certificates', ({ data }) => isCourse(data));
-const certifications = await getCollection('certificates', ({ data }) => isCertification(data));
-
+// out of every output, and a certificate belongs to the courses or to the
+// certifications by its own field.
+const experience = (await getCollection('experience')).sort((a, b) => byStartDescending(a.data, b.data));
+const projects = (await getCollection('projects', ({ data }) => isShown(data))).sort((a, b) =>
+  byOrderThenStartDescending(a.data, b.data),
+);
+const education = (await getCollection('education')).sort((a, b) => byStartAscending(a.data, b.data));
+// Both certificate grids are sorted the same way, by date newest first with
+// the undated last, so reclassifying an entry moves its card between the
+// grids and changes nothing else.
+const certificates = (await getCollection('certificates')).sort((a, b) => byDateDescending(a.data, b.data));
+const courses = certificates.filter(({ data }) => isCourse(data));
+const certifications = certificates.filter(({ data }) => isCertification(data));
+const skills = (await getCollection('skills')).sort((a, b) => byOrderThenName(a.data, b.data));
 const languages = await getCollection('languages');
 
 // The four numbers the first screen leads with, each the length of what a
-// page renders, read through the same filters, never written by hand. The
+// section renders, read through the same filters, never written by hand. The
 // technologies are the distinct names the shown projects list, not the skill
-// keywords, some of which are practices rather than technologies (the spec's
-// requirement 2, as amended on 2026-09-24).
+// keywords, some of which are practices rather than technologies.
 const technologies = new Set(projects.flatMap((project) => project.data.technologies));
 const tiles: { tile: string; icon: IconName; count: number; label: string }[] = [
   { tile: 'projects', icon: 'folder-code', count: projects.length, label: t.home.tiles.projects },
@@ -83,96 +94,70 @@ const tiles: { tile: string; icon: IconName; count: number; label: string }[] = 
   { tile: 'languages', icon: 'languages', count: languages.length, label: t.home.tiles.languages },
 ];
 
-// The project the content marks featured, as the work page puts it forward.
+// The one project the content marks featured leads the projects as a wider
+// card, and leaves the grid, so it appears once. With none marked there is
+// no featured card and the grid holds every project.
 const featured = featuredProject(projects);
+const grid = featured ? projects.filter((project) => project.id !== featured.id) : projects;
 
-const count = (n: number, noun: keyof Strings['home']['counts']['nouns']) =>
-  fill(t.home.counts.line, { count: String(n), noun: plural(locale, n, t.home.counts.nouns[noun]) });
+// The filter's chips: every technology two or more shown projects name,
+// the featured one among them, most used first and then by name, so a chip
+// never narrows the grid to the one card that named it. Each chip carries the
+// line announced when it is pressed, counted and declined here, so the
+// inline script that runs the filter needs no plural rules of its own.
+const uses = new Map<string, number>();
+for (const project of projects) {
+  for (const technology of new Set(project.data.technologies)) uses.set(technology, (uses.get(technology) ?? 0) + 1);
+}
+const chips = [...uses]
+  .filter(([, count]) => count >= 2)
+  .sort(([a, x], [b, y]) => y - x || a.localeCompare(b, 'en'))
+  .map(([technology, count]) => ({ technology, count, mark: technologyMark(technology) }));
+const showing = (count: number) =>
+  fill(t.filter.status, { count: String(count), noun: plural(locale, count, t.home.counts.nouns.projects) });
+const chip =
+  'inline-flex min-h-8 cursor-pointer items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1 text-sm text-muted-foreground hover:border-primary hover:text-primary motion-safe:transition-colors aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground';
 
-// One card per section of the site, in the order a hiring reader wants them,
-// each leading to the heading of the section on the page that holds it: the
-// work page carries experience and projects, the education page the studies
-// timeline, the courses, and the certifications, and the skills are on this
-// page already. The certifications heading keeps the `certificates` id it has
-// always had. The CV is one document rather than a list, so it counts nothing.
-const work = withBase(`/${locale}/work/`);
-const educationPage = withBase(`/${locale}/education/`);
+// The studies timeline is the institutions newest first, by their start,
+// with one node for the online-courses phase immediately after the most
+// recent institution, decided once in src/lib/timeline.ts for this page, the
+// CV, and the checks: it reads university, online courses, high school,
+// whatever dates the certificates carry. src/content/README.md,
+// "education/", says the same for whoever edits the content.
+//
+// The node stands for the courses, dated entries and undated alike: it
+// counts every course and runs from the earliest dated one to the latest.
+// The courses themselves are below the timeline, under the heading it links
+// to.
+const items = educationTimeline(
+  education,
+  courses.map((entry) => entry.data),
+);
+const countOf = (count: number) =>
+  fill(t.education.onlineCourses.count, { count: String(count), noun: plural(locale, count, t.education.onlineCourses.noun) });
 
-const sections = [
-  {
-    section: 'experience',
-    icon: 'briefcase' as const,
-    href: `${work}#experience`,
-    name: t.sections.experience,
-    description: t.home.experience,
-    counts: [count(experience.length, 'experience')],
-  },
-  {
-    section: 'projects',
-    icon: 'folder-code' as const,
-    href: `${work}#projects`,
-    name: t.sections.projects,
-    description: t.home.projects,
-    counts: [count(projects.length, 'projects')],
-  },
-  {
-    section: 'education',
-    icon: 'graduation-cap' as const,
-    href: `${educationPage}#studies`,
-    name: t.nav.education,
-    description: t.home.education,
-    counts: [count(education.length, 'education')],
-  },
-  {
-    section: 'courses',
-    icon: 'book-open' as const,
-    href: `${educationPage}#courses`,
-    name: t.sections.courses,
-    description: t.home.courses,
-    counts: [count(courses.length, 'courses')],
-  },
-  // Only while a certification exists, as the education page renders the
-  // section only then: a card counting zero would say "no credential" in so
-  // many words, and the heading it would lead to is not there.
-  ...(certifications.length > 0
-    ? [
-        {
-          section: 'certifications',
-    icon: 'award' as const,
-          href: `${educationPage}#certificates`,
-          name: t.sections.certifications,
-          description: t.home.certifications,
-          counts: [count(certifications.length, 'certifications')],
-        },
-      ]
-    : []),
-  {
-    section: 'skills',
-    icon: 'wrench' as const,
-    href: `${withBase(`/${locale}/`)}#skills`,
-    name: t.sections.skills,
-    description: t.home.skills,
-    counts: [count(skills.length, 'skills')],
-  },
-  { section: 'cv', icon: 'file-text' as const, href: cv, name: t.nav.cv, description: t.home.cv },
-  { section: 'resume', icon: 'file-text' as const, href: resume, name: t.nav.resume, description: t.home.resume },
-];
+const heading = 'flex items-center gap-2 text-xl font-semibold tracking-tight';
+const subheading = 'flex items-center gap-2 text-lg font-semibold tracking-tight';
 ---
 
 <Base locale={locale} title={name} description={summary} path="/" column="grid">
   {/*
-    The first screen: the monogram, the name, what he does and where, the
-    whole summary as the lead, the contact actions, and four numbers counted
-    from the content, over a soft light in the accent. It is one block so its
+    The whole portfolio on one page, in the order a hiring reader wants it:
+    About, Experience, Projects, Education, and Skills. Each section is a
+    landmark labelled by its heading, and the heading's id is the section's
+    anchor, marked `data-section` for the header that links to it.
+
+    About is the first screen: the name, what he does and where, the whole
+    summary as the lead, the contact actions, and four numbers counted from
+    the content, over a soft light in the accent. It is one block so its
     parts can enter one after another (src/styles/global.css), and so the
-    light sits behind this block alone; the light is decoration and carries no
-    text. At 1440 by 900 all of it is on the first screen, and on a phone
-    everything down to the contact actions is.
+    light sits behind this block alone; the light is decoration and carries
+    no text, and it comes last so the name is the block's first element. At
+    1440 by 900 all of it is on the first screen, and on a phone everything
+    down to the contact actions is.
   */}
-  <div data-hero class="relative isolate">
-    <div aria-hidden="true" data-glow class="pointer-events-none absolute inset-x-0 -top-24 -z-10 h-[32rem]"></div>
-    <Monogram />
-    <h1 class="mt-5 text-4xl font-semibold tracking-tight text-balance sm:text-5xl">{name}</h1>
+  <section aria-labelledby="about" data-hero class="relative isolate">
+    <h1 id="about" data-section class="text-4xl font-semibold tracking-tight text-balance sm:text-5xl">{name}</h1>
     <p data-hero-label class="mt-2 text-lg text-muted-foreground sm:text-xl">{label}</p>
     <p data-hero-location class="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
       <Icon name="map-pin" class="size-4" />
@@ -223,29 +208,183 @@ const sections = [
         }
       </ul>
     </section>
-  </div>
 
-  {
-    featured && (
-      <section aria-labelledby="featured" class="mt-12">
-        <h2 id="featured" class="sr-only">{t.project.featured}</h2>
-        <FeaturedProject locale={locale} entry={featured} />
-      </section>
-    )
-  }
+    <div aria-hidden="true" data-glow class="pointer-events-none absolute inset-x-0 -top-24 -z-10 h-[32rem]"></div>
+  </section>
 
-  <section aria-labelledby="journey" class="mt-16">
-    <h2 id="journey" data-reveal class="mb-5 flex items-center gap-2 text-xl font-semibold tracking-tight">
-      <Icon name="graduation-cap" class="size-5 text-primary" />
-      {t.journey.heading}
+  {/*
+    Experience comes first: a hiring reader looks for employment before
+    anything else. Experience and projects are ordered lists laid out as a
+    grid: one column on a phone, two from 48rem up, so the projects are
+    scanned rather than scrolled. The grid is written on the list itself, so
+    its items are its cards and the reading order is the order the collection
+    was sorted into.
+  */}
+  <section aria-labelledby="experience" class="mt-16">
+    <h2 id="experience" data-section data-reveal class={heading}>
+      <Icon name="briefcase" class="size-5 text-primary" />
+      {t.sections.experience}
     </h2>
-    <Journey locale={locale} />
+    <ol data-grid="experience" class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
+      {
+        experience.map((entry) => (
+          <li data-reveal>
+            <Experience locale={locale} entry={entry} />
+          </li>
+        ))
+      }
+    </ol>
+  </section>
+
+  <section aria-labelledby="projects" class="mt-16">
+    <h2 id="projects" data-section data-reveal class={heading}>
+      <Icon name="folder-code" class="size-5 text-primary" />
+      {t.sections.projects}
+    </h2>
+    {
+      featured && (
+        <FeaturedProject
+          locale={locale}
+          entry={featured}
+          class="mt-6"
+          data-technologies={featured.data.technologies.join('|')}
+        />
+      )
+    }
+    {/*
+      The filter ships hidden, and the inline script shows it and runs it; with
+      no script there is no row and every project shows. It filters the
+      featured card as it does the grid, in its own place above the grid, so
+      what a chip leaves on screen is exactly the projects naming its
+      technology and the number announced counts them. Which technology is
+      chosen is a view of the page and is not written to the address, so a
+      reload shows every project.
+    */}
+    {
+      chips.length > 0 && (
+        <div data-filter role="group" aria-label={t.filter.label} hidden class="mt-6 flex flex-wrap gap-2">
+          <button type="button" data-filter-chip="" aria-pressed="true" data-status={showing(projects.length)} class={chip}>
+            {t.filter.all}
+          </button>
+          {chips.map(({ technology, count, mark }) => (
+            <button type="button" data-filter-chip={technology} aria-pressed="false" data-status={showing(count)} class={chip}>
+              {mark && (
+                <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor" class="size-3.5 shrink-0">
+                  <path d={mark.path} />
+                </svg>
+              )}
+              <bdi>{technology}</bdi>
+            </button>
+          ))}
+        </div>
+      )
+    }
+    <p data-filter-status role="status" class="mt-3 text-sm text-muted-foreground"></p>
+    <ol data-grid="projects" class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
+      {
+        grid.map((entry) => (
+          <li data-reveal data-technologies={entry.data.technologies.join('|')}>
+            <Project locale={locale} entry={entry} />
+          </li>
+        ))
+      }
+    </ol>
+  </section>
+
+  {/*
+    Education: the studies timeline, then the courses and the certifications
+    as grids of cards under headings of their own, one column on a phone and
+    two from 48rem up. The courses heading carries the anchor the timeline's
+    node leads to.
+  */}
+  <section aria-labelledby="education" class="mt-16">
+    <h2 id="education" data-section data-reveal class={heading}>
+      <Icon name="graduation-cap" class="size-5 text-primary" />
+      {t.nav.education}
+    </h2>
+    <ol class="mt-8 border-s border-border">
+      {
+        items.map((item) => (
+          <li data-reveal class="relative ps-7 pb-6 last:pb-0">
+            {/* The marker on the rail. The courses node takes the accent,
+                because it is the one item on the timeline that leads
+                somewhere else on the page. */}
+            <span
+              aria-hidden="true"
+              class:list={[
+                'absolute -start-[5px] top-6 size-2.5 rounded-full sm:top-7',
+                item.kind === 'courses' ? 'bg-primary' : 'bg-border',
+              ]}
+            />
+            {item.kind === 'education' ? (
+              <Education locale={locale} entry={item.entry} />
+            ) : (
+              <Card href="#courses" data-courses-node>
+                {item.period && (
+                  <p class="text-sm text-muted-foreground tabular-nums" data-period>
+                    {formatPeriod(locale, item.period)}
+                  </p>
+                )}
+                <h3 class="mt-1 text-lg font-semibold tracking-tight">{t.education.onlineCourses.name}</h3>
+                <p class="mt-1">{countOf(item.count)}</p>
+                <p class="mt-2 flex items-center gap-1.5 text-sm text-primary">
+                  {t.education.onlineCourses.link}
+                  <Icon name="chevron-down" class="size-4" />
+                </p>
+              </Card>
+            )}
+          </li>
+        ))
+      }
+    </ol>
+
+    <section aria-labelledby="courses" class="mt-12">
+      <h3 id="courses" data-reveal class={subheading}>
+        <Icon name="book-open" class="size-5 text-primary" />
+        {t.sections.courses}
+      </h3>
+      <ul data-grid="courses" class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
+        {
+          courses.map((entry) => (
+            <li data-reveal>
+              <Certificate locale={locale} entry={entry} level={4} />
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    {/*
+      The certifications, the same grid of the same cards, rendered only while
+      an entry exists, the way the CV prints a section only where it holds
+      something: a heading over an empty grid would say "no credential" in so
+      many words. Its heading keeps the id the certificates section had, so an
+      inbound link to #certificates still lands on a credential; with none, the
+      anchor is absent rather than kept as an empty target.
+    */}
+    {
+      certifications.length > 0 && (
+        <section aria-labelledby="certificates" class="mt-12">
+          <h3 id="certificates" data-reveal class={subheading}>
+            <Icon name="award" class="size-5 text-primary" />
+            {t.sections.certifications}
+          </h3>
+          <ul data-grid="certifications" class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
+            {certifications.map((entry) => (
+              <li data-reveal>
+                <Certificate locale={locale} entry={entry} level={4} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )
+    }
   </section>
 
   {
     skills.length > 0 && (
       <section aria-labelledby="skills" class="mt-16">
-        <h2 id="skills" data-reveal class="mb-5 flex items-center gap-2 text-xl font-semibold tracking-tight">
+        <h2 id="skills" data-section data-reveal class:list={[heading, 'mb-5']}>
           <Icon name="wrench" class="size-5 text-primary" />
           {t.sections.skills}
         </h2>
@@ -254,19 +393,6 @@ const sections = [
     )
   }
 
-  <section aria-labelledby="sections" class="mt-16">
-    <h2 id="sections" data-reveal class="mb-5 flex items-center gap-2 text-xl font-semibold tracking-tight">
-      <Icon name="arrow-right" class="size-5 text-primary" />
-      {t.home.sections}
-    </h2>
-    <ul data-section-grid class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {
-        sections.map((section) => (
-          <li data-reveal class="h-full">
-            <SectionCard locale={locale} {...section} />
-          </li>
-        ))
-      }
-    </ul>
-  </section>
+  {/* The one dialog every certificate card opens, outside main. */}
+  <CertificateDialog locale={locale} slot="dialog" />
 </Base>

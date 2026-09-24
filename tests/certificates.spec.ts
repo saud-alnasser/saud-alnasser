@@ -40,16 +40,20 @@ const certificates = readdirSync(path.join(content, 'certificates'))
 
 const documented = certificates.filter((entry) => entry.document);
 
-// One row per grid on the education page, with the entries it holds in the
+// Both grids are on the home page, and on the education page for as long as
+// that is a page of its own, so every case runs on both.
+const routes = ['/', '/education/'] as const;
+
+// One row per grid, with the entries it holds in the
 // order the site puts them in: by date newest first, the undated last. A kind with no
 // entries renders no grid and no heading, so the per-grid cases below run
 // over the grids the page renders, and one case asserts the absence of the
 // rest.
 const grids = [
-  { grid: 'courses', heading: 'h2#courses', entries: certificates.filter(isCourse).sort(byDateDescending) },
+  { grid: 'courses', heading: '#courses', entries: certificates.filter(isCourse).sort(byDateDescending) },
   {
     grid: 'certifications',
-    heading: 'h2#certificates',
+    heading: '#certificates',
     entries: certificates.filter(isCertification).sort(byDateDescending),
   },
 ];
@@ -75,8 +79,8 @@ const columnsOf = (page: Page, grid: string) =>
 // keeps a click steady if a test asks for motion back.
 const settled = (page: Page) => page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished)));
 
-for (const locale of locales) {
-  const url = at(`/${locale}/education/`);
+for (const locale of locales) for (const route of routes) {
+  const url = at(`/${locale}${route}`);
 
   test.describe(url, () => {
     test('renders no grid and no heading for a kind with no entries', async ({ page }) => {
@@ -98,7 +102,7 @@ for (const locale of locales) {
         const found = await page.locator(`[data-grid="${grid}"] [data-entry]`).evaluateAll((nodes) =>
           nodes.map((node) => ({
             kind: node.getAttribute('data-entry'),
-            name: node.querySelector('h3')?.textContent?.trim() ?? '',
+            name: node.querySelector('h3, h4')?.textContent?.trim() ?? '',
             text: node.textContent?.replace(/\s+/g, ' ').trim() ?? '',
           })),
         );
@@ -300,17 +304,19 @@ for (const locale of locales) {
 test.describe('at 1440 pixels wide', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
-  test('the Arabic course grid fills from the right and the English from the left', async ({ page }) => {
-    const firstTwo = async (path: string) => {
-      await page.goto(path);
-      const card = page.locator(`[data-grid="courses"] ${cards}`);
-      return { first: (await card.nth(0).boundingBox())!, second: (await card.nth(1).boundingBox())! };
-    };
+  for (const route of routes) {
+    test(`the Arabic course grid on ${route} fills from the right and the English from the left`, async ({ page }) => {
+      const firstTwo = async (path: string) => {
+        await page.goto(path);
+        const card = page.locator(`[data-grid="courses"] ${cards}`);
+        return { first: (await card.nth(0).boundingBox())!, second: (await card.nth(1).boundingBox())! };
+      };
 
-    const arabic = await firstTwo(at('/ar/education/'));
-    expect(arabic.first.x, 'the first Arabic certificate sits right of the second').toBeGreaterThan(arabic.second.x);
+      const arabic = await firstTwo(at(`/ar${route}`));
+      expect(arabic.first.x, 'the first Arabic certificate sits right of the second').toBeGreaterThan(arabic.second.x);
 
-    const english = await firstTwo(at('/en/education/'));
-    expect(english.first.x, 'the first English certificate sits left of the second').toBeLessThan(english.second.x);
-  });
+      const english = await firstTwo(at(`/en${route}`));
+      expect(english.first.x, 'the first English certificate sits left of the second').toBeLessThan(english.second.x);
+    });
+  }
 });

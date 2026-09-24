@@ -11,9 +11,11 @@ import { byDateAscending, byDateDescending, byStartAscending } from '../src/lib/
 import { isCertification, isCourse } from '../src/lib/shown';
 import { educationTimeline } from '../src/lib/timeline';
 
-// The education page: the timeline of institutions with one node for the
+// The education section: the timeline of institutions with one node for the
 // online-courses phase, then the courses and the certifications, each under
-// its own heading below it.
+// its own heading below it. It is on the home page, and on the education page
+// for as long as that is a page of its own, so every case runs on both, each
+// with the timeline where that page holds it.
 //
 // What the page shows is read from src/content/ here, the way
 // scripts/check-dist.mjs reads it, so an expectation is the content rather
@@ -83,12 +85,16 @@ const dialog = '[data-certificate-dialog]';
 // The phase runs from the earliest dated certificate to the latest.
 const period = { start: String(dated[0].date), end: String(dated[dated.length - 1].date) };
 
-const timeline = 'section[aria-labelledby="studies"] ol > li';
 const node = '[data-courses-node]';
 
-for (const locale of locales) {
+const where = [
+  { route: '/', timeline: 'section[aria-labelledby="education"] > ol > li' },
+  { route: '/education/', timeline: 'section[aria-labelledby="studies"] ol > li' },
+] as const;
+
+for (const locale of locales) for (const { route, timeline } of where) {
   const t = strings[locale];
-  const url = at(`/${locale}/education/`);
+  const url = at(`/${locale}${route}`);
 
   test.describe(url, () => {
     test('shows the university as a card with its courses folded', async ({ page }) => {
@@ -160,16 +166,16 @@ for (const locale of locales) {
     }) => {
       await page.goto(url);
 
-      const coursesHeading = page.locator('h2#courses');
+      const coursesHeading = page.locator(':is(h2, h3)#courses');
       await expect(coursesHeading).toHaveText(t.sections.courses);
-      await expect(page.locator(timeline).locator('h2#courses')).toHaveCount(0);
+      await expect(page.locator(timeline).locator('#courses')).toHaveCount(0);
 
       // The certifications section exists only while the content has a
       // certification, so that the page never shows a heading over nothing.
       // Where it exists, its heading keeps the id the certificates section
       // had, so an inbound link to #certificates still lands on a credential;
       // where it does not, the anchor is absent too.
-      const certificationsHeading = page.locator('h2#certificates');
+      const certificationsHeading = page.locator(':is(h2, h3)#certificates');
       await expect(certificationsHeading).toHaveCount(certifications.length > 0 ? 1 : 0);
       if (certifications.length > 0) await expect(certificationsHeading).toHaveText(t.sections.certifications);
 

@@ -223,6 +223,11 @@
   :is(main, [data-hero]) > :nth-child(5) {
     --i: 4;
   }
+  /* The light comes last in the block, after the name, and still arrives
+     with the first step. */
+  [data-hero] > [data-glow] {
+    --i: 0;
+  }
   :is(main, [data-hero]) > :is(h1, section, article, [data-hero-summary]) {
     animation-name: enter-rise;
   }

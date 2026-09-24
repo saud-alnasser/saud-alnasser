@@ -150,7 +150,7 @@ test.describe('with motion allowed', () => {
         return { shadow: computed.boxShadow, translate: computed.translate, transform: computed.transform };
       });
 
-    await page.goto(at('/en/work/'));
+    await page.goto(at('/en/'));
     await settled(page);
     const project = '[data-entry="project"] >> nth=0';
     await page.locator(project).scrollIntoViewIfNeeded();
@@ -164,7 +164,7 @@ test.describe('with motion allowed', () => {
 
     await page.goto(at('/en/'));
     await settled(page);
-    const card = '[data-section-card] >> nth=0';
+    const card = '[data-courses-node]';
     const before = await style(card);
     await page.locator(card).focus();
     await settled(page);
@@ -176,7 +176,7 @@ test.describe('with motion allowed', () => {
   // A fold and a dialog open and close in place: the address and the scroll
   // position are what they were.
   test('a fold opens and closes in place', async ({ page }) => {
-    await page.goto(at('/en/work/'));
+    await page.goto(at('/en/'));
     await settled(page);
     const summary = page.locator('[data-entry="experience"] details summary').first();
     await summary.scrollIntoViewIfNeeded();
@@ -191,7 +191,7 @@ test.describe('with motion allowed', () => {
   });
 
   test('the certificate dialog opens and closes in place', async ({ page }) => {
-    await page.goto(at('/en/education/'));
+    await page.goto(at('/en/'));
     await settled(page);
     const card = page.locator('[data-document]').first();
     await card.scrollIntoViewIfNeeded();
@@ -307,10 +307,10 @@ test.describe('the reveal on scroll', () => {
     });
   }
 
-  // Beside it, a check that the observer has something to do: on the work
+  // Beside it, a check that the observer has something to do: on the home
   // page there are cards below the first screen, and they start hidden.
   test('hides what is below the first screen until it scrolls in', async ({ page }) => {
-    await page.goto(at('/en/work/'));
+    await page.goto(at('/en/'));
     const waiting = await page.evaluate(() => document.querySelectorAll('body [data-reveal]:not([data-revealed])').length);
     expect(waiting).toBeGreaterThan(0);
     const opacity = await page.locator('body [data-reveal]:not([data-revealed])').last().evaluate((node) => getComputedStyle(node).opacity);

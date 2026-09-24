@@ -172,7 +172,7 @@ Every task of every effort. The tracker carries the effort, never its tasks.
 | [[efforts/31-portfolio-rework/tickets/07-one-timeline-from-study-to-work]] feat(site): one timeline on the home page from study to work, each node leading to its detail | 31-portfolio-rework | resolved | 01 |
 | [[efforts/31-portfolio-rework/tickets/08-the-first-screen]] feat(site): a first screen with a monogram, stat tiles counted from the content, and icons on every section | 31-portfolio-rework | resolved | 05, 07 |
 | [[efforts/33-one-page-portfolio/tickets/01-newest-first]] feat(site): every list laid out in time reads newest first | 33-one-page-portfolio | resolved | — |
-| [[efforts/33-one-page-portfolio/tickets/02-the-one-page]] feat(site): the home page holds every section of the portfolio | 33-one-page-portfolio | open | 01 |
+| [[efforts/33-one-page-portfolio/tickets/02-the-one-page]] feat(site): the home page holds every section of the portfolio | 33-one-page-portfolio | resolved | 01 |
 | [[efforts/33-one-page-portfolio/tickets/03-the-old-addresses-forward]] feat(site): the work and education addresses forward to their sections | 33-one-page-portfolio | open | 02 |
 | [[efforts/33-one-page-portfolio/tickets/04-the-sticky-header]] feat(site): a header that stays on screen and names every section once | 33-one-page-portfolio | open | 03 |
 | [[efforts/33-one-page-portfolio/tickets/05-the-glide-and-the-current-section]] feat(site): the header glides to a section and marks the one being read | 33-one-page-portfolio | open | 04 |

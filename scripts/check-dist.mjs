@@ -1434,6 +1434,38 @@ async function languagesWhereTheyBelong() {
 // The README's profile block is written from the content source and the
 // config (scripts/readme-profile.mjs), so who Saud is stays authored once; a
 // README behind them fails here rather than drifting on the profile page.
+// The home page holds the whole portfolio: in each language its five
+// sections' headings, by the ids that are their anchors and in the order the
+// page reads them. And nothing the sections replaced is left on any page: the
+// monogram, the timeline from study to work, and the grid of cards leading
+// to each section, each by the attribute on its element.
+const sectionIds = ['about', 'experience', 'projects', 'education', 'skills'];
+
+async function onePage() {
+  const name = 'one page';
+  const lines = [];
+  for (const locale of context.locales) {
+    const file = `dist/${locale}/index.html`;
+    const html = await readFile(path.join(context.dist, locale, 'index.html'), 'utf8');
+    const found = sectionIds.map((id) => html.search(new RegExp(`<h[12]\\b[^>]*\\sid="${id}"`)));
+    const missing = sectionIds.filter((id, index) => found[index] === -1);
+    if (missing.length > 0) throw new CheckFailure(name, `${file} has no heading for ${missing.map((id) => `#${id}`).join(', ')}`);
+    for (let index = 1; index < found.length; index += 1) {
+      if (found[index] < found[index - 1]) {
+        throw new CheckFailure(name, `${file} puts #${sectionIds[index]} before #${sectionIds[index - 1]}`);
+      }
+    }
+    lines.push(`one page: ${file} holds ${sectionIds.map((id) => `#${id}`).join(', ')} in order`);
+  }
+  for (const file of await htmlFiles()) {
+    const html = await readFile(path.join(context.dist, file), 'utf8');
+    const left = html.match(/<[a-z][^>]*\sdata-(monogram|journey|section-grid|section-card)[\s>=]/);
+    if (left) throw new CheckFailure(name, `dist/${file} still carries data-${left[1]}`);
+  }
+  lines.push('one page: no page carries a monogram, a combined timeline, or a section grid');
+  return lines;
+}
+
 async function readmeProfile() {
   const name = 'readme profile';
   const { current, next } = await readmeWithProfile();
@@ -1447,7 +1479,7 @@ async function readmeProfile() {
 // alone, and a topic or provider with no witness would otherwise surface
 // first as a reading-order failure over a PDF, named for the line rather
 // than the cause.
-const checks = [jsonResume, selfStudy, documentPdfs, qrCode, resumePages, localeTwins, hrefs, basePaths, oneOrigin, metadata, sitemap, robots, identifiers, noContactDetails, nationalityWhereItBelongs, languagesWhereTheyBelong, gaps, noOverclaim, documentHazards, readmeProfile];
+const checks = [jsonResume, selfStudy, documentPdfs, qrCode, resumePages, localeTwins, hrefs, basePaths, oneOrigin, metadata, sitemap, robots, identifiers, noContactDetails, nationalityWhereItBelongs, languagesWhereTheyBelong, gaps, noOverclaim, documentHazards, onePage, readmeProfile];
 
 for (const check of checks) {
   try {

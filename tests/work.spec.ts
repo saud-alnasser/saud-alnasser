@@ -9,12 +9,17 @@ import { isShown } from '../src/lib/shown';
 import { technologyMark } from '../src/lib/technologies';
 import { at, locales, type Locale } from './pages';
 
-// The work page as a pair of card grids: every project and every placement
-// inside a card, one column on a phone and two on a desktop, the placement's
-// highlights folded behind a control that opens in place and needs no
-// script. What the cards must show is read from src/content/, the way
-// scripts/check-dist.mjs reads it, so a card that drifts from the content
-// source fails here rather than passing against a copy of itself.
+// The experience and projects sections as a pair of card grids: every
+// project and every placement inside a card, one column on a phone and two
+// on a desktop, the placement's highlights folded behind a control that
+// opens in place and needs no script. What the cards must show is read from
+// src/content/, the way scripts/check-dist.mjs reads it, so a card that
+// drifts from the content source fails here rather than passing against a
+// copy of itself.
+//
+// Both sections are on the home page, and on the work page for as long as
+// it is a page of its own, so every case runs on both.
+const routes = ['/', '/work/'] as const;
 
 interface Localized {
   en: string;
@@ -82,9 +87,9 @@ const foldLabel = (locale: Locale, state: 'show' | 'hide', count: number) =>
 
 const fold = (card: Locator) => card.locator('details');
 
-test.describe('the work page', () => {
-  for (const locale of locales) {
-    const url = at(`/${locale}/work/`);
+test.describe('the experience and projects sections', () => {
+  for (const locale of locales) for (const route of routes) {
+    const url = at(`/${locale}${route}`);
 
     test(`${url} puts every entry inside a card`, async ({ page }) => {
       await page.goto(url);
@@ -95,7 +100,7 @@ test.describe('the work page', () => {
 
       // A card is a bounded surface: its own colour, a border, and a radius.
       const background = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
-      const surfaces = await page.locator('[data-entry]').evaluateAll((nodes) =>
+      const surfaces = await page.locator(':is([data-grid="experience"], [data-grid="projects"]) [data-entry]').evaluateAll((nodes) =>
         nodes.map((node) => {
           const style = getComputedStyle(node);
           return {
@@ -249,8 +254,8 @@ test.describe('the work page', () => {
 test.describe('at 360 pixels wide', () => {
   test.use({ viewport: { width: 360, height: 780 } });
 
-  for (const locale of locales) {
-    const url = at(`/${locale}/work/`);
+  for (const locale of locales) for (const route of routes) {
+    const url = at(`/${locale}${route}`);
 
     test(`${url} lays one column and does not scroll sideways`, async ({ page }) => {
       await page.goto(url);
@@ -267,8 +272,8 @@ test.describe('at 360 pixels wide', () => {
 test.describe('at 1440 pixels wide', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
-  for (const locale of locales) {
-    const url = at(`/${locale}/work/`);
+  for (const locale of locales) for (const route of routes) {
+    const url = at(`/${locale}${route}`);
 
     test(`${url} lays two or more columns, none wider than its track`, async ({ page }) => {
       await page.goto(url);
@@ -288,21 +293,23 @@ test.describe('at 1440 pixels wide', () => {
     });
   }
 
-  test('the Arabic grid fills from the right and the English from the left', async ({ page }) => {
-    const firstTwo = async (path: string) => {
-      await page.goto(path);
-      const cards = page.locator('[data-entry="project"]');
-      const first = (await cards.nth(0).boundingBox())!;
-      const second = (await cards.nth(1).boundingBox())!;
-      return { first, second };
-    };
+  for (const route of routes) {
+    test(`the Arabic grid on ${route} fills from the right and the English from the left`, async ({ page }) => {
+      const firstTwo = async (path: string) => {
+        await page.goto(path);
+        const cards = page.locator('[data-entry="project"]');
+        const first = (await cards.nth(0).boundingBox())!;
+        const second = (await cards.nth(1).boundingBox())!;
+        return { first, second };
+      };
 
-    const arabic = await firstTwo(at('/ar/work/'));
-    expect(arabic.first.x, 'the first Arabic card sits right of the second').toBeGreaterThan(arabic.second.x);
+      const arabic = await firstTwo(at(`/ar${route}`));
+      expect(arabic.first.x, 'the first Arabic card sits right of the second').toBeGreaterThan(arabic.second.x);
 
-    const english = await firstTwo(at('/en/work/'));
-    expect(english.first.x, 'the first English card sits left of the second').toBeLessThan(english.second.x);
-  });
+      const english = await firstTwo(at(`/en${route}`));
+      expect(english.first.x, 'the first English card sits left of the second').toBeLessThan(english.second.x);
+    });
+  }
 });
 
 // Reduced motion is asked for beside it, as the shared options already do,
@@ -313,8 +320,8 @@ test.describe('at 1440 pixels wide', () => {
 test.describe('with JavaScript disabled', () => {
   test.use({ javaScriptEnabled: false, reducedMotion: 'reduce' });
 
-  for (const locale of locales) {
-    const url = at(`/${locale}/work/`);
+  for (const locale of locales) for (const route of routes) {
+    const url = at(`/${locale}${route}`);
 
     test(`${url} still opens the fold`, async ({ page }) => {
       // The fold is a native <details>, so nothing about it waits on a
@@ -332,19 +339,21 @@ test.describe('with JavaScript disabled', () => {
 
 // A row of badges starts where the language reads from: the first badge at
 // the list's right edge in Arabic and its left edge in English.
-test('badge rows fill from the right in Arabic and the left in English', async ({ page }) => {
-  const edges = async (url: string) => {
-    await page.goto(url);
-    const list = page.locator(`[data-entry="project"] [aria-label] >> nth=0`);
-    const box = (await list.boundingBox())!;
-    const first = (await list.locator('[data-badge]').first().boundingBox())!;
-    return { left: first.x - box.x, right: box.x + box.width - (first.x + first.width) };
-  };
-  const arabic = await edges(at('/ar/work/'));
-  expect(arabic.right, 'the first Arabic badge at the right edge').toBeLessThanOrEqual(1);
-  const english = await edges(at('/en/work/'));
-  expect(english.left, 'the first English badge at the left edge').toBeLessThanOrEqual(1);
-});
+for (const route of routes) {
+  test(`badge rows on ${route} fill from the right in Arabic and the left in English`, async ({ page }) => {
+    const edges = async (url: string) => {
+      await page.goto(url);
+      const list = page.locator(`[data-entry="project"] [aria-label] >> nth=0`);
+      const box = (await list.boundingBox())!;
+      const first = (await list.locator('[data-badge]').first().boundingBox())!;
+      return { left: first.x - box.x, right: box.x + box.width - (first.x + first.width) };
+    };
+    const arabic = await edges(at(`/ar${route}`));
+    expect(arabic.right, 'the first Arabic badge at the right edge').toBeLessThanOrEqual(1);
+    const english = await edges(at(`/en${route}`));
+    expect(english.left, 'the first English badge at the left edge').toBeLessThanOrEqual(1);
+  });
+}
 
 // The featured project: one raised card across the column, ahead of the
 // grid, under a "Featured" label with a star, carrying everything a grid card
@@ -352,8 +361,8 @@ test('badge rows fill from the right in Arabic and the left in English', async (
 test.describe('the featured project', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
-  for (const locale of locales) {
-    const url = at(`/${locale}/work/`);
+  for (const locale of locales) for (const route of routes) {
+    const url = at(`/${locale}${route}`);
 
     test(`${url} leads the projects with the featured one, once`, async ({ page }) => {
       expect(featured, 'a project is marked featured in the content').toBeDefined();
@@ -417,8 +426,8 @@ const visibleGrid = (page: Page) =>
   );
 
 test.describe('the project filter', () => {
-  for (const locale of locales) {
-    const url = at(`/${locale}/work/`);
+  for (const locale of locales) for (const route of routes) {
+    const url = at(`/${locale}${route}`);
     const t = strings[locale];
 
     test(`${url} offers a chip per technology two projects share`, async ({ page }) => {
@@ -481,8 +490,8 @@ test.describe('the project filter', () => {
 test.describe('the project filter with JavaScript disabled', () => {
   test.use({ javaScriptEnabled: false });
 
-  for (const locale of locales) {
-    const url = at(`/${locale}/work/`);
+  for (const locale of locales) for (const route of routes) {
+    const url = at(`/${locale}${route}`);
 
     test(`${url} shows no chips and every project`, async ({ page }) => {
       await page.goto(url);

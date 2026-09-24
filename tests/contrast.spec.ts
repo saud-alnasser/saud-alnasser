@@ -54,8 +54,8 @@ for (const page of audited) {
 // the accent on its border. The shadow sits outside the surface the text is
 // on, so the pairs should not move; measured in both palettes and both
 // directions all the same, with the card held in the raised state.
-for (const locale of ['en', 'ar'] as const) {
-  const page = at(`/${locale}/work/`);
+for (const locale of ['en', 'ar'] as const) for (const route of ['/', '/work/']) {
+  const page = at(`/${locale}${route}`);
 
   test(`a raised card on ${page} meets WCAG AA`, async ({ page: browser, colorScheme }) => {
     await browser.goto(page);
@@ -77,8 +77,8 @@ for (const locale of ['en', 'ar'] as const) {
 // The two surfaces the page-wide audits see closed: a project card's folded
 // badges and the footer's logo credits. Opened here, in both palettes and
 // both directions.
-for (const locale of ['en', 'ar'] as const) {
-  const page = at(`/${locale}/work/`);
+for (const locale of ['en', 'ar'] as const) for (const route of ['/', '/work/']) {
+  const page = at(`/${locale}${route}`);
 
   test(`the badge fold and the logo credits on ${page} meet WCAG AA open`, async ({ page: browser, colorScheme }) => {
     await browser.goto(page);
@@ -103,8 +103,8 @@ for (const locale of ['en', 'ar'] as const) {
 // The filter's chips, at rest and pressed: every label at AA on its own
 // chip, and the pressed chip's fill at 3:1 or better against a chip at rest,
 // so the pressed state does not rest on a text colour.
-for (const locale of ['en', 'ar'] as const) {
-  const page = at(`/${locale}/work/`);
+for (const locale of ['en', 'ar'] as const) for (const route of ['/', '/work/']) {
+  const page = at(`/${locale}${route}`);
 
   test(`the filter chips on ${page} meet WCAG AA at rest and pressed`, async ({ page: browser, colorScheme }) => {
     await browser.goto(page);
@@ -168,7 +168,7 @@ for (const locale of ['en', 'ar'] as const) {
       const hero = document.querySelector('[data-hero]')!;
       const colours = new Set<string>();
       for (const node of hero.querySelectorAll('h1, p, span, a')) {
-        if (node.closest('[data-stat-tile], [data-contact-actions] a, [data-monogram]')) continue;
+        if (node.closest('[data-stat-tile], [data-contact-actions] a')) continue;
         if ((node.textContent ?? '').trim() === '') continue;
         colours.add(getComputedStyle(node).color);
       }

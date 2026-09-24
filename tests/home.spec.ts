@@ -3,18 +3,21 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect, test, type Page } from '@playwright/test';
 import { parse as parseYaml } from 'yaml';
-import { fill, plural, strings } from '../src/lib/i18n';
+import { fill, strings } from '../src/lib/i18n';
 import { profileIcon } from '../src/lib/networks';
-import { isCertification, isCourse, isShown } from '../src/lib/shown';
+import { isShown } from '../src/lib/shown';
 import { technologyMark } from '../src/lib/technologies';
-import { byStartAscending } from '../src/lib/order';
-import { journey } from '../src/lib/timeline';
 import { at, locales, type Locale } from './pages';
 
-// The home page: the hero, the contact actions, the skill cards, and one card
-// per section of the site. What the page says about the content is checked
-// against src/content/ itself, read here the way scripts/check-dist.mjs reads
-// it, so a count that drifts from the source fails rather than being believed.
+// The home page, which holds the whole portfolio: the first screen with the
+// contact actions and the tiles, then Experience, Projects, Education, and
+// Skills, each a section of its own. What the page says about the content is
+// checked against src/content/ itself, read here the way
+// scripts/check-dist.mjs reads it, so a count that drifts from the source
+// fails rather than being believed. The cards inside each section are the
+// work and education suites' to check (tests/work.spec.ts,
+// tests/education.spec.ts, tests/certificates.spec.ts), which run on this
+// page.
 
 const content = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'src', 'content');
 
@@ -44,98 +47,19 @@ const profile = entryData('profile.yaml').profile as {
 
 const skillEntries = visibleEntries('skills').map((file) => entryData('skills', file));
 
-// The certificates collection is two sections, told apart by the field the
-// page reads (src/lib/shown.ts), so a card's count follows a reclassification
-// in the content without this file being touched.
-const certificates = visibleEntries('certificates').map(
-  (file) => entryData('certificates', file) as { kind: 'course' | 'certification' },
-);
+// Every certificate the site shows, courses and certifications alike, which
+// is what the certificates tile counts.
+const certificates = visibleEntries('certificates');
 
-// What each section card must say it holds: the number of entries that
-// section renders, computed from src/content/ the way the page computes it.
-const counted = {
-  experience: visibleEntries('experience').length,
-  projects: visibleEntries('projects').length,
-  education: visibleEntries('education').length,
-  courses: certificates.filter(isCourse).length,
-  certifications: certificates.filter(isCertification).length,
-  skills: skillEntries.length,
-};
+// The five sections, in the order the page holds them, each by the id its
+// heading carries.
+const sectionIds = ['about', 'experience', 'projects', 'education', 'skills'];
 
-// The line a section card shows for one collection, worded as the page words
-// it: the number, and the form of the noun the language gives that number.
-function countLine(locale: Locale, collection: keyof typeof counted): string {
-  const t = strings[locale];
-  const n = counted[collection];
-  return fill(t.home.counts.line, { count: String(n), noun: plural(locale, n, t.home.counts.nouns[collection]) });
-}
-
-// The sections of the site, in the order the home page indexes them, each
-// with the heading it leads to on the page that holds it and the collection
-// it counts. The certifications heading keeps the `certificates` id an
-// inbound link may already carry. The CV is one document rather than a list
-// of entries, so it counts nothing.
-const sections: {
-  section: string;
-  href: (locale: Locale) => string;
-  name: (locale: Locale) => string;
-  counts?: keyof typeof counted;
-}[] = [
-  {
-    section: 'experience',
-    href: (locale) => `${at(`/${locale}/work/`)}#experience`,
-    name: (locale) => strings[locale].sections.experience,
-    counts: 'experience',
-  },
-  {
-    section: 'projects',
-    href: (locale) => `${at(`/${locale}/work/`)}#projects`,
-    name: (locale) => strings[locale].sections.projects,
-    counts: 'projects',
-  },
-  {
-    section: 'education',
-    href: (locale) => `${at(`/${locale}/education/`)}#studies`,
-    name: (locale) => strings[locale].nav.education,
-    counts: 'education',
-  },
-  {
-    section: 'courses',
-    href: (locale) => `${at(`/${locale}/education/`)}#courses`,
-    name: (locale) => strings[locale].sections.courses,
-    counts: 'courses',
-  },
-  // The certifications card exists only while the content has a
-  // certification, as the section it leads to does; with none, the page shows
-  // no card rather than one counting zero, and the case below says so.
-  ...(counted.certifications > 0
-    ? [
-        {
-          section: 'certifications',
-          href: (locale: Locale) => `${at(`/${locale}/education/`)}#certificates`,
-          name: (locale: Locale) => strings[locale].sections.certifications,
-          counts: 'certifications' as const,
-        },
-      ]
-    : []),
-  {
-    section: 'skills',
-    href: (locale) => `${at(`/${locale}/`)}#skills`,
-    name: (locale) => strings[locale].sections.skills,
-    counts: 'skills',
-  },
-  {
-    section: 'cv',
-    href: (locale) => at(`/${locale}/cv/`),
-    name: (locale) => strings[locale].nav.cv,
-  },
-  // The two documents are the last cards, the resume after the CV. Neither
-  // is a list of entries, so neither counts anything.
-  {
-    section: 'resume',
-    href: (locale) => at(`/${locale}/resume/`),
-    name: (locale) => strings[locale].nav.resume,
-  },
+// The entries whose cards carry an id of their own, which an address can
+// still name on this page.
+const entryIds = [
+  ...visibleEntries('experience').map((file) => `experience-${file.replace(/\.yaml$/, '')}`),
+  ...visibleEntries('education').map((file) => `education-${file.replace(/\.yaml$/, '')}`),
 ];
 
 // Where each element sits in the document order of `main`, so reading order is
@@ -150,25 +74,31 @@ function positions(page: Page, selectors: string[]) {
   }, selectors);
 }
 
-// The first screen in the order a visitor reads it, then what follows it:
-// the featured project, the timeline, the skills, and the section cards.
+// The first screen in the order a visitor reads it, then the sections that
+// follow it, each heading before what it holds.
 const reading = [
-  '[data-monogram]',
   'main h1',
   '[data-hero-label]',
   '[data-hero-location]',
   '[data-hero-summary]',
   '[data-contact-actions]',
   '[data-stat-tiles]',
+  'h2#experience',
+  '[data-grid="experience"]',
+  'h2#projects',
   '[data-featured-project]',
-  '[data-journey]',
+  '[data-grid="projects"]',
+  'h2#education',
+  '[data-courses-node]',
+  '#courses',
+  '[data-grid="courses"]',
+  'h2#skills',
   '[data-skill-grid]',
-  '[data-section-grid]',
 ];
 
 for (const locale of locales) {
   test.describe(`the home page in ${locale}`, () => {
-    test('reads as a hero, then the contact actions, then the cards', async ({ page }) => {
+    test('reads as the first screen, then each section in turn', async ({ page }) => {
       await page.goto(at(`/${locale}/`));
 
       await expect(page.locator('main h1')).toHaveText(profile.name[locale]);
@@ -265,69 +195,43 @@ for (const locale of locales) {
       }
     });
 
-    test('shows one card per section, in the order the site reads in', async ({ page }) => {
+    // The portfolio's five sections, in order, each a landmark labelled by
+    // its heading, whose id is the section's anchor and which the header
+    // finds by `data-section`.
+    test('holds the five sections in order, each labelled by its heading', async ({ page }) => {
       await page.goto(at(`/${locale}/`));
-      const cards = page.locator('[data-section-card]');
-      await expect(cards).toHaveCount(sections.length);
-
-      // Experience before projects, on the home page as everywhere else
-      // (requirement 4), and the order asserted from the page rather than
-      // read off the template.
-      const order = await cards.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-section-card')));
-      expect(order, `the section cards on /${locale}/`).toEqual(sections.map((section) => section.section));
-    });
-
-    test('shows a certifications card only while the content has a certification', async ({ page }) => {
-      await page.goto(at(`/${locale}/`));
-      const card = page.locator('[data-section-card="certifications"]');
-      await expect(card).toHaveCount(counted.certifications > 0 ? 1 : 0);
-      // Nothing on the page says "0 certifications": the count line a card
-      // would carry for zero, worded the way the page words it.
-      if (counted.certifications === 0) {
-        const t = strings[locale];
-        const zero = fill(t.home.counts.line, { count: '0', noun: plural(locale, 0, t.home.counts.nouns.certifications) });
-        expect(await page.locator('body').innerText(), `the zero count on /${locale}/`).not.toContain(zero);
+      const found = await page.locator('main [data-section]').evaluateAll((nodes) =>
+        nodes.map((node) => ({
+          id: node.id,
+          level: node.localName,
+          landmark: node.closest('section')?.getAttribute('aria-labelledby') ?? null,
+        })),
+      );
+      expect(found).toEqual(sectionIds.map((id) => ({ id, level: id === 'about' ? 'h1' : 'h2', landmark: id })));
+      for (const id of sectionIds) {
+        const name = (await page.locator(`#${id}`).innerText()).trim();
+        await expect(page.getByRole('region', { name, exact: true }), `the ${id} landmark`).toHaveCount(1);
       }
+      // The courses and the certifications are subsections of Education, a
+      // level down, so their cards are a level below that.
+      await expect(page.locator('section[aria-labelledby="education"] h3#courses')).toHaveCount(1);
+      await expect(page.locator('[data-grid="courses"] h3')).toHaveCount(0);
+      expect(await page.locator('[data-grid="courses"] h4').count()).toBeGreaterThan(0);
     });
 
-    test('leads each section card to its heading and counts what it holds', async ({ page }) => {
+    test('keeps every entry id an address can name', async ({ page }) => {
       await page.goto(at(`/${locale}/`));
-
-      for (const section of sections) {
-        const card = page.locator(`[data-section-card="${section.section}"]`);
-        await expect(card, `the ${section.section} card on /${locale}/`).toHaveAttribute('href', section.href(locale));
-        await expect(card.locator('h3')).toHaveText(section.name(locale));
-        if (section.counts) {
-          await expect(card.locator('[data-counts]'), `the count on the ${section.section} card`).toHaveText(
-            countLine(locale, section.counts),
-          );
-        } else {
-          await expect(card.locator('[data-counts]'), `the ${section.section} card counts nothing`).toHaveCount(0);
-        }
-      }
+      for (const id of entryIds) await expect(page.locator(`main [id="${id}"]`), `#${id}`).toHaveCount(1);
     });
 
-    test('lands each section card on the heading it names', async ({ page }) => {
-      // The anchors are addresses on other pages, so following one is what
-      // proves the heading is there to land on.
-      for (const section of sections) {
-        const href = section.href(locale);
-        const anchor = href.includes('#') ? href.slice(href.indexOf('#') + 1) : undefined;
-        if (!anchor) continue;
-        await page.goto(href);
-        await expect(page.locator(`h2#${anchor}`), `${href} lands on a heading`).toHaveCount(1);
-      }
-    });
-
-    test('offers the two documents last, the resume after the CV', async ({ page }) => {
-      // The CV and the resume are documents rather than lists of entries, so
-      // each says what it holds, counts nothing, and comes after the sections
-      // (requirement 8, and requirement 4's order).
+    // What the header and the sections replace: the monogram, the timeline
+    // from study to work, and the grid of cards leading to each section.
+    test('carries no monogram, no combined timeline, and no section grid', async ({ page }) => {
       await page.goto(at(`/${locale}/`));
-
-      const order = await positions(page, ['[data-section-card="cv"]', '[data-section-card="resume"]']);
-      expect(order, 'both document cards are on the page').not.toContain(-1);
-      expect(order[1], 'the resume card comes after the CV card').toBeGreaterThan(order[0]!);
+      await expect(page.locator('[data-monogram], [data-journey], [data-section-grid], [data-section-card]')).toHaveCount(0);
+      // The name is the first thing in the first screen.
+      expect(await page.locator('[data-hero]').evaluate((hero) => hero.firstElementChild?.localName)).toBe('h1');
+      await expect(page.locator('[data-hero] > h1')).toHaveAttribute('id', 'about');
     });
   });
 }
@@ -349,7 +253,7 @@ async function columnsOf(page: Page, selector: string): Promise<number> {
     .evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(/\s+/).filter(Boolean).length);
 }
 
-const grids = { 'the skill grid': '[data-skill-grid]', 'the section grid': '[data-section-grid]' };
+const grids = { 'the skill grid': '[data-skill-grid]' };
 
 test.describe('the card grids at 360 pixels wide', () => {
   test.use({ viewport: { width: 360, height: 780 } });
@@ -395,112 +299,6 @@ test.describe('the card grids at 1440 pixels wide', () => {
   });
 });
 
-// The timeline from study to work: the nodes in the order `journey` gives,
-// read from src/content/ as the page reads it; each with its kind's icon
-// hidden from assistive technology and the kind said instead; and each
-// leading to an id that exists on the page it names.
-const journeyOrder = (() => {
-  const dir = (name: string): Record<string, any>[] =>
-    readdirSync(path.join(content, name))
-      .filter((file) => file.endsWith('.yaml'))
-      .sort()
-      .map((file) => ({ id: file.replace(/\.yaml$/, ''), ...entryData(name, file) }));
-  const education = dir('education').sort(byStartAscending as (a: any, b: any) => number);
-  const courses = dir('certificates').filter((entry) => isCourse(entry as { kind: 'course' | 'certification' }));
-  const experience = dir('experience');
-  return journey(education, experience, courses, (entry: any) => entry.period.start).map((item) =>
-    item.kind === 'courses' ? { kind: 'courses', href: '/education/#courses' } : item.kind === 'experience'
-      ? { kind: 'experience', href: `/work/#experience-${(item.entry as { id: string }).id}` }
-      : { kind: 'education', href: `/education/#education-${(item.entry as { id: string }).id}` },
-  );
-})();
-
-const journeyIcons = { experience: 'briefcase', education: 'graduation-cap', courses: 'book-open' } as const;
-
-for (const locale of locales) {
-  test.describe(`the timeline on /${locale}/`, () => {
-    test('lays out every node, newest first, each with its kind', async ({ page }) => {
-      await page.goto(at(`/${locale}/`));
-      await expect(page.locator('h2#journey')).toContainText(strings[locale].journey.heading);
-      await expect(page.locator('h2#journey svg')).toHaveAttribute('aria-hidden', 'true');
-      const nodes = page.locator('[data-journey] [data-journey-node]');
-      const found = await nodes.evaluateAll((items) =>
-        items.map((item) => ({ kind: item.getAttribute('data-journey-node'), href: item.getAttribute('href') })),
-      );
-      expect(found).toEqual(journeyOrder.map((node) => ({ kind: node.kind, href: at(`/${locale}${node.href}`) })));
-      for (const [index, node] of journeyOrder.entries()) {
-        const item = nodes.nth(index);
-        await expect(item.locator(`svg[data-icon="${journeyIcons[node.kind as keyof typeof journeyIcons]}"]`)).toHaveAttribute('aria-hidden', 'true');
-        await expect(item.locator('.sr-only')).toHaveText(`${strings[locale].journey.kinds[node.kind as keyof typeof journeyIcons]}: `);
-      }
-      await expect(page.locator('[data-journey] > li')).toHaveCount(journeyOrder.length);
-    });
-
-    test('leads every node to an id on the page it names', async ({ page }) => {
-      for (const node of journeyOrder) {
-        const address = at(`/${locale}${node.href}`);
-        const [target, id] = address.split('#');
-        await page.goto(target!);
-        await expect(page.locator(`[id="${id}"]`), `${id} on ${target}`).toHaveCount(1);
-      }
-    });
-
-    test('draws the rail on the reading start, at 3:1 with its markers', async ({ page }) => {
-      await page.goto(at(`/${locale}/`));
-      const found = await page.evaluate(() => {
-        const rail = document.querySelector('[data-journey]')!;
-        const style = getComputedStyle(rail);
-        const parse = (value: string) => (value.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
-        const luminance = (rgb: number[]) => {
-          const [r, g, b] = rgb.map((v) => {
-            const c = v / 255;
-            return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-          });
-          return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
-        };
-        const page = luminance(parse(getComputedStyle(document.documentElement).backgroundColor));
-        const ratio = (colour: string) => {
-          const l = luminance(parse(colour));
-          return (Math.max(l, page) + 0.05) / (Math.min(l, page) + 0.05);
-        };
-        const marker = document.querySelector('[data-journey-marker]')!;
-        const box = rail.getBoundingClientRect();
-        const dot = marker.getBoundingClientRect();
-        return {
-          left: parseFloat(style.borderLeftWidth),
-          right: parseFloat(style.borderRightWidth),
-          rail: ratio(document.documentElement.dir === 'rtl' ? style.borderRightColor : style.borderLeftColor),
-          marker: ratio(getComputedStyle(marker).backgroundColor),
-          markerNearRight: Math.abs(dot.right - box.right) < 12,
-          markerNearLeft: Math.abs(dot.left - box.left) < 12,
-        };
-      });
-      if (locale === 'ar') {
-        expect(found.right, 'the rail on the right').toBeGreaterThan(0);
-        expect(found.left).toBe(0);
-        expect(found.markerNearRight, 'the markers on the rail').toBe(true);
-      } else {
-        expect(found.left, 'the rail on the left').toBeGreaterThan(0);
-        expect(found.right).toBe(0);
-        expect(found.markerNearLeft, 'the markers on the rail').toBe(true);
-      }
-      expect(found.rail, 'the rail against the page').toBeGreaterThanOrEqual(3);
-      expect(found.marker, 'a marker against the page').toBeGreaterThanOrEqual(3);
-    });
-  });
-
-  test.describe(`the timeline on /${locale}/ with JavaScript disabled`, () => {
-    test.use({ javaScriptEnabled: false });
-
-    test('shows every node', async ({ page }) => {
-      await page.goto(at(`/${locale}/`));
-      const nodes = page.locator('[data-journey] [data-journey-node]');
-      await expect(nodes).toHaveCount(journeyOrder.length);
-      for (const node of await nodes.all()) await expect(node).toBeVisible();
-    });
-  });
-}
-
 // The first screen. The four tiles count what the pages render, read here
 // from src/content/ through the same predicates, and the number is final in
 // the page as built, so a visitor with no script or with reduced motion reads
@@ -520,10 +318,8 @@ for (const locale of locales) {
   const t = strings[locale];
 
   test.describe(`the first screen of /${locale}/`, () => {
-    test('opens on the monogram and the light, both hidden from assistive technology', async ({ page }) => {
+    test('lays the light behind the name, hidden from assistive technology', async ({ page }) => {
       await page.goto(at(`/${locale}/`));
-      await expect(page.locator('[data-monogram]')).toHaveAttribute('aria-hidden', 'true');
-      await expect(page.locator('[data-monogram]')).toHaveText('SA');
       const glow = page.locator('[data-glow]');
       await expect(glow).toHaveAttribute('aria-hidden', 'true');
       expect(await glow.evaluate((node) => node.textContent)).toBe('');
@@ -546,12 +342,13 @@ for (const locale of locales) {
       }
     });
 
-    // Every section heading on the three pages, every section card, and
-    // every tile carries its icon, hidden where the text names the thing.
-    test('puts an icon on every section heading, section card, and tile', async ({ page }) => {
+    // Every section heading on the pages that list entries, the subsections
+    // of Education among them, carries its icon, hidden where the text names
+    // the thing; the tiles' icons are asserted above.
+    test('puts an icon on every section heading', async ({ page }) => {
       for (const route of ['/', '/work/', '/education/']) {
         await page.goto(at(`/${locale}${route}`));
-        const headings = await page.locator('main h2:not(.sr-only)').evaluateAll((nodes) =>
+        const headings = await page.locator('main :is(h2:not(.sr-only), h3#courses, h3#certificates)').evaluateAll((nodes) =>
           nodes.map((node) => ({
             text: node.textContent?.trim(),
             icon: node.querySelector('svg[data-icon]')?.getAttribute('aria-hidden') ?? null,
@@ -560,23 +357,6 @@ for (const locale of locales) {
         expect(headings.length, `headings on ${route}`).toBeGreaterThan(0);
         for (const heading of headings) expect(heading.icon, `the icon on "${heading.text}" on ${route}`).toBe('true');
       }
-      await page.goto(at(`/${locale}/`));
-      for (const card of await page.locator('[data-section-card]').all()) {
-        await expect(card.locator('h3 svg[data-icon]')).toHaveAttribute('aria-hidden', 'true');
-        await expect(card.locator('svg[data-icon="arrow-right"]')).toHaveAttribute('aria-hidden', 'true');
-      }
-      // The arrow points along the reading direction, so it mirrors in Arabic.
-      const scale = await page
-        .locator('[data-section-card] svg[data-icon="arrow-right"]')
-        .first()
-        .evaluate((node) => {
-          // Tailwind mirrors through the `scale` property rather than a
-          // transform: "-1 1" in Arabic, "none" where nothing is scaled.
-          const scale = getComputedStyle(node).scale;
-          return scale === 'none' ? 1 : Number.parseFloat(scale);
-        });
-      if (locale === 'ar') expect(scale, 'the arrow mirrors in Arabic').toBeLessThan(0);
-      else expect(scale, 'the arrow points right in English').toBe(1);
     });
   });
 
@@ -656,8 +436,8 @@ for (const locale of locales) {
   // block, tiles included; on a 390 by 844 phone everything down to the
   // contact actions.
   const sizes = [
-    { width: 1440, height: 900, parts: ['[data-monogram]', 'main h1', '[data-hero-label]', '[data-hero-location]', '[data-contact-actions]', '[data-stat-tiles]'] },
-    { width: 390, height: 844, parts: ['[data-monogram]', 'main h1', '[data-hero-label]', '[data-hero-location]', '[data-contact-actions]'] },
+    { width: 1440, height: 900, parts: ['main h1', '[data-hero-label]', '[data-hero-location]', '[data-contact-actions]', '[data-stat-tiles]'] },
+    { width: 390, height: 844, parts: ['main h1', '[data-hero-label]', '[data-hero-location]', '[data-contact-actions]'] },
   ];
   for (const { width, height, parts } of sizes) {
     test.describe(`the first screen of /${locale}/ at ${width} by ${height}`, () => {

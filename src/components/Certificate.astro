@@ -1,8 +1,10 @@
 ---
 // A certificate card, for a course completion or for a certification: the
-// entry's `kind` decides which grid on the education page holds it and is
-// what the card says it is, so a reclassification in the content moves the
-// card and nothing else changes.
+// entry's `kind` decides which grid on the home page holds it and is what
+// the card says it is, so a reclassification in the content moves the card
+// and nothing else changes. Its name is a heading at `level`, 3 unless the
+// page says otherwise: the home page's grids sit under third-level headings
+// of their own, so their cards pass 4.
 //
 // Where the entry names a document, the whole card is a link to that PDF, so
 // with no script a click opens the document itself; the inline script in the
@@ -21,6 +23,7 @@ import { localized } from '../lib/localized';
 interface Props {
   locale: Locale;
   entry: CollectionEntry<'certificates'>;
+  level?: 3 | 4;
 }
 
 // The documents and their previews, read once for the whole build rather than
@@ -47,7 +50,8 @@ const previews = import.meta.glob('../content/certificates/files/*.webp', {
   eager: true,
 }) as Record<string, ImageMetadata>;
 
-const { locale, entry } = Astro.props;
+const { locale, entry, level = 3 } = Astro.props;
+const Heading = `h${level}` as const;
 const { data } = entry;
 const t = strings[locale];
 const text = localized(locale, 'certificates', entry.id);
@@ -76,7 +80,7 @@ const caption = `${name}${t.listSeparator}${data.issuer}`;
 >
   <div class="flex h-full flex-col">
     <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-      <h3 class="font-semibold tracking-tight">{name}</h3>
+      <Heading class="font-semibold tracking-tight">{name}</Heading>
       {data.date && <p class="text-sm text-muted-foreground tabular-nums">{formatDate(locale, data.date)}</p>}
     </div>
     <p class="mt-1 text-sm text-muted-foreground">{data.issuer}</p>

@@ -1,13 +1,13 @@
 // The mechanism behind "one source of content": a project added to
-// src/content/projects/ appears on the work page, the CV page, the resume
-// page, and resume.json in both languages, with no change to any file outside
-// the content source, and disappears again when removed. A course added to
-// src/content/certificates/ reaches the education page and resume.json and
-// not the CV, which reads the courses as one self-study entry; a
-// certification added there reaches the education page, the CV page, and
-// resume.json, and brings back the certifications section on the education
-// page, the card on the home page, and the section on the CV, which render
-// only while one exists. A language added to src/content/languages/ reaches
+// src/content/projects/ appears on the home page, the work page, the CV
+// page, the resume page, and resume.json in both languages, with no change to
+// any file outside the content source, and disappears again when removed. A
+// course added to src/content/certificates/ reaches the home page, the
+// education page, and resume.json and not the CV, which reads the courses as
+// one self-study entry; a certification added there reaches the home page,
+// the education page, the CV page, and resume.json, and brings back the
+// certifications section on the home page and the education page and the
+// section on the CV, which render only while one exists. A language added to src/content/languages/ reaches
 // the CV page, the resume page, and resume.json, and no page of the site.
 //
 //   pnpm test:content
@@ -22,8 +22,9 @@
 // tolerates their own uncommitted work while still catching a build that
 // writes outside dist/.
 //
-// Neither fixture certificate names a document, so its card on the education
-// page has nothing to open and must be neither a link nor a button. Every
+// Neither fixture certificate names a document, so its card on the home page
+// and the education page has nothing to open and must be neither a link nor
+// a button. Every
 // real certificate carries its document, so this is the one place that card
 // is rendered and checked.
 //
@@ -71,6 +72,8 @@ const project = {
   name: 'fixture-mechanism-probe-4f9c2e',
   file: path.join(root, contentDir, 'projects', 'fixture-mechanism-probe-4f9c2e.yaml'),
   outputs: [
+    'en/index.html',
+    'ar/index.html',
     'en/work/index.html',
     'ar/work/index.html',
     'en/cv/index.html',
@@ -102,14 +105,14 @@ status: completed
 resume: true
 `;
 
-// The course reaches the education page and the JSON documents and not the
-// CV: the CV names no course, and that absence is what proves the courses
+// The course reaches the home page, the education page, and the JSON
+// documents and not the CV: the CV names no course, and that absence is what proves the courses
 // collapsed into the self-study entry rather than merely moved.
 const course = {
   name: 'fixture-certificate-without-document-7b1d0a',
   kind: 'course',
   file: path.join(root, contentDir, 'certificates', 'fixture-certificate-without-document-7b1d0a.yaml'),
-  outputs: ['en/education/index.html', 'ar/education/index.html', 'en/resume.json', 'ar/resume.json'],
+  outputs: ['en/index.html', 'ar/index.html', 'en/education/index.html', 'ar/education/index.html', 'en/resume.json', 'ar/resume.json'],
 };
 course.text = `# Written by scripts/test-content-mechanism.mjs and removed by it. If this
 # file is in the tree, that script was interrupted; delete it.
@@ -121,12 +124,21 @@ kind: course
 `;
 
 // The certification reaches the CV as well, and its presence is what brings
-// the certifications section, card, and heading back (assertCertificationsShown).
+// the certifications sections and headings back (assertCertificationsShown).
 const certification = {
   name: 'fixture-certification-without-document-3c8e1f',
   kind: 'certification',
   file: path.join(root, contentDir, 'certificates', 'fixture-certification-without-document-3c8e1f.yaml'),
-  outputs: ['en/education/index.html', 'ar/education/index.html', 'en/cv/index.html', 'ar/cv/index.html', 'en/resume.json', 'ar/resume.json'],
+  outputs: [
+    'en/index.html',
+    'ar/index.html',
+    'en/education/index.html',
+    'ar/education/index.html',
+    'en/cv/index.html',
+    'ar/cv/index.html',
+    'en/resume.json',
+    'ar/resume.json',
+  ],
 };
 certification.text = `# Written by scripts/test-content-mechanism.mjs and removed by it. If this
 # file is in the tree, that script was interrupted; delete it.
@@ -348,13 +360,12 @@ async function assertProjectLinked() {
   }
 }
 
-// A fixture certificate's card on the education page is neither a link nor a
-// button and carries no document, because the entry names none. The card is
-// the nearest element before the name that is marked with the entry's kind;
-// its opening tag says what it is.
+// A fixture certificate's card on the home page and the education page is
+// neither a link nor a button and carries no document, because the entry
+// names none. The card is the nearest element before the name that is marked
+// with the entry's kind; its opening tag says what it is.
 async function assertCardUnopenable(certificate) {
-  for (const locale of ['en', 'ar']) {
-    const file = `${locale}/education/index.html`;
+  for (const file of ['en/index.html', 'ar/index.html', 'en/education/index.html', 'ar/education/index.html']) {
     const html = await readFile(path.join(dist, file), 'utf8');
     const at = html.indexOf(certificate.name);
     const marker = html.lastIndexOf(`data-entry="${certificate.kind}"`, at);
@@ -368,10 +379,11 @@ async function assertCardUnopenable(certificate) {
   }
 }
 
-// The three surfaces that exist only while a certification does: the card on
-// the home page, the heading on the education page, and the section on the
-// CV, in both languages. With the fixture certification present all six are
-// there; with it removed, and no real certification in the content, none is.
+// The three surfaces that exist only while a certification does: the heading
+// on the home page, the heading on the education page, and the section on
+// the CV, in both languages. With the fixture certification present all six
+// are there; with it removed, and no real certification in the content, none
+// is.
 // Where the content does carry a real certification the second half cannot
 // be told from the fixture's effect, so it is asserted present instead and
 // the line says which reading applied.
@@ -386,7 +398,7 @@ async function assertCertificationsShown(withFixture) {
   }
   const expected = withFixture || real;
   const surfaces = [
-    ['index.html', 'data-section-card="certifications"'],
+    ['index.html', 'id="certificates"'],
     ['education/index.html', 'id="certificates"'],
     ['cv/index.html', 'data-cv-section="certifications"'],
   ];
@@ -402,7 +414,7 @@ async function assertCertificationsShown(withFixture) {
       }
     }
   }
-  console.log(`certifications: the card, the heading, and the CV section are ${expected ? 'present' : 'absent'} in both languages${real ? ' (a real certification is in the content)' : ''}`);
+  console.log(`certifications: the two headings and the CV section are ${expected ? 'present' : 'absent'} in both languages${real ? ' (a real certification is in the content)' : ''}`);
 }
 
 async function assertAbsent(fixture) {
