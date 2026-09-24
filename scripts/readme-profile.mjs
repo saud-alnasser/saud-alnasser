@@ -1,12 +1,11 @@
 // Writes the profile block of README.md, the page GitHub shows for the
 // account, from the content source and the site config: the summary, the
-// profiles other than GitHub, and the addresses of the three things a reader
-// came for, the site, the CV, and the resume, each in both languages. Who
-// Saud is stays authored once, in
-// src/content/, and the profile page repeats it without a second hand-written
-// copy. The skills, the projects, and the rest of the record are on the site;
-// the README points at it rather than growing a copy. Run after editing the
-// profile:
+// profiles other than GitHub, and the site's address in both languages. The CV
+// and the resume are one press away from the site's header, so the block does
+// not link them itself. Who Saud is stays authored once, in src/content/, and
+// the profile page repeats it without a second hand-written copy. The skills,
+// the projects, and the rest of the record are on the site; the README points
+// at it rather than growing a copy. Run after editing the profile:
 //
 //   pnpm readme           # rewrites the block between the markers
 //   pnpm readme --check   # exits non-zero when the README is behind
@@ -48,13 +47,9 @@ function wrap(text, width = 76) {
 // A full address on the site, from the same `site` and `base` the build uses.
 const at = (sitePath) => new URL(joinBase(base, sitePath), site).href;
 
-// The three things the README links to, in the order a reader wants them: the
-// site first, then the long document, then the short one.
-const links = [
-  { emoji: '🌐', label: 'Portfolio', path: '' },
-  { emoji: '📄', label: 'CV', path: 'cv/' },
-  { emoji: '📃', label: 'Resume', path: 'resume/' },
-];
+// What the README links to on the site: the portfolio, which leads to the
+// rest, the two documents included.
+const links = [{ emoji: '🌐', label: 'Portfolio', path: '' }];
 
 // The profiles the block links to, above the site: every one in the content
 // except GitHub, because this README is the GitHub profile page and a link to

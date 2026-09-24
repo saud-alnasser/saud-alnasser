@@ -113,6 +113,17 @@
   --duration-short: 150ms;
   --duration-medium: 250ms;
   --duration-long: 350ms;
+
+  /* The header's height, which stays on screen above everything a link
+     jumps to: 3.5rem while it holds the name and the controls alone, 4rem
+     from `lg`, where it holds the whole row. */
+  --header-height: 3.5rem;
+}
+
+@media (width >= 64rem) {
+  :root {
+    --header-height: 4rem;
+  }
 }
 
 @media (prefers-color-scheme: dark) {
@@ -223,10 +234,23 @@
   :is(main, [data-hero]) > :nth-child(5) {
     --i: 4;
   }
+  /* The light comes last in the block, after the name, and still arrives
+     with the first step. */
+  [data-hero] > [data-glow] {
+    --i: 0;
+  }
   :is(main, [data-hero]) > :is(h1, section, article, [data-hero-summary]) {
     animation-name: enter-rise;
   }
   main > [data-hero] {
+    animation: none;
+  }
+  /* A page opened at an anchor, as the header's links open the home page
+     from a document and the old addresses forward to it, arrives without
+     the entrance: the browser scrolls to the anchor while the page is still
+     arriving, and a section held low by it would leave its heading under
+     the header once it settled. */
+  :root:has(:target) :is(main, [data-hero]) > * {
     animation: none;
   }
 
@@ -327,6 +351,9 @@
     font-family: var(--font-sans);
     background-color: var(--background);
     color: var(--foreground);
+    /* A jump to an anchor, a heading scrolled to by focus, and the find bar
+       all stop a step below the sticky header rather than under it. */
+    scroll-padding-top: calc(var(--header-height) + 1rem);
   }
 
   /* An Arabic document takes the bundled face for its Arabic text; the
@@ -381,9 +408,50 @@
 }
 
 /*
- * The two disclosures, the language menu and a card's fold, are native
- * <details> elements: they open and close with no script. The rules here are
- * what utilities cannot express, keyed on the element's own open state.
+ * The home page's last section is at least as tall as the screen below the
+ * header, so its heading can be brought up to the header like every other
+ * section's, however short the section is. Without it a link to the last
+ * section from near the foot of the page would not move the page at all.
+ * Only a page of sections has one; the documents end as they end.
+ */
+main:has(> section [data-section]) > section:last-child {
+  min-height: calc(100vh - var(--header-height) - 1rem);
+}
+
+/*
+ * The current link in the header and the phone menu: a document's own link
+ * on that document (`page`), and on the home page the section being read
+ * (`location`). It takes the text colour and a bar in the accent, a painted
+ * box rather than a colour, so which link is current never rests on a text
+ * colour alone. In the header the bar runs under the link; in the phone menu,
+ * whose links are rows, down the row's start.
+ */
+[data-nav-link][aria-current] {
+  color: var(--foreground);
+}
+
+[data-nav-link][aria-current]::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0.125rem;
+  height: 0.125rem;
+  border-radius: 9999px;
+  background-color: var(--primary);
+}
+
+[data-site-menu] [data-nav-link][aria-current]::after {
+  inset-block: 0.625rem;
+  inset-inline: 0 auto;
+  width: 0.1875rem;
+  height: auto;
+}
+
+/*
+ * The disclosures, the language menu, the phone menu, and a card's fold, are
+ * native <details> elements: they open and close with no script. The rules
+ * here are what utilities cannot express, keyed on the element's own open
+ * state.
  */
 details > summary::-webkit-details-marker {
   display: none;

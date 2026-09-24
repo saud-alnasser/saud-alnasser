@@ -8,7 +8,20 @@ import { at, pages } from './pages';
 // nothing moves at all where it is not allowed to, and the entrance never
 // holds the page's largest text back from being painted.
 
-const settled = (page: Page) => page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished)));
+// Waits until nothing is moving: the bundled faces in, so no late swap
+// reflows the page and scroll anchoring moves it, and every animation over.
+// An animation cancelled on the way, as a hover's colour is when the fold it
+// is on opens and restyles it, has stopped rather than failed, and what
+// replaced it is waited for in the next pass.
+const settled = (page: Page) =>
+  page.evaluate(async () => {
+    await document.fonts.ready;
+    for (let pass = 0; pass < 10; pass += 1) {
+      const running = document.getAnimations();
+      if (running.length === 0) return;
+      await Promise.all(running.map((animation) => animation.finished.catch(() => undefined)));
+    }
+  });
 
 // Every duration the page could move on: each running animation's, and each
 // element's computed transition and animation durations, with the fold's
@@ -150,7 +163,7 @@ test.describe('with motion allowed', () => {
         return { shadow: computed.boxShadow, translate: computed.translate, transform: computed.transform };
       });
 
-    await page.goto(at('/en/work/'));
+    await page.goto(at('/en/'));
     await settled(page);
     const project = '[data-entry="project"] >> nth=0';
     await page.locator(project).scrollIntoViewIfNeeded();
@@ -164,7 +177,7 @@ test.describe('with motion allowed', () => {
 
     await page.goto(at('/en/'));
     await settled(page);
-    const card = '[data-section-card] >> nth=0';
+    const card = '[data-courses-node]';
     const before = await style(card);
     await page.locator(card).focus();
     await settled(page);
@@ -176,7 +189,7 @@ test.describe('with motion allowed', () => {
   // A fold and a dialog open and close in place: the address and the scroll
   // position are what they were.
   test('a fold opens and closes in place', async ({ page }) => {
-    await page.goto(at('/en/work/'));
+    await page.goto(at('/en/'));
     await settled(page);
     const summary = page.locator('[data-entry="experience"] details summary').first();
     await summary.scrollIntoViewIfNeeded();
@@ -191,7 +204,7 @@ test.describe('with motion allowed', () => {
   });
 
   test('the certificate dialog opens and closes in place', async ({ page }) => {
-    await page.goto(at('/en/education/'));
+    await page.goto(at('/en/'));
     await settled(page);
     const card = page.locator('[data-document]').first();
     await card.scrollIntoViewIfNeeded();
@@ -204,6 +217,56 @@ test.describe('with motion allowed', () => {
     await expect(page.locator('[data-certificate-dialog]')).not.toHaveAttribute('open');
     await settled(page);
     expect(await page.evaluate(() => ({ href: location.href, y: scrollY })), 'closed').toEqual(before);
+  });
+});
+
+// A section link glides: the page is between where it was and the section
+// part of the way through, and settled on the section by 400ms. Sampled every
+// frame from the press, in the page, so the samples are the page's own.
+const glide = (page: Page, id: string) =>
+  page.evaluate(
+    (id) =>
+      new Promise<{ start: number; samples: { t: number; y: number }[] }>((resolve) => {
+        const link = document.querySelector<HTMLElement>(`body > header > div > nav a[data-section-link="${id}"]`)!;
+        const samples: { t: number; y: number }[] = [];
+        const start = window.scrollY;
+        const from = performance.now();
+        const step = () => {
+          const t = performance.now() - from;
+          samples.push({ t, y: window.scrollY });
+          if (t < 500) requestAnimationFrame(step);
+          else resolve({ start, samples });
+        };
+        link.click();
+        requestAnimationFrame(step);
+      }),
+    id,
+  );
+
+test.describe('the glide to a section', () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  test('passes between its start and its end, and settles by 400ms', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.goto(at('/en/'));
+    await settled(page);
+    const { start, samples } = await glide(page, 'education');
+    const end = samples.at(-1)!.y;
+    expect(end, 'the page moved').toBeGreaterThan(start);
+    expect(samples.some(({ y }) => y > start && y < end), 'a frame between the start and the end').toBe(true);
+    for (const { t, y } of samples.filter(({ t }) => t >= 400)) expect(y, `scrollY at ${Math.round(t)}ms`).toBe(end);
+    const gap = await page.evaluate(() => document.getElementById('education')!.getBoundingClientRect().top - document.querySelector('body > header')!.getBoundingClientRect().bottom);
+    expect(gap).toBeGreaterThanOrEqual(0);
+    expect(gap).toBeLessThanOrEqual(24);
+  });
+
+  test('is one step under reduced motion', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto(at('/en/'));
+    const { start, samples } = await glide(page, 'education');
+    const end = samples.at(-1)!.y;
+    expect(end).toBeGreaterThan(start);
+    expect(samples[0]!.y, 'the first frame after the press is at the section').toBe(end);
   });
 });
 
@@ -307,10 +370,10 @@ test.describe('the reveal on scroll', () => {
     });
   }
 
-  // Beside it, a check that the observer has something to do: on the work
+  // Beside it, a check that the observer has something to do: on the home
   // page there are cards below the first screen, and they start hidden.
   test('hides what is below the first screen until it scrolls in', async ({ page }) => {
-    await page.goto(at('/en/work/'));
+    await page.goto(at('/en/'));
     const waiting = await page.evaluate(() => document.querySelectorAll('body [data-reveal]:not([data-revealed])').length);
     expect(waiting).toBeGreaterThan(0);
     const opacity = await page.locator('body [data-reveal]:not([data-revealed])').last().evaluate((node) => getComputedStyle(node).opacity);
@@ -375,7 +438,7 @@ test.describe('the curves with motion allowed', () => {
 
 // The crossfade itself, read while it runs. Its pseudo-elements exist only
 // during a navigation, so the sweeps above never meet them: this follows a
-// link from the home page to the work page and, as the new page is revealed,
+// link from the home page to the CV and, as the new page is revealed,
 // reads every animation the transition runs, the header's group among them.
 test.describe('the page crossfade with motion allowed', () => {
   test.use({ reducedMotion: 'no-preference' });
@@ -400,8 +463,8 @@ test.describe('the page crossfade with motion allowed', () => {
       });
     });
     await page.goto(at('/en/'));
-    await page.locator('body > header nav a').nth(1).click();
-    await page.waitForURL(`**${at('/en/work/')}`);
+    await page.locator(`body > header > div > nav a[href="${at('/en/cv/')}"]`).click();
+    await page.waitForURL(`**${at('/en/cv/')}`);
     const crossfade = await page.waitForFunction(() => (window as unknown as { crossfade?: string[] }).crossfade);
     const parts = (await crossfade.jsonValue()) as string[];
     expect(parts.some((part) => part.includes('(site-header)')), 'the header takes part').toBe(true);

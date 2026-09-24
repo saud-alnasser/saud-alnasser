@@ -115,9 +115,9 @@ const projects = defineCollection({
       status: z.enum(projectStatuses),
       resume,
       order: z.number().int().optional(),
-      // The one project the work page and the home page put forward, as a
-      // wider card ahead of the others. Absent means no. Only a project that
-      // is shown may carry it, and src/lib/shown.ts refuses two.
+      // The one project the home page puts forward, as a wider card ahead of
+      // the others. Absent means no. Only a project that is shown may carry
+      // it, and src/lib/shown.ts refuses two.
       featured: z.boolean().optional(),
     })
     .strict()
@@ -167,8 +167,8 @@ const education = defineCollection({
 // that is not there fails the build naming the file rather than shipping a
 // dead link or a blank card, and a PDF added without its preview fails the
 // same way until the command has run. A certificate names its own, and so
-// does an institution, for the degree certificate the education page opens
-// from the university card; the two collections keep their files apart.
+// does an institution, for the degree certificate the home page opens from
+// the university card; the two collections keep their files apart.
 function documentUnder(collection: 'certificates' | 'education') {
   const directory = fileURLToPath(new URL(`./content/${collection}/`, import.meta.url));
   return z

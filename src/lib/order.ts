@@ -49,3 +49,10 @@ export function byDateAscending<T extends { date?: string }>(a: T, b: T): number
   if (b.date === undefined) return -1;
   return key(a.date).localeCompare(key(b.date));
 }
+
+// The same, newest first, and the undated still last: the order the site
+// lists the certificates in.
+export function byDateDescending<T extends { date?: string }>(a: T, b: T): number {
+  if (a.date === undefined || b.date === undefined) return byDateAscending(a, b);
+  return byDateAscending(b, a);
+}

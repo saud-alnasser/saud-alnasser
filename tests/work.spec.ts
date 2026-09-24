@@ -9,12 +9,15 @@ import { isShown } from '../src/lib/shown';
 import { technologyMark } from '../src/lib/technologies';
 import { at, locales, type Locale } from './pages';
 
-// The work page as a pair of card grids: every project and every placement
-// inside a card, one column on a phone and two on a desktop, the placement's
-// highlights folded behind a control that opens in place and needs no
-// script. What the cards must show is read from src/content/, the way
-// scripts/check-dist.mjs reads it, so a card that drifts from the content
-// source fails here rather than passing against a copy of itself.
+// The experience and projects sections as a pair of card grids: every
+// project and every placement inside a card, one column on a phone and two
+// on a desktop, the placement's highlights folded behind a control that
+// opens in place and needs no script. What the cards must show is read from
+// src/content/, the way scripts/check-dist.mjs reads it, so a card that
+// drifts from the content source fails here rather than passing against a
+// copy of itself.
+//
+// Both sections are on the home page.
 
 interface Localized {
   en: string;
@@ -82,9 +85,9 @@ const foldLabel = (locale: Locale, state: 'show' | 'hide', count: number) =>
 
 const fold = (card: Locator) => card.locator('details');
 
-test.describe('the work page', () => {
+test.describe('the experience and projects sections', () => {
   for (const locale of locales) {
-    const url = at(`/${locale}/work/`);
+    const url = at(`/${locale}/`);
 
     test(`${url} puts every entry inside a card`, async ({ page }) => {
       await page.goto(url);
@@ -95,7 +98,7 @@ test.describe('the work page', () => {
 
       // A card is a bounded surface: its own colour, a border, and a radius.
       const background = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
-      const surfaces = await page.locator('[data-entry]').evaluateAll((nodes) =>
+      const surfaces = await page.locator(':is([data-grid="experience"], [data-grid="projects"]) [data-entry]').evaluateAll((nodes) =>
         nodes.map((node) => {
           const style = getComputedStyle(node);
           return {
@@ -250,7 +253,7 @@ test.describe('at 360 pixels wide', () => {
   test.use({ viewport: { width: 360, height: 780 } });
 
   for (const locale of locales) {
-    const url = at(`/${locale}/work/`);
+    const url = at(`/${locale}/`);
 
     test(`${url} lays one column and does not scroll sideways`, async ({ page }) => {
       await page.goto(url);
@@ -268,7 +271,7 @@ test.describe('at 1440 pixels wide', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
   for (const locale of locales) {
-    const url = at(`/${locale}/work/`);
+    const url = at(`/${locale}/`);
 
     test(`${url} lays two or more columns, none wider than its track`, async ({ page }) => {
       await page.goto(url);
@@ -297,10 +300,10 @@ test.describe('at 1440 pixels wide', () => {
       return { first, second };
     };
 
-    const arabic = await firstTwo(at('/ar/work/'));
+    const arabic = await firstTwo(at('/ar/'));
     expect(arabic.first.x, 'the first Arabic card sits right of the second').toBeGreaterThan(arabic.second.x);
 
-    const english = await firstTwo(at('/en/work/'));
+    const english = await firstTwo(at('/en/'));
     expect(english.first.x, 'the first English card sits left of the second').toBeLessThan(english.second.x);
   });
 });
@@ -314,7 +317,7 @@ test.describe('with JavaScript disabled', () => {
   test.use({ javaScriptEnabled: false, reducedMotion: 'reduce' });
 
   for (const locale of locales) {
-    const url = at(`/${locale}/work/`);
+    const url = at(`/${locale}/`);
 
     test(`${url} still opens the fold`, async ({ page }) => {
       // The fold is a native <details>, so nothing about it waits on a
@@ -340,9 +343,9 @@ test('badge rows fill from the right in Arabic and the left in English', async (
     const first = (await list.locator('[data-badge]').first().boundingBox())!;
     return { left: first.x - box.x, right: box.x + box.width - (first.x + first.width) };
   };
-  const arabic = await edges(at('/ar/work/'));
+  const arabic = await edges(at('/ar/'));
   expect(arabic.right, 'the first Arabic badge at the right edge').toBeLessThanOrEqual(1);
-  const english = await edges(at('/en/work/'));
+  const english = await edges(at('/en/'));
   expect(english.left, 'the first English badge at the left edge').toBeLessThanOrEqual(1);
 });
 
@@ -353,7 +356,7 @@ test.describe('the featured project', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
   for (const locale of locales) {
-    const url = at(`/${locale}/work/`);
+    const url = at(`/${locale}/`);
 
     test(`${url} leads the projects with the featured one, once`, async ({ page }) => {
       expect(featured, 'a project is marked featured in the content').toBeDefined();
@@ -418,7 +421,7 @@ const visibleGrid = (page: Page) =>
 
 test.describe('the project filter', () => {
   for (const locale of locales) {
-    const url = at(`/${locale}/work/`);
+    const url = at(`/${locale}/`);
     const t = strings[locale];
 
     test(`${url} offers a chip per technology two projects share`, async ({ page }) => {
@@ -482,7 +485,7 @@ test.describe('the project filter with JavaScript disabled', () => {
   test.use({ javaScriptEnabled: false });
 
   for (const locale of locales) {
-    const url = at(`/${locale}/work/`);
+    const url = at(`/${locale}/`);
 
     test(`${url} shows no chips and every project`, async ({ page }) => {
       await page.goto(url);

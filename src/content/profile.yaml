@@ -4,8 +4,8 @@ profile:
     en: Saud Alnasser
     ar: سعود الناصر
   label:
-    en: Software developer
-    ar: مطور برمجيات
+    en: Software engineer
+    ar: مهندس برمجيات
   # Two summaries, because there are two documents and they carry different
   # entries. Split on 2026-09-11, by Saud's decision, after one field had been
   # rewritten twice in a day trying to serve both:
@@ -30,11 +30,19 @@ profile:
   # document, and no JSON file. The clause was the only place it was named
   # anywhere, and a reader following it arrived at nothing. Do not restore it
   # on the grounds that the entry is in the source: when its status changes,
-  # Nova reaches the work page and the CV on its own, the way every other
+  # Nova reaches the home page and the CV on its own, the way every other
   # project gets there.
   #
   # Keeping them apart is the cost of the split, and it is the reason they sit
   # a few lines apart under one comment rather than in two files.
+  #
+  # Rewritten on 2026-09-24 at Saud's request, both of them: plainer, shorter,
+  # opening on "Software engineer", and naming only work he built and learned
+  # from, which is rentable. `summary` closes on the role he is looking for,
+  # in his own words from his LinkedIn profile, pared down. The PL/0 compiler
+  # and the Monkey interpreter stay on the site as projects and leave the
+  # summary. So does cachescribe: no version on npm ships its built code, so
+  # installing it has never given a working import.
   #
   # Length on the resume is measured, never assumed. Lengthening
   # `resumeSummary` means running `pnpm render:pdf` and reading the free
@@ -42,26 +50,25 @@ profile:
   # has no budget, because the CV has no page count to hold.
   summary:
     en: >-
-      Software developer in Riyadh, working mostly in Rust and TypeScript.
-      Built an offline-first desktop rent tracker on Tauri, SvelteKit, and
-      Turso, and published an npm package that keeps a cache on the file
-      system between runs. Most of the rest is language work in Rust: a PL/0
-      compiler and an interpreter for the Monkey language.
+      Software engineer and computer science graduate in Riyadh, working
+      mainly in TypeScript and Rust. Sole developer of rentable, a desktop app
+      for tracking rent payments that works offline. Looking for a junior
+      software engineering role building products people rely on, alongside
+      an experienced team.
     ar: >-
-      مطور برمجيات في الرياض، يعمل في الغالب بلغتي Rust وTypeScript. بنى
-      متتبعًا لمدفوعات الإيجار على سطح المكتب يعمل دون اتصال أولاً باستخدام
-      Tauri وSvelteKit وTurso، ونشر حزمة npm تحتفظ بذاكرة تخزين مؤقت في نظام
-      الملفات بين تشغيلات البرنامج. وأغلب ما تبقى عمل في اللغات بلغة Rust:
-      مترجم للغة PL/0 ومفسر للغة Monkey.
+      مهندس برمجيات وخريج علوم حاسب في الرياض، يعمل في الغالب بلغتي
+      TypeScript وRust. المطور الوحيد لـ rentable، تطبيق لسطح المكتب لتتبع
+      مدفوعات الإيجار يعمل دون اتصال. يتطلع إلى وظيفة مهندس برمجيات مبتدئ
+      يبني فيها منتجات يعتمد عليها الناس، ضمن فريق ذي خبرة.
   resumeSummary:
     en: >-
-      Software developer in Riyadh, working mostly in Rust and TypeScript.
-      Sole developer of rentable, an offline-first desktop tracker for rent
-      payments on Tauri, SvelteKit, and Turso.
+      Software engineer and computer science graduate in Riyadh, working
+      mainly in TypeScript and Rust. Sole developer of rentable, a desktop app
+      for tracking rent payments that works offline.
     ar: >-
-      مطور برمجيات في الرياض، يعمل في الغالب بلغتي Rust وTypeScript. المطور
-      الوحيد لـ rentable، متتبع لمدفوعات الإيجار على سطح المكتب يعمل دون
-      اتصال أولاً، مبني على Tauri وSvelteKit وTurso.
+      مهندس برمجيات وخريج علوم حاسب في الرياض، يعمل في الغالب بلغتي
+      TypeScript وRust. المطور الوحيد لـ rentable، تطبيق لسطح المكتب لتتبع
+      مدفوعات الإيجار يعمل دون اتصال.
   email: saud4services@gmail.com
   nationality:
     en: Saudi

@@ -101,6 +101,7 @@ Start at [[protocol]].
 | 29-credentials-as-one-self-study-line | implemented | [[efforts/29-credentials-as-one-self-study-line/spec]] | 0 | 0 | 3 |
 | 3-site-redesign | implemented | [[efforts/3-site-redesign/spec]] | 0 | 1 | 8 |
 | 31-portfolio-rework | implemented | [[efforts/31-portfolio-rework/spec]] | 3 | 0 | 8 |
+| 33-one-page-portfolio | implemented | [[efforts/33-one-page-portfolio/spec]] | 0 | 1 | 6 |
 | 5-sections-and-resume | implemented | [[efforts/5-sections-and-resume/spec]] | 0 | 0 | 6 |
 | 7-document-downloads-and-contact-details | implemented | [[efforts/7-document-downloads-and-contact-details/spec]] | 1 | 0 | 6 |
 
@@ -170,6 +171,12 @@ Every task of every effort. The tracker carries the effort, never its tasks.
 | [[efforts/31-portfolio-rework/tickets/06-the-project-filter]] feat(site): the project grid filtered by technology, announcing how many projects remain | 31-portfolio-rework | resolved | 05 |
 | [[efforts/31-portfolio-rework/tickets/07-one-timeline-from-study-to-work]] feat(site): one timeline on the home page from study to work, each node leading to its detail | 31-portfolio-rework | resolved | 01 |
 | [[efforts/31-portfolio-rework/tickets/08-the-first-screen]] feat(site): a first screen with a monogram, stat tiles counted from the content, and icons on every section | 31-portfolio-rework | resolved | 05, 07 |
+| [[efforts/33-one-page-portfolio/tickets/01-newest-first]] feat(site): every list laid out in time reads newest first | 33-one-page-portfolio | resolved | — |
+| [[efforts/33-one-page-portfolio/tickets/02-the-one-page]] feat(site): the home page holds every section of the portfolio | 33-one-page-portfolio | resolved | 01 |
+| [[efforts/33-one-page-portfolio/tickets/03-the-old-addresses-forward]] feat(site): the work and education addresses forward to their sections | 33-one-page-portfolio | resolved | 02 |
+| [[efforts/33-one-page-portfolio/tickets/04-the-sticky-header]] feat(site): a header that stays on screen and names every section once | 33-one-page-portfolio | resolved | 03 |
+| [[efforts/33-one-page-portfolio/tickets/05-the-glide-and-the-current-section]] feat(site): the header glides to a section and marks the one being read | 33-one-page-portfolio | resolved | 04 |
+| [[efforts/33-one-page-portfolio/tickets/06-a-plainer-description]] feat(content): a plainer description, and a README without the documents | 33-one-page-portfolio | resolved | — |
 | [[efforts/5-sections-and-resume/tickets/01-contract-and-predicate]] feat(content): a completion status on projects, a kind on certificates, a resume marker, and the one predicate every output reads | 5-sections-and-resume | resolved | — |
 | [[efforts/5-sections-and-resume/tickets/02-sections]] feat(site): experience before projects, courses and certifications as their own grids, and the home page's section index | 5-sections-and-resume | resolved | 01 |
 | [[efforts/5-sections-and-resume/tickets/03-documents]] feat(cv): one document component rendering the CV and a one-page resume, each as a page and a PDF | 5-sections-and-resume | resolved | 01 |

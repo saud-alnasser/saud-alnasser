@@ -8,7 +8,7 @@ import { fill, formatPeriod, strings } from '../src/lib/i18n';
 import { icons } from '../src/lib/icons';
 import { levelLine } from '../src/lib/languages';
 import { codedProfile, profileIcon } from '../src/lib/networks';
-import { byDateAscending, byOrderThenName, byStartAscending } from '../src/lib/order';
+import { byDateDescending, byOrderThenName, byStartAscending } from '../src/lib/order';
 import { isCertification, isCourse, isShown, onResume } from '../src/lib/shown';
 import { educationTimeline } from '../src/lib/timeline';
 import { at, locales, type Locale } from './pages';
@@ -80,14 +80,15 @@ const tailOrder = {
 } as const;
 
 // The courses in the site's order, by date with the undated last, which the
-// timeline helper reads the node's period from; and the CV's education
-// section as the helper lays it out, the institutions with the self-study
-// entry in the node's place. The resume prints the institutions alone.
-const courses = certificates.filter((data) => isCourse(data)).sort(byDateAscending);
+// timeline helper reads the node's period from; and each document's
+// education section as the helper lays it out, newest first: on the CV the
+// institutions with the self-study entry in the node's place, and on the
+// resume the institutions alone, which is the helper given no courses.
+const courses = certificates.filter((data) => isCourse(data)).sort(byDateDescending);
 const institutions = entries('education').sort(byStartAscending);
 const timeline = {
   cv: educationTimeline(institutions, courses),
-  resume: institutions.map((entry) => ({ kind: 'education' as const, entry })),
+  resume: educationTimeline(institutions, []),
 };
 
 // What the self-study entry is authored to say (src/content/self-study.yaml):
@@ -183,7 +184,7 @@ for (const locale of locales) {
       });
 
       // The online courses as one self-study entry in the CV's education
-      // section, in the node's place before the most recent institution, and
+      // section, in the node's place after the most recent institution, and
       // on the resume no such entry at all. The entry names the year, the
       // count of courses, every provider, and every authored topic in the
       // page's language, and no course is listed one by one anywhere on
@@ -437,10 +438,12 @@ for (const locale of locales) {
         await expect(page.locator(`main a[href$="resume.json"]`)).toHaveCount(0);
         await expect(page.locator(`main a[href="${at(`/${locale}/${other}/`)}"]`)).toHaveCount(0);
 
-        // The header's first list is the site's routes; the second holds the
-        // language menu, whose own links to this route in the other language
-        // are not what carries a reader between the two documents.
-        const nav = page.getByRole('navigation', { name: strings[locale].nav.label }).locator('ul').first();
+        // The header's documents group, not the language menu, whose own
+        // links to this route in the other language are not what carries a
+        // reader between the two documents.
+        const nav = page
+          .getByRole('navigation', { name: strings[locale].nav.label })
+          .getByRole('list', { name: strings[locale].nav.documents });
         await expect(nav.locator(`a[href="${at(`/${locale}/cv/`)}"]`)).toHaveCount(1);
         await expect(nav.locator(`a[href="${at(`/${locale}/resume/`)}"]`)).toHaveCount(1);
       });

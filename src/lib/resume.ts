@@ -3,10 +3,9 @@ import { strings, type Locale } from './i18n';
 import { levelLine } from './languages';
 import { localized, type Localized } from './localized';
 import {
-  byDateAscending,
+  byDateDescending,
   byOrderThenName,
   byOrderThenStartDescending,
-  byStartAscending,
   byStartDescending,
 } from './order';
 import { absolute } from './paths';
@@ -153,13 +152,12 @@ export async function resumeFor(locale: Locale, site: URL) {
     getCollection('languages'),
   ]);
 
-  // The same orders the pages use (src/lib/order.ts): work newest first,
-  // education oldest first so high school precedes university, certificates
-  // by date with undated ones last, projects, skills, and languages by
-  // authored order.
+  // The same orders the pages use (src/lib/order.ts): work, education, and
+  // certificates newest first, the undated certificates last; projects,
+  // skills, and languages by authored order.
   experience.sort((a, b) => byStartDescending(a.data, b.data));
-  education.sort((a, b) => byStartAscending(a.data, b.data));
-  certificates.sort((a, b) => byDateAscending(a.data, b.data));
+  education.sort((a, b) => byStartDescending(a.data, b.data));
+  certificates.sort((a, b) => byDateDescending(a.data, b.data));
   projects.sort((a, b) => byOrderThenStartDescending(a.data, b.data));
   skills.sort((a, b) => byOrderThenName(a.data, b.data));
   languages.sort((a, b) => byOrderThenName(a.data, b.data));

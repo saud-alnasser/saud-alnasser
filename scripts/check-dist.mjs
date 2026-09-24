@@ -24,7 +24,9 @@ import { readmeWithProfile } from './readme-profile.mjs';
 import { fill, formatPeriod, localeInfo, plural, strings } from '../src/lib/i18n.ts';
 import { levelLine } from '../src/lib/languages.ts';
 import { gapReport, pick } from '../src/lib/localized.ts';
+import { forwards } from '../src/lib/forwards.ts';
 import { codedProfile } from '../src/lib/networks.ts';
+import { sections as sectionIds } from '../src/lib/sections.ts';
 import { byDateAscending, byOrderThenName, byStartAscending, byStartDescending } from '../src/lib/order.ts';
 import { joinBase } from '../src/lib/paths.ts';
 import { isCourse, isShown } from '../src/lib/shown.ts';
@@ -151,6 +153,18 @@ async function jsonResume() {
       counts.push(`${section} ${found}`);
     }
 
+    // The certificates in time as every list in time reads: newest first,
+    // the undated after them.
+    const dates = (resume.certificates ?? []).map((certificate) => certificate.date);
+    const dated = dates.filter((date) => date !== undefined);
+    const undatedFrom = dates.findIndex((date) => date === undefined);
+    if (dated.some((date, index) => index > 0 && String(date) > String(dated[index - 1]))) {
+      throw new CheckFailure(name, `${locale}: certificates are not newest first: ${dated.join(', ')}`);
+    }
+    if (undatedFrom !== -1 && dates.slice(undatedFrom).some((date) => date !== undefined)) {
+      throw new CheckFailure(name, `${locale}: a dated certificate follows an undated one`);
+    }
+
     for (const project of resume.projects ?? []) {
       if (described.includes(project.name) && 'url' in project) {
         throw new CheckFailure(name, `${locale}: described project "${project.name}" carries a url key`);
@@ -203,7 +217,7 @@ async function jsonResume() {
       throw new CheckFailure(name, `${locale}: meta.canonical is ${JSON.stringify(resume.meta?.canonical)}, expected ${canonical}`);
     }
 
-    lines.push(`${locale}/resume.json: valid, ${counts.join(', ')}`);
+    lines.push(`${locale}/resume.json: valid, ${counts.join(', ')}, certificates newest first`);
   }
   return lines;
 }
@@ -333,18 +347,19 @@ async function documentPdfs() {
   const education = (await visibleEntries('education')).map((entry) => entry.data).sort(byStartAscending);
   const languages = (await visibleEntries('languages')).map((entry) => entry.data).sort(byOrderThenName);
   // The education section is the timeline the CV prints (src/lib/timeline.ts):
-  // the institutions with the online-courses node before the most recent one,
-  // rendered as the self-study entry, whose title with its years is one group
-  // and whose providers line is another, built from the same strings the
-  // component fills; the topics line is not asserted, because it wraps on
-  // paper and the browser case reads it whole instead. The resume prints the
-  // institutions alone, so its expectation holds no node.
+  // the institutions newest first with the online-courses node after the most
+  // recent one, rendered as the self-study entry, whose title with its years
+  // is one group and whose providers line is another, built from the same
+  // strings the component fills; the topics line is not asserted, because it
+  // wraps on paper and the browser case reads it whole instead. The resume
+  // prints the institutions alone, newest first, so its expectation holds no
+  // node.
   const courses = (await visibleEntries('certificates')).map((entry) => entry.data).filter(isCourse).sort(byDateAscending);
   const selfStudy = parseYaml(await readFile(path.join(context.content, 'self-study.yaml'), 'utf8')).selfStudy;
   const providers = new Intl.ListFormat(locale, { type: 'conjunction' }).format(selfStudy.providers);
   const timeline = {
     cv: educationTimeline(education, courses),
-    resume: education.map((entry) => ({ kind: 'education', entry })),
+    resume: [...education].sort(byStartDescending).map((entry) => ({ kind: 'education', entry })),
   };
   const expectedFor = (document) => {
     const expected = [
@@ -754,8 +769,9 @@ async function walk(directory, prefix = '') {
   return files;
 }
 
-// The routes one language publishes, as "/", "/work/", and so on: every
-// index.html under dist/<locale>/, without the locale prefix.
+// The routes one language publishes, as "/", "/cv/", and so on: every
+// index.html under dist/<locale>/, without the locale prefix. The forwards
+// are among them; `isForward` tells them apart.
 async function routes(locale) {
   const files = await walk(path.join(context.dist, locale));
   return files
@@ -794,6 +810,14 @@ function metaContent(html, key, value) {
 // sitemap leave it out, on purpose.
 function isNoindex(html) {
   return metaContent(html, 'name', 'robots')?.includes('noindex') ?? false;
+}
+
+// A page that only sends the reader on: an address that was a page before the
+// portfolio became one, recognised by its meta refresh (src/lib/forwards.ts).
+// It is held to the `forwards` check below rather than the checks of a page
+// a reader stays on.
+function isForward(html) {
+  return metaContent(html, 'http-equiv', 'refresh') !== null;
 }
 
 // Every route of one language exists in the other, and each page's <html>
@@ -1009,13 +1033,19 @@ async function sitemap() {
   }
 
   const expected = new Set();
+  const forwarded = new Set();
   for (const locale of context.locales) {
-    for (const route of await routes(locale)) expected.add(`${context.siteRoot}${locale}${route}`);
+    for (const route of await routes(locale)) {
+      const html = await readFile(path.join(context.dist, locale, route, 'index.html'), 'utf8');
+      (isForward(html) ? forwarded : expected).add(`${context.siteRoot}${locale}${route}`);
+    }
   }
+  if (forwarded.size === 0) throw new CheckFailure(name, 'no page under dist/ forwards; were the old addresses dropped?');
   for (const url of expected) {
     if (!listed.has(url)) throw new CheckFailure(name, `${url} is a page but no sitemap under dist/${indexFile} lists it`);
   }
   for (const url of listed) {
+    if (forwarded.has(url)) throw new CheckFailure(name, `a sitemap under dist/${indexFile} lists ${url}, which only forwards`);
     if (!expected.has(url)) throw new CheckFailure(name, `a sitemap under dist/${indexFile} lists ${url}, which is not a page`);
   }
 
@@ -1033,9 +1063,12 @@ async function sitemap() {
     if (!aliased.has(url)) throw new CheckFailure(name, `${url} is a page but dist/${aliasFile} does not list it`);
   }
   for (const url of aliased) {
+    if (forwarded.has(url)) throw new CheckFailure(name, `dist/${aliasFile} lists ${url}, which only forwards`);
     if (!expected.has(url)) throw new CheckFailure(name, `dist/${aliasFile} lists ${url}, which is not a page`);
   }
-  return [`sitemap: ${sitemaps.length} sitemap(s) listing all ${expected.size} pages, and ${aliasFile} lists them all`];
+  return [
+    `sitemap: ${sitemaps.length} sitemap(s) listing all ${expected.size} pages, and ${aliasFile} lists them all; neither lists any of the ${forwarded.size} forwards`,
+  ];
 }
 
 // robots.txt permits indexing: no line disallows the whole site.
@@ -1430,6 +1463,77 @@ async function languagesWhereTheyBelong() {
   return lines;
 }
 
+// The home page holds the whole portfolio: in each language its five
+// sections' headings, by the ids that are their anchors and in the order the
+// page reads them. And nothing the sections replaced is left on any page: the
+// monogram, the timeline from study to work, and the grid of cards leading
+// to each section, each by the attribute on its element.
+async function onePage() {
+  const name = 'one page';
+  const lines = [];
+  for (const locale of context.locales) {
+    const file = `dist/${locale}/index.html`;
+    const html = await readFile(path.join(context.dist, locale, 'index.html'), 'utf8');
+    const found = sectionIds.map((id) => html.search(new RegExp(`<h[12]\\b[^>]*\\sid="${id}"`)));
+    const missing = sectionIds.filter((id, index) => found[index] === -1);
+    if (missing.length > 0) throw new CheckFailure(name, `${file} has no heading for ${missing.map((id) => `#${id}`).join(', ')}`);
+    for (let index = 1; index < found.length; index += 1) {
+      if (found[index] < found[index - 1]) {
+        throw new CheckFailure(name, `${file} puts #${sectionIds[index]} before #${sectionIds[index - 1]}`);
+      }
+    }
+    lines.push(`one page: ${file} holds ${sectionIds.map((id) => `#${id}`).join(', ')} in order`);
+  }
+  for (const file of await htmlFiles()) {
+    const html = await readFile(path.join(context.dist, file), 'utf8');
+    const left = html.match(/<[a-z][^>]*\sdata-(monogram|journey|section-grid|section-card)[\s>=]/);
+    if (left) throw new CheckFailure(name, `dist/${file} still carries data-${left[1]}`);
+  }
+  lines.push('one page: no page carries a monogram, a combined timeline, or a section grid');
+  return lines;
+}
+
+// Each address in src/lib/forwards.ts, in each language, is a forward and
+// nothing else: a meta refresh to its section of that language's home page
+// under the base path, a canonical link to that home page, `noindex`, and no
+// script or stylesheet, since it has to forward wherever a page can load. And
+// no other page carries a refresh, so a forward is never mistaken for a page
+// or the other way round.
+async function forwardsLand() {
+  const name = 'forwards';
+  const lines = [];
+  const expected = new Map(
+    context.locales.flatMap((locale) => forwards.map(({ route, section }) => [`${locale}${route}`, { locale, section }])),
+  );
+  for (const locale of context.locales) {
+    for (const route of await routes(locale)) {
+      const file = `dist/${locale}${route}index.html`;
+      const html = await readFile(path.join(context.root, file), 'utf8');
+      const forward = expected.get(`${locale}${route}`);
+      if (!forward) {
+        if (isForward(html)) throw new CheckFailure(name, `${file} carries a meta refresh, and src/lib/forwards.ts names no forward there`);
+        continue;
+      }
+      if (!isForward(html)) throw new CheckFailure(name, `${file} is a page; src/lib/forwards.ts says it forwards to #${forward.section}`);
+      const target = `${context.prefix}${locale}/#${forward.section}`;
+      const refresh = metaContent(html, 'http-equiv', 'refresh');
+      if (refresh !== `0;url=${target}`) throw new CheckFailure(name, `${file} refreshes with "${refresh}", expected "0;url=${target}"`);
+      const canonical = [...html.matchAll(/<link\b([^>]*)>/gi)]
+        .map(([tag]) => attributesOf(tag, 'link'))
+        .find((attributes) => attributes?.rel === 'canonical')?.href;
+      const home = `${context.siteRoot}${locale}/`;
+      if (canonical !== home) throw new CheckFailure(name, `${file} names ${canonical ?? 'no canonical address'}, expected ${home}`);
+      if (!isNoindex(html)) throw new CheckFailure(name, `${file} has no <meta name="robots" content="noindex">`);
+      if (/<script\b/i.test(html)) throw new CheckFailure(name, `${file} carries a <script>; a forward works without one`);
+      if (/<link\b[^>]*rel=["']?stylesheet|<style\b/i.test(html)) throw new CheckFailure(name, `${file} carries a stylesheet`);
+      expected.delete(`${locale}${route}`);
+      lines.push(`forwards: ${file} refreshes to ${target}, canonical ${home}, noindex, no script`);
+    }
+  }
+  for (const [route] of expected) throw new CheckFailure(name, `dist/${route}index.html does not exist; src/lib/forwards.ts names a forward there`);
+  return lines;
+}
+
 // The README's profile block is written from the content source and the
 // config (scripts/readme-profile.mjs), so who Saud is stays authored once; a
 // README behind them fails here rather than drifting on the profile page.
@@ -1446,7 +1550,7 @@ async function readmeProfile() {
 // alone, and a topic or provider with no witness would otherwise surface
 // first as a reading-order failure over a PDF, named for the line rather
 // than the cause.
-const checks = [jsonResume, selfStudy, documentPdfs, qrCode, resumePages, localeTwins, hrefs, basePaths, oneOrigin, metadata, sitemap, robots, identifiers, noContactDetails, nationalityWhereItBelongs, languagesWhereTheyBelong, gaps, noOverclaim, documentHazards, readmeProfile];
+const checks = [jsonResume, selfStudy, documentPdfs, qrCode, resumePages, localeTwins, hrefs, basePaths, oneOrigin, metadata, sitemap, robots, identifiers, noContactDetails, nationalityWhereItBelongs, languagesWhereTheyBelong, gaps, noOverclaim, documentHazards, onePage, forwardsLand, readmeProfile];
 
 for (const check of checks) {
   try {

@@ -7,7 +7,7 @@ import { parse as parseYaml } from 'yaml';
 import { lowContrastPairs } from './contrast';
 import { at, locales } from './pages';
 import { formatDate, strings } from '../src/lib/i18n';
-import { byDateAscending } from '../src/lib/order';
+import { byDateDescending } from '../src/lib/order';
 import { isCertification, isCourse } from '../src/lib/shown';
 
 // The two certificate grids and the one dialog their cards open: the card is
@@ -40,17 +40,17 @@ const certificates = readdirSync(path.join(content, 'certificates'))
 
 const documented = certificates.filter((entry) => entry.document);
 
-// One row per grid on the education page, with the entries it holds in the
-// order the site puts them in: by date, the undated last. A kind with no
+// One row per grid, with the entries it holds in the
+// order the site puts them in: by date newest first, the undated last. A kind with no
 // entries renders no grid and no heading, so the per-grid cases below run
 // over the grids the page renders, and one case asserts the absence of the
 // rest.
 const grids = [
-  { grid: 'courses', heading: 'h2#courses', entries: certificates.filter(isCourse).sort(byDateAscending) },
+  { grid: 'courses', heading: '#courses', entries: certificates.filter(isCourse).sort(byDateDescending) },
   {
     grid: 'certifications',
-    heading: 'h2#certificates',
-    entries: certificates.filter(isCertification).sort(byDateAscending),
+    heading: '#certificates',
+    entries: certificates.filter(isCertification).sort(byDateDescending),
   },
 ];
 const rendered = grids.filter(({ entries }) => entries.length > 0);
@@ -76,7 +76,7 @@ const columnsOf = (page: Page, grid: string) =>
 const settled = (page: Page) => page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished)));
 
 for (const locale of locales) {
-  const url = at(`/${locale}/education/`);
+  const url = at(`/${locale}/`);
 
   test.describe(url, () => {
     test('renders no grid and no heading for a kind with no entries', async ({ page }) => {
@@ -98,7 +98,7 @@ for (const locale of locales) {
         const found = await page.locator(`[data-grid="${grid}"] [data-entry]`).evaluateAll((nodes) =>
           nodes.map((node) => ({
             kind: node.getAttribute('data-entry'),
-            name: node.querySelector('h3')?.textContent?.trim() ?? '',
+            name: node.querySelector('h3, h4')?.textContent?.trim() ?? '',
             text: node.textContent?.replace(/\s+/g, ' ').trim() ?? '',
           })),
         );
@@ -112,12 +112,12 @@ for (const locale of locales) {
           expect(card.kind, `card ${index} of the ${grid} grid on ${url}`).toBe(kind);
         }
 
-        // In date order, with the undated last: the dates the cards carry, in
+        // Newest first, with the undated last: the dates the cards carry, in
         // the order they are laid out, are the dates the content sorts into.
         const dateOf = (name: string) => entries.find((entry) => (entry.name[locale] ?? entry.name.en) === name)?.date;
         expect(
           found.map((card) => dateOf(card.name)),
-          `the ${grid} cards on ${url} in date order, the undated last`,
+          `the ${grid} cards on ${url} newest first, the undated last`,
         ).toEqual(entries.map((entry) => entry.date));
 
         // What a card says: its name, its issuer, and its date where the
@@ -307,10 +307,10 @@ test.describe('at 1440 pixels wide', () => {
       return { first: (await card.nth(0).boundingBox())!, second: (await card.nth(1).boundingBox())! };
     };
 
-    const arabic = await firstTwo(at('/ar/education/'));
+    const arabic = await firstTwo(at('/ar/'));
     expect(arabic.first.x, 'the first Arabic certificate sits right of the second').toBeGreaterThan(arabic.second.x);
 
-    const english = await firstTwo(at('/en/education/'));
+    const english = await firstTwo(at('/en/'));
     expect(english.first.x, 'the first English certificate sits left of the second').toBeLessThan(english.second.x);
   });
 });

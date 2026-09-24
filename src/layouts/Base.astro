@@ -4,9 +4,11 @@ import { getEntry } from 'astro:content';
 import { localeInfo, otherLocale, strings, type Locale } from '../lib/i18n';
 import { localized } from '../lib/localized';
 import { absolute, withBase } from '../lib/paths';
+import { sections as sectionIds } from '../lib/sections';
 import { credits } from '../lib/technologies';
 import Icon from '../components/Icon.astro';
 import LanguageMenu from '../components/LanguageMenu.astro';
+import SiteMenu from '../components/SiteMenu.astro';
 import ThemeToggle from '../components/ThemeToggle.astro';
 
 interface Props {
@@ -14,12 +16,13 @@ interface Props {
   title: string;
   description: string;
   // The route without its locale prefix, with the trailing slash: "/",
-  // "/work/", "/cv/". The layout builds the canonical address, the language
-  // menu, and the alternates from it.
+  // "/cv/", "/resume/". The layout builds the canonical address, the
+  // language menu, and the alternates from it.
   path: string;
   // The width of the page: `grid` for a page laying cards in columns, 64rem;
   // `document` for the CV, which reads as one column of text, 48rem. The
-  // header and the content share it.
+  // content and the footer take it; the header's row is 64rem on every page,
+  // because the whole row fits in nothing narrower.
   column: 'document' | 'grid';
 }
 
@@ -50,13 +53,21 @@ const fonts = [
 
 const logoCredits = credits();
 
-const nav = [
-  { href: home, label: t.nav.home, current: path === '/' },
-  { href: withBase(`/${locale}/work/`), label: t.nav.work, current: path === '/work/' },
-  { href: withBase(`/${locale}/education/`), label: t.nav.education, current: path === '/education/' },
+// The header's links, the same on every page: the five sections of the home
+// page, each by the anchor its heading carries, so from a document they lead
+// back to the section; and the two documents, the one being read marked as
+// the current page.
+const sections = sectionIds.map((id) => ({
+  id,
+  href: `${home}#${id}`,
+  label: t.nav[id],
+}));
+const documents = [
   { href: withBase(`/${locale}/cv/`), label: t.nav.cv, current: path === '/cv/' },
   { href: withBase(`/${locale}/resume/`), label: t.nav.resume, current: path === '/resume/' },
 ];
+const link =
+  'relative inline-flex min-h-6 min-w-6 items-center gap-1.5 py-2 whitespace-nowrap text-muted-foreground hover:text-primary motion-safe:transition-colors';
 ---
 
 <!doctype html>
@@ -95,16 +106,19 @@ const nav = [
     <!--
       The only script on the site. It applies a stored theme before first
       paint, so the page never flashes the other palette, wires the theme
-      control once the document is parsed, closes the language menu on Escape
-      and on a click outside it, rises the headings and cards below the first
-      screen into place as they scroll in and counts the home page's numbers
-      up as they first show, runs the work page's technology filter, opens a
-      certificate card in the page's dialog, and turns a document page's
-      download control into the form that fills the contact line and prints,
-      which it does only where the page's address carries the marker. The
-      last five all work without it: the menu opens and closes on its own,
-      nothing is ever hidden for the reveal to undo and every number is
-      already its final figure, the filter's row stays hidden and every
+      control once the document is parsed, closes the language menu and the
+      phone menu on Escape and on a click outside them, glides the home page
+      to a section when a header link is pressed and marks the section being
+      read, rises the headings and cards below the first screen into place as
+      they scroll in and counts the home page's numbers up as they first
+      show, runs the projects' technology filter, opens a certificate card in
+      the page's dialog, and turns a document page's download control into
+      the form that fills the contact line and prints, which it does only
+      where the page's address carries the marker. All but the theme work
+      without it: the menus open and close on their own, a section link
+      jumps to its heading and the scroll padding keeps it clear of the
+      header, nothing is ever hidden for the reveal to undo and every number
+      is already its final figure, the filter's row stays hidden and every
       project shows, a certificate card is the link to its PDF that it
       already is, and the download control is the link to the published PDF
       that it already is, which is what every unmarked click gets too.
@@ -125,19 +139,148 @@ const nav = [
           );
         }
 
-        // Closes the open language menu when the event landed outside it or
-        // was Escape, and puts focus back on its summary in the second case.
+        // Closes an open menu, the language menu or the phone menu, when the
+        // event landed outside it or was Escape, and puts focus back on its
+        // summary in the second case.
         function dismiss(event) {
-          var menu = document.querySelector('[data-language-menu][open]');
-          if (!menu) return;
-          if (event.type === 'keydown') {
-            if (event.key !== 'Escape') return;
-            menu.removeAttribute('open');
-            var summary = menu.querySelector('summary');
-            if (summary) summary.focus();
-          } else if (!menu.contains(event.target)) {
-            menu.removeAttribute('open');
+          var menus = document.querySelectorAll('[data-language-menu][open], [data-site-menu][open]');
+          Array.prototype.forEach.call(menus, function (menu) {
+            if (event.type === 'keydown') {
+              if (event.key !== 'Escape') return;
+              menu.removeAttribute('open');
+              var summary = menu.querySelector('summary');
+              if (summary) summary.focus();
+            } else if (!menu.contains(event.target)) {
+              menu.removeAttribute('open');
+            }
+          });
+        }
+
+        // The home page's sections and the header's links to them. The link
+        // for the section being read carries `aria-current="location"`, in
+        // the header's row and in the phone menu alike: the last section
+        // whose heading has reached the line a jump leaves a heading on, the
+        // first before any has, and the last at the foot of the page. It is
+        // read from the headings' positions once per frame while the page
+        // scrolls, so it is a function of where the page is and nothing else.
+        //
+        // A plain press on a section link whose section is on this page
+        // glides there instead of jumping: 350ms on the entrance curve, to
+        // where the jump would have left the heading, the scroll padding
+        // below the header. Under reduced motion it goes there in one step.
+        // Either way the address then takes the anchor, through pushState so
+        // the browser does not jump again, and focus moves to the heading, so
+        // the next Tab starts from the section. A modified press, and a press
+        // on a document page, whose sections are on another page, are left to
+        // the browser. The phone menu closes on the press.
+        //
+        // Without this the links are the anchors they already are: the jump
+        // lands in the same place, and only the glide and the mark are lost.
+        function sections() {
+          var headings = document.querySelectorAll('[data-section]');
+          var links = document.querySelectorAll('[data-section-link]');
+          var header = document.querySelector('body > header');
+          var glide = null;
+
+          document.addEventListener('click', function (event) {
+            var link = event.target.closest ? event.target.closest('[data-section-link]') : null;
+            if (!link) return;
+            var menu = link.closest('[data-site-menu]');
+            if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+            if (menu) menu.removeAttribute('open');
+            if (!headings.length || link.pathname !== location.pathname) return;
+            var heading = document.getElementById(link.getAttribute('data-section-link'));
+            if (!heading) return;
+            event.preventDefault();
+            go(heading);
+          });
+
+          if (!headings.length) return;
+
+          // The line a jump leaves a heading on: the scroll padding, which is
+          // the header's height and a step more.
+          function line() {
+            return parseFloat(getComputedStyle(root).scrollPaddingTop) || header.getBoundingClientRect().bottom;
           }
+
+          // Where the page stands with a heading on the line. Measured through
+          // the heading's section rather than the heading itself, which may be
+          // mid-reveal and moved by it.
+          function stop(heading) {
+            var box = (heading.closest('section') || heading).getBoundingClientRect();
+            var end = document.documentElement.scrollHeight - window.innerHeight;
+            return Math.max(0, Math.min(end, window.scrollY + box.top - line()));
+          }
+
+          function arrive(heading) {
+            glide = null;
+            history.pushState(null, '', '#' + heading.id);
+            heading.setAttribute('tabindex', '-1');
+            heading.focus({ preventScroll: true });
+            mark();
+          }
+
+          function go(heading) {
+            var from = window.scrollY;
+            var to = stop(heading);
+            if (!matchMedia('(prefers-reduced-motion: no-preference)').matches || from === to) {
+              window.scrollTo(0, to);
+              arrive(heading);
+              return;
+            }
+            var start = null;
+            var token = {};
+            glide = token;
+            function step(now) {
+              if (glide !== token) return;
+              if (start === null) start = now;
+              var progress = Math.min((now - start) / 350, 1);
+              window.scrollTo(0, from + (to - from) * enter(progress));
+              if (progress < 1) requestAnimationFrame(step);
+              else arrive(heading);
+            }
+            requestAnimationFrame(step);
+          }
+
+          function mark() {
+            var reach = line() + 8;
+            var current = headings[0];
+            var foot = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
+            Array.prototype.forEach.call(headings, function (heading) {
+              if ((heading.closest('section') || heading).getBoundingClientRect().top <= reach) current = heading;
+            });
+            if (foot) current = headings[headings.length - 1];
+            Array.prototype.forEach.call(links, function (link) {
+              if (link.getAttribute('data-section-link') === current.id) link.setAttribute('aria-current', 'location');
+              else link.removeAttribute('aria-current');
+            });
+          }
+
+          // A reader who scrolls during a glide takes the page back from it.
+          ['wheel', 'touchstart', 'keydown'].forEach(function (type) {
+            window.addEventListener(
+              type,
+              function () {
+                glide = null;
+              },
+              { passive: true },
+            );
+          });
+
+          var queued = false;
+          window.addEventListener(
+            'scroll',
+            function () {
+              if (queued) return;
+              queued = true;
+              requestAnimationFrame(function () {
+                queued = false;
+                mark();
+              });
+            },
+            { passive: true },
+          );
+          mark();
         }
 
         // Turns a click on a certificate card into the page's dialog: the
@@ -381,6 +524,15 @@ const nav = [
         // so wherever this does not run the tile simply shows it.
         function reveal() {
           if (typeof IntersectionObserver !== 'function') return;
+          // Opened at an anchor, the page is already where the reader asked
+          // to be, and a heading held low there would land under the header.
+          // Read from the address, since `:target` may not match yet here;
+          // an anchor that is not a valid escape names nothing.
+          var anchor = null;
+          try {
+            anchor = location.hash.length > 1 ? document.getElementById(decodeURIComponent(location.hash.slice(1))) : null;
+          } catch (error) {}
+          if (anchor) return;
           if (!matchMedia('(prefers-reduced-motion: no-preference)').matches) return;
           var marked = document.querySelectorAll('[data-reveal]');
           if (!marked.length) return;
@@ -407,9 +559,9 @@ const nav = [
         }
 
         // The entrance curve, --ease-enter in the stylesheet,
-        // cubic-bezier(0.05, 0.7, 0.1, 1): how far along the count is at a
-        // given fraction of the time, found by halving for the curve's
-        // parameter at that time.
+        // cubic-bezier(0.05, 0.7, 0.1, 1): how far along a count or a glide
+        // is at a given fraction of the time, found by halving for the
+        // curve's parameter at that time.
         function enter(time) {
           function at(t, a, b) {
             return 3 * (1 - t) * (1 - t) * t * a + 3 * (1 - t) * t * t * b + t * t * t;
@@ -438,7 +590,7 @@ const nav = [
           requestAnimationFrame(step);
         }
 
-        // Shows the work page's technology chips and runs them: a press marks
+        // Shows the projects' technology chips and runs them: a press marks
         // that chip pressed and every other not, hides the projects that do
         // not name its technology, the featured card in its place above the
         // grid among them, and writes the chip's own line,
@@ -471,6 +623,7 @@ const nav = [
         document.addEventListener('DOMContentLoaded', function () {
           document.addEventListener('click', dismiss);
           document.addEventListener('keydown', dismiss);
+          sections();
           reveal();
           filter();
           certificates();
@@ -492,56 +645,68 @@ const nav = [
   <body class="min-h-dvh bg-background text-foreground antialiased motion-safe:transition-colors motion-safe:duration-300">
     <a
       href="#content"
-      class="sr-only focus:not-sr-only focus:absolute focus:start-4 focus:top-4 focus:z-10 focus:rounded-md focus:bg-background focus:px-3 focus:py-2"
+      class="sr-only focus:not-sr-only focus:absolute focus:start-4 focus:top-4 focus:z-30 focus:rounded-md focus:bg-background focus:px-3 focus:py-2"
     >
       {t.skipToContent}
     </a>
 
     <!--
-      On a phone the header is two rows: the name at the start and the two
-      controls at the end, then the navigation across the whole width, spaced
-      evenly and never wrapping. From `sm` up it is one row, the navigation
-      beside the controls. The source order is the wide one, name, navigation,
-      controls, which is also the order a keyboard reaches them in; on a phone
-      the navigation is moved last by `order` alone.
+      The header stays on screen as the page scrolls: a bar of its own height
+      (`--header-height`, which the stylesheet also scrolls every jump clear
+      of), on the page's background, with a border under it. One row, in the
+      order a keyboard reaches it: the name, leading to the top of the home
+      page; the five sections; the two documents, set apart as a group of
+      their own with the file icon; and the language and theme controls.
 
-      The current page is underlined by a bar in the accent as well as marked
-      `aria-current`, so which page this is does not rest on a text colour.
-      Every link and button here is at least 24 pixels each way.
+      Below `lg` the row cannot hold all of it in either language, so the
+      sections and the documents fold into the phone menu, a native
+      disclosure at the end of the row that needs no script to open, close,
+      or lead anywhere.
+
+      The current link carries `aria-current` and a bar in the accent, so it
+      does not rest on a text colour: a document's own link on that document,
+      and on the home page the section being read, which the inline script
+      marks. Every link and button here is at least 24 pixels each way.
     -->
-    <header class:list={['mx-auto w-full px-6 pt-8 sm:pt-12', width]}>
-      <div class="flex flex-wrap items-center justify-between gap-x-5 gap-y-2">
-        <a href={home} class="inline-flex min-h-6 items-center py-1 text-base font-semibold tracking-tight hover:text-primary">
+    <header class="sticky top-0 z-20 border-b border-border bg-background">
+      <div class="mx-auto flex h-(--header-height) w-full max-w-5xl items-center gap-x-4 px-6">
+        <a href={home} class="inline-flex min-h-6 items-center py-1 text-base font-semibold tracking-tight whitespace-nowrap hover:text-primary">
           {siteName}
         </a>
-        <nav aria-label={t.nav.label} class="order-last w-full text-sm sm:order-none sm:ms-auto sm:w-auto">
-          <ul class="flex justify-between sm:justify-start sm:gap-x-5">
+        <nav aria-label={t.nav.label} class="ms-auto hidden items-center text-sm lg:flex">
+          <ul class="flex items-center gap-x-5">
             {
-              nav.map((item) => (
+              sections.map((section) => (
                 <li>
-                  <a
-                    href={item.href}
-                    aria-current={item.current ? 'page' : undefined}
-                    class:list={[
-                      'relative inline-flex min-h-6 min-w-6 items-center justify-center py-2 whitespace-nowrap hover:text-primary motion-safe:transition-colors',
-                      item.current
-                        ? 'text-foreground after:absolute after:inset-x-0 after:bottom-0.5 after:h-0.5 after:rounded-full after:bg-primary'
-                        : 'text-muted-foreground',
-                    ]}
-                  >
-                    {item.label}
+                  <a href={section.href} data-nav-link data-section-link={section.id} class={link}>
+                    {section.label}
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+          <ul aria-label={t.nav.documents} class="ms-5 flex items-center gap-x-4 border-s border-border ps-5">
+            {
+              documents.map((document) => (
+                <li>
+                  <a href={document.href} data-nav-link aria-current={document.current ? 'page' : undefined} class={link}>
+                    <Icon name="file-text" class="size-4" />
+                    {document.label}
                   </a>
                 </li>
               ))
             }
           </ul>
         </nav>
-        <ul class="flex items-center gap-x-1">
+        <ul class="ms-auto flex items-center gap-x-1 lg:ms-0">
           <li>
             <LanguageMenu locale={locale} path={path} />
           </li>
           <li>
             <ThemeToggle locale={locale} />
+          </li>
+          <li class="lg:hidden">
+            <SiteMenu locale={locale} sections={sections} documents={documents} />
           </li>
         </ul>
       </div>

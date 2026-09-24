@@ -1,0 +1,63 @@
+---
+// The header's links on a phone: a native <details> in the language menu's
+// pattern, whose summary is one button with the menu icon and an accessible
+// name, and whose panel holds the same links as the wide header, the five
+// sections and then the two documents in a group of their own. Opening and
+// closing is the browser's, so with scripting off the panel still opens,
+// closes, and leads everywhere; the browser also exposes whether it is open.
+//
+// The panel hangs under the whole header rather than under the button: the
+// element is not positioned itself, so the sticky header is what it is laid
+// out against, and it spans the header's width in both directions.
+
+import Icon from './Icon.astro';
+import { strings, type Locale } from '../lib/i18n';
+
+interface Props {
+  locale: Locale;
+  sections: { id: string; href: string; label: string }[];
+  documents: { href: string; label: string; current: boolean }[];
+}
+
+const { locale, sections, documents } = Astro.props;
+const t = strings[locale];
+const link =
+  'relative flex min-h-11 items-center gap-2 rounded-md px-3 text-muted-foreground hover:bg-muted hover:text-foreground motion-safe:transition-colors';
+---
+
+<details data-site-menu>
+  <summary
+    class="flex cursor-pointer list-none items-center rounded-md px-2 py-1.5 text-muted-foreground select-none hover:text-primary motion-safe:transition-colors"
+  >
+    <span class="sr-only">{t.nav.menu}</span>
+    <Icon name="menu" class="fold-when-closed size-5" />
+    <Icon name="x" class="fold-when-open size-5" />
+  </summary>
+  <div class="absolute inset-x-0 top-full border-b border-border bg-background">
+    <nav aria-label={t.nav.label} class="mx-auto w-full max-w-5xl px-6 py-3">
+      <ul>
+        {
+          sections.map((section) => (
+            <li>
+              <a href={section.href} data-nav-link data-section-link={section.id} class={link}>
+                {section.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+      <ul aria-label={t.nav.documents} class="mt-2 border-t border-border pt-2">
+        {
+          documents.map((document) => (
+            <li>
+              <a href={document.href} data-nav-link aria-current={document.current ? 'page' : undefined} class={link}>
+                <Icon name="file-text" class="size-4" />
+                {document.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+  </div>
+</details>

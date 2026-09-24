@@ -2,6 +2,7 @@
 import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
+import { forwards } from './src/lib/forwards.ts';
 import { gapReport } from './src/lib/localized.ts';
 import { joinBase } from './src/lib/paths.ts';
 
@@ -43,6 +44,12 @@ const sitemapAlias = {
   },
 };
 
+// The full address of every forward in both languages, as the sitemap
+// integration names a page.
+const forwarded = new Set(
+  ['en', 'ar'].flatMap((locale) => forwards.map(({ route }) => `${site}${joinBase(base, `/${locale}${route}`)}`)),
+);
+
 // https://astro.build/config
 export default defineConfig({
   site,
@@ -67,7 +74,10 @@ export default defineConfig({
     '/': joinBase(base, '/en/'),
   },
 
-  integrations: [sitemap(), localizedGaps, sitemapAlias],
+  // The sitemap lists the pages and not the addresses that only forward to
+  // one (src/lib/forwards.ts): those carry `noindex`, and a sitemap naming
+  // them would ask a search engine to index what the page asks it not to.
+  integrations: [sitemap({ filter: (page) => !forwarded.has(page) }), localizedGaps, sitemapAlias],
 
   vite: {
     plugins: [tailwindcss()],

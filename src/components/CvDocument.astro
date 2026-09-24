@@ -4,7 +4,7 @@ import { fill, formatDate, formatPeriod, plural, strings, type Locale } from '..
 import { levelLine } from '../lib/languages';
 import { localized } from '../lib/localized';
 import {
-  byDateAscending,
+  byDateDescending,
   byOrderThenName,
   byOrderThenStartDescending,
   byStartAscending,
@@ -55,8 +55,8 @@ import QrCode from './QrCode.astro';
 // while no certification exists. The course completions are never listed one
 // by one on either document: the CV reads them as the one self-study entry,
 // whose topics and providers are src/content/self-study.yaml's and whose
-// count and years are the course entries', and the education page and the
-// JSON Resume documents are where every course is listed.
+// count and years are the course entries', and the home page and the JSON
+// Resume documents are where every course is listed.
 
 interface Props {
   locale: Locale;
@@ -90,7 +90,7 @@ const experience = (await getCollection('experience')).sort((a, b) => byStartDes
 const education = (await getCollection('education')).sort((a, b) => byStartAscending(a.data, b.data));
 const skills = (await getCollection('skills')).sort((a, b) => byOrderThenName(a.data, b.data));
 const languages = (await getCollection('languages')).sort((a, b) => byOrderThenName(a.data, b.data));
-const certificates = (await getCollection('certificates')).sort((a, b) => byDateAscending(a.data, b.data));
+const certificates = (await getCollection('certificates')).sort((a, b) => byDateDescending(a.data, b.data));
 const shownProjects = (await getCollection('projects', ({ data }) => isShown(data))).sort((a, b) =>
   byOrderThenStartDescending(a.data, b.data),
 );
@@ -100,14 +100,15 @@ const shownProjects = (await getCollection('projects', ({ data }) => isShown(dat
 // resume can never name a project the content source dropped.
 const projects = resume ? shownProjects.filter((entry) => onResume(entry.data)) : shownProjects;
 
-// The education section's items. The CV lays the record out in time through
-// the same function the education page uses (src/lib/timeline.ts), so the
-// online-courses phase sits before the university on paper exactly where the
-// timeline puts its node; the resume prints the institutions alone, as it
-// did. The node's count and years are read from the course entries.
+// The education section's items, newest first. The CV lays the record out in
+// time through the same function the home page uses (src/lib/timeline.ts),
+// so the online-courses phase sits after the university on paper exactly
+// where the timeline puts its node; the resume prints the institutions
+// alone, newest first by their start. The node's count and years are read
+// from the course entries.
 const courses = certificates.filter((entry) => isCourse(entry.data)).map((entry) => entry.data);
 const timeline: TimelineItem<(typeof education)[number]>[] = resume
-  ? education.map((entry) => ({ kind: 'education', entry }))
+  ? [...education].sort((a, b) => byStartDescending(a.data, b.data)).map((entry) => ({ kind: 'education', entry }))
   : educationTimeline(education, courses);
 
 // What the self-study entry says: the count of courses in the noun's form
@@ -445,7 +446,7 @@ const muted = 'text-sm text-muted-foreground';
               {section.entries.map((entry) => {
                 const { data } = entry;
                 const text = localized(locale, 'projects', entry.id);
-                // As on the work page: only a public project shows its links,
+                // As on the home page: only a public project shows its links,
                 // and here they are written out so they survive paper.
                 const links = data.visibility === 'public' ? (data.links ?? {}) : {};
                 const urls = [links.repository, links.live].filter((url): url is string => Boolean(url));
@@ -462,7 +463,7 @@ const muted = 'text-sm text-muted-foreground';
                         entries the content marks for the resume, which is a
                         third of the page budget. Every technology is already
                         in the key skills above, and the repository is on the
-                        work page and in resume.json. Both are on the CV,
+                        home page and in resume.json. Both are on the CV,
                         whole. */}
                     {!resume && (
                       <>

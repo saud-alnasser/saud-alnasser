@@ -1,14 +1,11 @@
 # Hi, I'm Saud 👋
 
 <!-- profile -->
-Software developer in Riyadh, working mostly in Rust and TypeScript. Built
-an offline-first desktop rent tracker on Tauri, SvelteKit, and Turso, and
-published an npm package that keeps a cache on the file system between runs.
-Most of the rest is language work in Rust: a PL/0 compiler and an
-interpreter for the Monkey language.
+Software engineer and computer science graduate in Riyadh, working mainly in
+TypeScript and Rust. Sole developer of rentable, a desktop app for tracking
+rent payments that works offline. Looking for a junior software engineering
+role building products people rely on, alongside an experienced team.
 
 - 💼 **LinkedIn** — [saudalnasser](https://www.linkedin.com/in/saudalnasser)
 - 🌐 **Portfolio** — [English](https://saud-alnasser.github.io/saud-alnasser/en/) · [العربية](https://saud-alnasser.github.io/saud-alnasser/ar/)
-- 📄 **CV** — [English](https://saud-alnasser.github.io/saud-alnasser/en/cv/) · [العربية](https://saud-alnasser.github.io/saud-alnasser/ar/cv/)
-- 📃 **Resume** — [English](https://saud-alnasser.github.io/saud-alnasser/en/resume/) · [العربية](https://saud-alnasser.github.io/saud-alnasser/ar/resume/)
 <!-- /profile -->

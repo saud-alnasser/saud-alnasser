@@ -7,12 +7,13 @@ import { parse as parseYaml } from 'yaml';
 import { lowContrastPairs } from './contrast';
 import { at, locales } from './pages';
 import { fill, formatPeriod, plural, strings, type Locale } from '../src/lib/i18n';
-import { byDateAscending, byStartAscending } from '../src/lib/order';
+import { byDateAscending, byDateDescending, byStartAscending } from '../src/lib/order';
 import { isCertification, isCourse } from '../src/lib/shown';
+import { educationTimeline } from '../src/lib/timeline';
 
-// The education page: the timeline of institutions with one node for the
+// The education section: the timeline of institutions with one node for the
 // online-courses phase, then the courses and the certifications, each under
-// its own heading below it.
+// its own heading below it, all on the home page.
 //
 // What the page shows is read from src/content/ here, the way
 // scripts/check-dist.mjs reads it, so an expectation is the content rather
@@ -62,12 +63,14 @@ const courses = certificates.filter(isCourse);
 const certifications = certificates.filter(isCertification);
 const dated = courses.filter((entry) => entry.date).sort(byDateAscending);
 
-// The institution the timeline ends on, and the one that lists its courses:
-// the same entry today, and the test says which it means either way. The status
-// is read off the entry rather than named here, so changing it in the content
-// changes what this expects instead of failing here.
-const mostRecent = education[education.length - 1];
+// The one institution that lists its courses. The status is read off the
+// entry rather than named here, so changing it in the content changes what
+// this expects instead of failing here.
 const degree = education.find((entry) => entry.courses?.length)!;
+
+// The timeline as src/lib/timeline.ts lays it out for every output, newest
+// first: an institution by its name, the online-courses node as `courses`.
+const order = educationTimeline(education, courses).map((item) => (item.kind === 'courses' ? null : item.entry));
 
 // The institutions whose entry names a document, the degree certificate: each
 // card carries one link that opens it in the page's certificate dialog, the
@@ -80,12 +83,13 @@ const dialog = '[data-certificate-dialog]';
 // The phase runs from the earliest dated certificate to the latest.
 const period = { start: String(dated[0].date), end: String(dated[dated.length - 1].date) };
 
-const timeline = 'section[aria-labelledby="studies"] ol > li';
 const node = '[data-courses-node]';
+
+const timeline = 'section[aria-labelledby="education"] > ol > li';
 
 for (const locale of locales) {
   const t = strings[locale];
-  const url = at(`/${locale}/education/`);
+  const url = at(`/${locale}/`);
 
   test.describe(url, () => {
     test('shows the university as a card with its courses folded', async ({ page }) => {
@@ -119,7 +123,7 @@ for (const locale of locales) {
       await expect(fold.locator('li').last()).toHaveText(courses[courses.length - 1][locale]);
     });
 
-    test('reads in order of time, with the courses node before the most recent institution', async ({ page }) => {
+    test('reads newest first, with the courses node where the timeline rule puts it', async ({ page }) => {
       await page.goto(url);
       const items = page.locator(timeline);
       // The institutions and the one node, and nothing else: the certificates
@@ -129,9 +133,10 @@ for (const locale of locales) {
       // none of them: the one degree is complete and its dates say so.
       await expect(items.locator('[data-status]')).toHaveCount(statuses.length);
 
-      const last = education.length;
-      await expect(items.nth(last - 1).locator(node), 'the node sits before the last institution').toHaveCount(1);
-      await expect(items.nth(last)).toContainText(mostRecent.institution[locale]);
+      for (const [index, entry] of order.entries()) {
+        if (entry === null) await expect(items.nth(index).locator(node), `the node is item ${index}`).toHaveCount(1);
+        else await expect(items.nth(index)).toContainText(entry.institution[locale]);
+      }
     });
 
     test('counts the courses on the node and dates it from the first to the last', async ({ page }) => {
@@ -156,21 +161,21 @@ for (const locale of locales) {
     }) => {
       await page.goto(url);
 
-      const coursesHeading = page.locator('h2#courses');
+      const coursesHeading = page.locator(':is(h2, h3)#courses');
       await expect(coursesHeading).toHaveText(t.sections.courses);
-      await expect(page.locator(timeline).locator('h2#courses')).toHaveCount(0);
+      await expect(page.locator(timeline).locator('#courses')).toHaveCount(0);
 
       // The certifications section exists only while the content has a
       // certification, so that the page never shows a heading over nothing.
       // Where it exists, its heading keeps the id the certificates section
       // had, so an inbound link to #certificates still lands on a credential;
       // where it does not, the anchor is absent too.
-      const certificationsHeading = page.locator('h2#certificates');
+      const certificationsHeading = page.locator(':is(h2, h3)#certificates');
       await expect(certificationsHeading).toHaveCount(certifications.length > 0 ? 1 : 0);
       if (certifications.length > 0) await expect(certificationsHeading).toHaveText(t.sections.certifications);
 
       // Each grid holds its own kind, in the order the site orders them: by
-      // date, the undated last.
+      // date newest first, the undated last.
       for (const [grid, expected] of [
         ['courses', courses],
         ['certifications', certifications],
@@ -182,7 +187,7 @@ for (const locale of locales) {
         }
         const list = page.locator(`[data-grid="${grid}"] > li`);
         await expect(list, `the ${grid} grid on ${url}`).toHaveCount(expected.length);
-        const ordered = [...expected].sort(byDateAscending);
+        const ordered = [...expected].sort(byDateDescending);
         // The Arabic of a certificate's name is optional in the contract, so
         // the page falls back to the English and the expectation follows it.
         const nameOf = (entry: (typeof ordered)[number]) => entry.name[locale] ?? entry.name.en;
