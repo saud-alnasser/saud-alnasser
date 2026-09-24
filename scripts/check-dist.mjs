@@ -873,9 +873,10 @@ async function basePaths() {
 // script, image, or icon is fetched from anywhere but the site itself, so a
 // visit tells no third party it happened and the page cannot break because
 // someone else's server did. Read from every built page and stylesheet: a
-// `src` or `srcset` on any element, the `href` of a `<link>` or a `<script>`,
-// and a CSS `url()` or `@import`, including those inside a page's own
-// styles. A link a visitor follows, `<a href>`, is not a request the page
+// `src`, `srcset`, `poster`, `data`, `href`, or `xlink:href` on any element
+// (an SVG's `<use>` and `<image>` among them), and a CSS `url()`, `@import`,
+// or `image-set()` string, including those inside a page's own styles. A link
+// a visitor follows, `<a href>` or `<area href>`, is not a request the page
 // makes, so the profile and repository links in the content are left alone.
 // The site's own origin, from astro.config.mjs, counts as its own, which is
 // what the canonical and alternate links carry.
@@ -898,14 +899,19 @@ async function oneOrigin() {
     const found = [
       ...[...text.matchAll(/url\(\s*(["']?)(.*?)\1\s*\)/g)].map((match) => match[2]),
       ...[...text.matchAll(/@import\s+(?:url\(\s*)?["']?([^"')\s;]+)/g)].map((match) => match[1]),
+      // image-set() may name its images as bare strings rather than url().
+      ...[...text.matchAll(/image-set\(([^)]*(?:\([^)]*\)[^)]*)*)\)/g)].flatMap((match) =>
+        [...match[1].matchAll(/["']([^"']+)["']/g)].map((string) => string[1]),
+      ),
     ];
     if (file.endsWith('.html')) {
       for (const [, tag, attributes] of text.matchAll(/<([a-z][\w:-]*)\b([^>]*)>/gi)) {
-        if (tag.toLowerCase() === 'a') continue;
+        if (['a', 'area'].includes(tag.toLowerCase())) continue;
         const map = attributesOf(`<${tag}${attributes}>`, tag) ?? {};
-        if (map.src !== undefined) found.push(map.src);
+        for (const name of ['src', 'poster', 'data', 'href', 'xlink:href']) {
+          if (map[name] !== undefined) found.push(map[name]);
+        }
         if (map.srcset !== undefined) found.push(...map.srcset.split(',').map((candidate) => candidate.trim().split(/\s+/)[0]));
-        if (['link', 'script'].includes(tag.toLowerCase()) && map.href !== undefined) found.push(map.href);
       }
     }
     for (const value of found) {
