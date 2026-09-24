@@ -45,7 +45,7 @@ Decided so far:
 | `src/styles/` | the one global stylesheet: Tailwind, reading src/ alone for class names, the palette tokens for both themes including the card surface, the depth and motion tokens with every rule that moves anything, all of it under a no-preference query, the rules for the native disclosures and the CV, the print rules including the two documents' page boxes, the Arabic font faces |
 | `public/` | files served as they are: the bundled Arabic font and its licence |
 | `scripts/` | what runs after the build: the PDF render, the dist checks, the content mechanism test, the history scan, the Lighthouse runner, the static server the tests, the PDF render, and Lighthouse use, which serves `dist/` under the base path as Pages does, and the live check the deploy job runs last; and one that runs before a commit rather than after a build, the preview render for the certificate and degree documents, whose output is committed |
-| `tests/` | the Playwright tests over the built site |
+| `tests/` | the Playwright tests over the built site, and the two Node tests `pnpm test:content` runs first: the technology marks' licences and the home timeline's order |
 | `AGENTS.md` | the entrypoint |
 | `README.md` | the profile page GitHub shows for the account, and nothing else: its facts are written from `src/content/` and the config by `pnpm readme` |
 | `docs/` | how the site is built, checked, and deployed (`development.md`) |
