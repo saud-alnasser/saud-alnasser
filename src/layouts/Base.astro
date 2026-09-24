@@ -382,14 +382,25 @@ const nav = [
       {t.skipToContent}
     </a>
 
+    <!--
+      On a phone the header is two rows: the name at the start and the two
+      controls at the end, then the navigation across the whole width, spaced
+      evenly and never wrapping. From `sm` up it is one row, the navigation
+      beside the controls. The source order is the wide one, name, navigation,
+      controls, which is also the order a keyboard reaches them in; on a phone
+      the navigation is moved last by `order` alone.
+
+      The current page is underlined by a bar in the accent as well as marked
+      `aria-current`, so which page this is does not rest on a text colour.
+      Every link and button here is at least 24 pixels each way.
+    -->
     <header class:list={['mx-auto w-full px-6 pt-8 sm:pt-12', width]}>
-      <!-- `relative` anchors the language menu's list to this row. -->
-      <div class="relative flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
-        <a href={home} class="text-base font-semibold tracking-tight hover:text-primary">
+      <div class="flex flex-wrap items-center justify-between gap-x-5 gap-y-2">
+        <a href={home} class="inline-flex min-h-6 items-center py-1 text-base font-semibold tracking-tight hover:text-primary">
           {siteName}
         </a>
-        <nav aria-label={t.nav.label} class="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
-          <ul class="flex gap-x-5">
+        <nav aria-label={t.nav.label} class="order-last w-full text-sm sm:order-none sm:ms-auto sm:w-auto">
+          <ul class="flex justify-between sm:justify-start sm:gap-x-5">
             {
               nav.map((item) => (
                 <li>
@@ -397,8 +408,10 @@ const nav = [
                     href={item.href}
                     aria-current={item.current ? 'page' : undefined}
                     class:list={[
-                      'py-1 hover:text-primary motion-safe:transition-colors',
-                      item.current ? 'text-foreground underline underline-offset-4 decoration-border' : 'text-muted-foreground',
+                      'relative inline-flex min-h-6 min-w-6 items-center justify-center py-2 whitespace-nowrap hover:text-primary motion-safe:transition-colors',
+                      item.current
+                        ? 'text-foreground after:absolute after:inset-x-0 after:bottom-0.5 after:h-0.5 after:rounded-full after:bg-primary'
+                        : 'text-muted-foreground',
                     ]}
                   >
                     {item.label}
@@ -407,15 +420,15 @@ const nav = [
               ))
             }
           </ul>
-          <ul class="flex items-center gap-x-1 border-s border-border ps-3">
-            <li>
-              <LanguageMenu locale={locale} path={path} />
-            </li>
-            <li>
-              <ThemeToggle locale={locale} />
-            </li>
-          </ul>
         </nav>
+        <ul class="flex items-center gap-x-1">
+          <li>
+            <LanguageMenu locale={locale} path={path} />
+          </li>
+          <li>
+            <ThemeToggle locale={locale} />
+          </li>
+        </ul>
       </div>
     </header>
 

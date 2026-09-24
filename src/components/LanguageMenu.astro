@@ -7,12 +7,10 @@
 // the other language is still one click away; the inline script in the base
 // layout only closes it on Escape and on a click outside.
 //
-// The list is positioned against the header row, which the layout marks
-// `relative`, rather than against the control: on a phone the navigation
-// wraps under the name and the control lands at the start of the row, where
-// a list hanging off its end edge would run off the screen. So under `sm`
-// the list spans the column beneath the header, and from `sm` up, where both
-// headers fit one row, it is a compact popup at the row's end.
+// The list hangs from the control's own end edge. The control sits at the
+// end of the header's first row at every width, a phone included, so the
+// list opens under it and grows toward the start, inside the column, in both
+// directions.
 
 import Icon from './Icon.astro';
 import { locales, strings, type Locale } from '../lib/i18n';
@@ -28,7 +26,7 @@ const { locale, path } = Astro.props;
 const t = strings[locale];
 ---
 
-<details data-language-menu>
+<details data-language-menu class="relative">
   <summary
     class="flex cursor-pointer list-none items-center gap-1.5 rounded-md px-2 py-1.5 text-muted-foreground select-none hover:text-primary motion-safe:transition-colors"
   >
@@ -38,7 +36,7 @@ const t = strings[locale];
     <Icon name="chevron-down" class="fold-chevron size-3.5 motion-safe:transition-transform" />
   </summary>
   <ul
-    class="absolute inset-x-0 top-full z-10 mt-2 rounded-lg border border-border bg-card p-1 text-sm sm:start-auto sm:end-0 sm:min-w-40"
+    class="absolute end-0 top-full z-10 mt-2 min-w-40 rounded-lg border border-border bg-card p-1 text-sm"
   >
     {
       locales.map((l) => {
