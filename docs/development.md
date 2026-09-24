@@ -29,7 +29,7 @@ pnpm build        # writes dist/
 pnpm render:pdf   # writes the four document PDFs to dist/ and four filled ones to .artifacts/; fails if a resume runs past one page or fits it by less than 10mm (needs Playwright's Chromium)
 pnpm check:dist   # the checks CI runs over dist/
 pnpm test         # the Playwright tests, against a static server of dist/
-pnpm test:content # adds a temporary project, course, certification, and language, rebuilds, and checks each shows everywhere it should and nowhere else
+pnpm test:content # the Node tests of the technology marks' licences and the home timeline's order, then adds a temporary project, course, certification, and language, rebuilds, and checks each shows everywhere it should and nowhere else; then tries the featured mark on a hidden project, on a second project, and on none
 pnpm lighthouse   # Lighthouse on the home, CV, and resume pages, mobile profile
 pnpm check:live <address>  # asks a served site for its pages and downloads; the deploy job runs it last
 pnpm readme       # rewrites the profile block of README.md from src/content/ and the config
