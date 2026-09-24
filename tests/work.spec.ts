@@ -169,24 +169,29 @@ test.describe('the experience and projects sections', () => {
       await expect(project.locator(`[aria-label="${strings[locale].project.technologies}"] li`)).not.toHaveCount(0);
     });
 
-    // Every technology a badge, in the content's order and spelling, with a
-    // mark exactly where src/lib/technologies.ts has one, drawn in the text
-    // colour and hidden from assistive technology. The first five are in
+    // Every technology a badge, in the content's order and spelling, with
+    // exactly one drawing: the mark where src/lib/technologies.ts has one, in
+    // the text colour, and the code glyph where it has none, both hidden from
+    // assistive technology. The first five are in
     // view and the rest folded behind a control that counts them.
     test(`${url} shows every technology as a badge, with its mark where it has one`, async ({ page }) => {
       await page.goto(url);
       const found = await page.locator('[data-entry="project"]').evaluateAll((nodes) =>
         nodes.map((node) => ({
           badges: [...node.querySelectorAll('[data-badge]')].map((badge) => {
-            const svg = badge.querySelector('svg');
-            return { name: badge.textContent?.trim(), mark: svg ? `${svg.getAttribute('aria-hidden')} ${svg.getAttribute('fill')}` : null };
+            const svgs = badge.querySelectorAll('svg');
+            const svg = svgs[0];
+            return {
+              name: badge.textContent?.trim(),
+              mark: svgs.length === 1 ? `${svg.getAttribute('aria-hidden')} ${svg.getAttribute('data-icon') ?? svg.getAttribute('fill')}` : `${svgs.length} svgs`,
+            };
           }),
           inView: node.querySelectorAll('[data-badge]:not(details [data-badge])').length,
           summary: node.querySelector('details summary .fold-when-closed')?.textContent?.trim() ?? null,
         })),
       );
       const expected = gridProjects.map((entry) => ({
-        badges: entry.technologies.map((name) => ({ name, mark: technologyMark(name) ? 'true currentColor' : null })),
+        badges: entry.technologies.map((name) => ({ name, mark: technologyMark(name) ? 'true currentColor' : 'true code' })),
         inView: Math.min(entry.technologies.length, 5),
         summary:
           entry.technologies.length > 5
@@ -197,8 +202,8 @@ test.describe('the experience and projects sections', () => {
             : null,
       }));
       expect(found).toEqual(expected);
-      expect(expected.some((entry) => entry.badges.some((badge) => badge.mark)), 'some badge carries a mark').toBe(true);
-      expect(expected.some((entry) => entry.badges.some((badge) => !badge.mark)), 'some badge is the name alone').toBe(true);
+      expect(expected.some((entry) => entry.badges.some((badge) => badge.mark === 'true currentColor')), 'some badge carries a mark').toBe(true);
+      expect(expected.some((entry) => entry.badges.some((badge) => badge.mark === 'true code')), 'some badge carries the code glyph').toBe(true);
     });
 
     test(`${url} links a public project and leaves a described one unlinked`, async ({ page }) => {

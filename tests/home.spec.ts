@@ -176,17 +176,22 @@ for (const locale of locales) {
       for (const entry of skillEntries) {
         const card = cards.filter({ has: page.getByRole('heading', { name: entry.name[locale], exact: true }) });
         await expect(card, `the card for ${entry.name.en}`).toHaveCount(1);
-        // Every keyword a badge, in the content's order and spelling, with a
-        // mark exactly where src/lib/technologies.ts has one, drawn in the
-        // text colour and hidden from assistive technology.
+        // Every keyword a badge, in the content's order and spelling, with
+        // exactly one drawing: the mark where src/lib/technologies.ts has one,
+        // in the text colour, and the code glyph where it has none, both
+        // hidden from assistive technology.
         const badges = await card.locator('[data-badge]').evaluateAll((nodes) =>
           nodes.map((node) => {
-            const svg = node.querySelector('svg');
-            return { name: node.textContent?.trim(), mark: svg ? `${svg.getAttribute('aria-hidden')} ${svg.getAttribute('fill')}` : null };
+            const svgs = node.querySelectorAll('svg');
+            const svg = svgs[0];
+            return {
+              name: node.textContent?.trim(),
+              mark: svgs.length === 1 ? `${svg.getAttribute('aria-hidden')} ${svg.getAttribute('data-icon') ?? svg.getAttribute('fill')}` : `${svgs.length} svgs`,
+            };
           }),
         );
         expect(badges, `the badges on ${entry.name.en}`).toEqual(
-          entry.keywords.map((name: string) => ({ name, mark: technologyMark(name) ? 'true currentColor' : null })),
+          entry.keywords.map((name: string) => ({ name, mark: technologyMark(name) ? 'true currentColor' : 'true code' })),
         );
         if (entry.level) await expect(card).toContainText(entry.level[locale]);
       }

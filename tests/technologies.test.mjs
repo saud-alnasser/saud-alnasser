@@ -80,3 +80,17 @@ test('a name with no mark, and a name nowhere in the mapping, both draw the name
   assert.equal(technologyMark('Refactoring'), undefined);
   assert.ok(technologyMark('TypeScript'));
 });
+
+// The five mapped on 2026-09-24 for the stack read from Saud's repositories,
+// each with the title its package entry gives it.
+test('tRPC, Zod, Vite, Vitest, and SQLite draw their own marks', () => {
+  for (const [name, title] of [
+    ['tRPC', 'tRPC'],
+    ['Zod', 'Zod'],
+    ['Vite', 'Vite'],
+    ['Vitest', 'Vitest'],
+    ['SQLite', 'SQLite'],
+  ]) {
+    assert.equal(technologyMark(name)?.title, title, `${name} maps to the mark titled ${title}`);
+  }
+});

@@ -24,7 +24,11 @@
 //   whose package entry links guidelines.
 //
 // A name not listed at all, a practice such as "Refactoring" or a technology
-// only a hidden project names, is a badge with no mark.
+// only a hidden project names, has no mark. The badge and the filter chip
+// then draw the site's own code glyph (`code` in src/lib/icons.ts) in its
+// place, the same for every such name, so a row reads as one kind of thing
+// and no badge borrows a mark. The glyph is theirs to draw, not a mark:
+// `technologyMark` still answers undefined for these names.
 
 import {
   siBevy,
@@ -39,11 +43,16 @@ import {
   siPhp,
   siRust,
   siSolid,
+  siSqlite,
   siSupabase,
   siSvelte,
   siTailwindcss,
+  siTrpc,
   siTurso,
   siTypescript,
+  siVite,
+  siVitest,
+  siZod,
 } from 'simple-icons';
 import type { SimpleIcon } from 'simple-icons';
 
@@ -62,11 +71,16 @@ export const marks: Record<string, SimpleIcon | null> = {
   PHP: siPhp,
   Rust: siRust,
   SolidJS: siSolid,
+  SQLite: siSqlite,
   Supabase: siSupabase,
   Svelte: siSvelte,
   'Tailwind CSS': siTailwindcss,
+  tRPC: siTrpc,
   Turso: siTurso,
   TypeScript: siTypescript,
+  Vite: siVite,
+  Vitest: siVitest,
+  Zod: siZod,
   // CC BY-NC-ND 4.0, which a portfolio's use does not clearly fall inside.
   Tauri: null,
   // Guidelines that rule out a one-colour reference: Node.js's forbid

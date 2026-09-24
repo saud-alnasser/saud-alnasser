@@ -268,10 +268,12 @@ const subheading = 'flex items-center gap-2 text-lg font-semibold tracking-tight
           </button>
           {chips.map(({ technology, count, mark }) => (
             <button type="button" data-filter-chip={technology} aria-pressed="false" data-status={showing(count)} class={chip}>
-              {mark && (
+              {mark ? (
                 <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor" class="size-3.5 shrink-0">
                   <path d={mark.path} />
                 </svg>
+              ) : (
+                <Icon name="code" class="size-3.5" />
               )}
               <bdi>{technology}</bdi>
             </button>
