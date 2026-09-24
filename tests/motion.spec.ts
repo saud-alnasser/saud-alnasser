@@ -8,7 +8,20 @@ import { at, pages } from './pages';
 // nothing moves at all where it is not allowed to, and the entrance never
 // holds the page's largest text back from being painted.
 
-const settled = (page: Page) => page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished)));
+// Waits until nothing is moving: the bundled faces in, so no late swap
+// reflows the page and scroll anchoring moves it, and every animation over.
+// An animation cancelled on the way, as a hover's colour is when the fold it
+// is on opens and restyles it, has stopped rather than failed, and what
+// replaced it is waited for in the next pass.
+const settled = (page: Page) =>
+  page.evaluate(async () => {
+    await document.fonts.ready;
+    for (let pass = 0; pass < 10; pass += 1) {
+      const running = document.getAnimations();
+      if (running.length === 0) return;
+      await Promise.all(running.map((animation) => animation.finished.catch(() => undefined)));
+    }
+  });
 
 // Every duration the page could move on: each running animation's, and each
 // element's computed transition and animation durations, with the fold's
