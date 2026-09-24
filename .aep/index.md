@@ -101,6 +101,7 @@ Start at [[protocol]].
 | 29-credentials-as-one-self-study-line | implemented | [[efforts/29-credentials-as-one-self-study-line/spec]] | 0 | 0 | 3 |
 | 3-site-redesign | implemented | [[efforts/3-site-redesign/spec]] | 0 | 1 | 8 |
 | 31-portfolio-rework | implemented | [[efforts/31-portfolio-rework/spec]] | 3 | 0 | 8 |
+| 33-one-page-portfolio | draft | [[efforts/33-one-page-portfolio/spec]] | 0 | 0 | 0 |
 | 5-sections-and-resume | implemented | [[efforts/5-sections-and-resume/spec]] | 0 | 0 | 6 |
 | 7-document-downloads-and-contact-details | implemented | [[efforts/7-document-downloads-and-contact-details/spec]] | 1 | 0 | 6 |
 
