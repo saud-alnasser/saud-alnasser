@@ -869,6 +869,22 @@ async function basePaths() {
   return [`base paths: ${count} root-relative paths in ${files.length} files, all under ${context.prefix}`];
 }
 
+// Every image-set(...) in a stylesheet's text, each taken whole: from its
+// name to the parenthesis that closes it, counting the ones inside.
+function imageSets(css) {
+  const sets = [];
+  for (let start = css.indexOf('image-set('); start !== -1; start = css.indexOf('image-set(', start + 1)) {
+    let depth = 0;
+    let end = start + 'image-set'.length;
+    for (; end < css.length; end += 1) {
+      if (css[end] === '(') depth += 1;
+      else if (css[end] === ')' && --depth === 0) break;
+    }
+    sets.push(css.slice(start, end + 1));
+  }
+  return sets;
+}
+
 // Nothing the site loads comes from another origin: no font, stylesheet,
 // script, image, or icon is fetched from anywhere but the site itself, so a
 // visit tells no third party it happened and the page cannot break because
@@ -896,13 +912,16 @@ async function oneOrigin() {
   let count = 0;
   for (const file of files) {
     const text = await readFile(path.join(context.dist, file), 'utf8');
+    // A page's own style attributes write their quotes as entities, so the
+    // CSS is read with them turned back into quotes.
+    const css = text.replace(/&quot;|&#34;/g, '"').replace(/&#39;|&apos;/g, "'");
     const found = [
-      ...[...text.matchAll(/url\(\s*(["']?)(.*?)\1\s*\)/g)].map((match) => match[2]),
-      ...[...text.matchAll(/@import\s+(?:url\(\s*)?["']?([^"')\s;]+)/g)].map((match) => match[1]),
-      // image-set() may name its images as bare strings rather than url().
-      ...[...text.matchAll(/image-set\(([^)]*(?:\([^)]*\)[^)]*)*)\)/g)].flatMap((match) =>
-        [...match[1].matchAll(/["']([^"']+)["']/g)].map((string) => string[1]),
-      ),
+      ...[...css.matchAll(/url\(\s*(["']?)(.*?)\1\s*\)/g)].map((match) => match[2]),
+      ...[...css.matchAll(/@import\s+(?:url\(\s*)?["']?([^"')\s;]+)/g)].map((match) => match[1]),
+      // image-set() may name its images as bare strings rather than url(),
+      // and may hold url() among them, so each is read to its own closing
+      // parenthesis rather than to the first one.
+      ...imageSets(css).flatMap((set) => [...set.matchAll(/["']([^"']+)["']/g)].map((string) => string[1])),
     ];
     if (file.endsWith('.html')) {
       for (const [, tag, attributes] of text.matchAll(/<([a-z][\w:-]*)\b([^>]*)>/gi)) {
