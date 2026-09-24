@@ -65,18 +65,19 @@ test('the credits list exactly the marks whose licence asks for attribution', ()
   assert.ok(expected.length > 0, 'at least one mark asks for attribution today');
 });
 
-// A mark whose guidelines the package records is mapped only once they have
-// been read, and what they allow is written beside the mapping.
+// Given the names a page shows, the footer credits only the marks those names
+// draw: each mark that asks for credit, alone, credits itself and nothing
+// else, and no names credit nothing.
 test('given the names a site shows, the credits cover only the marks those names draw', () => {
-  const all = credits().map((credit) => credit.name);
-  assert.ok(all.includes('Godot Engine'), 'Godot is mapped and asks for credit');
-  assert.deepEqual(
-    credits(['Rust', 'TypeScript']).map((credit) => credit.name),
-    all.filter((name) => ['Rust', 'TypeScript'].some((shown) => technologyMark(shown)?.title === name)),
-  );
-  assert.ok(!credits(['Rust']).some((credit) => credit.name === 'Godot Engine'), 'a mark nothing draws is not credited');
+  assert.deepEqual(credits([]), []);
+  for (const credit of credits()) {
+    const name = mapped.find(({ mark }) => mark.title === credit.name).name;
+    assert.deepEqual(credits([name]), [credit], `${name} alone credits ${credit.name} and nothing else`);
+  }
 });
 
+// A mark whose guidelines the package records is mapped only once they have
+// been read, and what they allow is written beside the mapping.
 test('every mapped mark with recorded guidelines has had them read', () => {
   for (const { name, recorded } of mapped) {
     if (!recorded.guidelines) continue;

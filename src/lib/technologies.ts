@@ -14,7 +14,8 @@
 //
 // - no licence recorded, or MIT or BSD: mapped;
 // - CC BY or CC BY-SA: mapped, and credited by name, licence, and source in
-//   the footer, which reads `credits()`;
+//   the footer wherever a shown project or a skill keyword draws it, which
+//   the footer asks `credits()` for with those names;
 // - any NC or ND licence: not mapped, so the name stands alone;
 // - absent from the set: not mapped, and a mark is never borrowed from
 //   another product, since a badge drawing it would name the wrong thing;
