@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { strings } from '../src/lib/i18n';
+import { sections } from '../src/lib/sections';
 import { at, locales, pages } from './pages';
 
 // The header as the way around the one page: it stays on screen however far
@@ -13,8 +14,6 @@ import { at, locales, pages } from './pages';
 // sticky header, the anchors, the scroll padding that keeps a heading clear
 // of the header, and the last section's height, which lets its heading come
 // up at all.
-
-const sections = ['about', 'experience', 'projects', 'education', 'skills'] as const;
 
 const sizes = [
   { width: 1440, height: 900, phone: false },

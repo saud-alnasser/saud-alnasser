@@ -1,6 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { strings, type Locale } from '../src/lib/i18n';
+import { sections as sectionIds } from '../src/lib/sections';
 import { lowContrastPairs } from './contrast';
 import { at, control, locales, menu, otherLocale, pageList } from './pages';
 
@@ -15,8 +16,6 @@ import { at, control, locales, menu, otherLocale, pageList } from './pages';
 
 // The languages as the menu names them, in their own script.
 const names = { en: 'English', ar: 'العربية' } as const;
-
-const sectionIds = ['about', 'experience', 'projects', 'education', 'skills'] as const;
 
 // What a navigation holds, on any page: the five sections of the home page by
 // their anchors, then the two documents as a group of their own named for

@@ -5,9 +5,10 @@
 // src/content/certificates/ reaches the home page and resume.json and not the
 // CV, which reads the courses as one self-study entry; a certification added
 // there reaches the home page, the CV page, and resume.json, and brings back
-// the certifications section on the home page and the section on the CV,
-// which render only while one exists. A language added to src/content/languages/ reaches
-// the CV page, the resume page, and resume.json, and no page of the site.
+// the certifications section on the home page and the section on the CV, which
+// render only while one exists. A language added to src/content/languages/
+// reaches the CV page, the resume page, and resume.json, and no page of the
+// site.
 //
 //   pnpm test:content
 //
@@ -101,8 +102,9 @@ status: completed
 resume: true
 `;
 
-// The course reaches the home page and the JSON documents and not the CV: the CV names no course, and that absence is what proves the courses
-// collapsed into the self-study entry rather than merely moved.
+// The course reaches the home page and the JSON documents and not the CV: the
+// CV names no course, and that absence is what proves the courses collapsed
+// into the self-study entry rather than merely moved.
 const course = {
   name: 'fixture-certificate-without-document-7b1d0a',
   kind: 'course',
@@ -353,9 +355,10 @@ async function assertProjectLinked() {
   }
 }
 
-// A fixture certificate's card on the home page is neither a link nor a
-// button and carries no document, because the entry names none. The card is the nearest element before the name that is marked
-// with the entry's kind; its opening tag says what it is.
+// A fixture certificate's card on the home page is neither a link nor a button
+// and carries no document, because the entry names none. The card is the
+// nearest element before the name that is marked with the entry's kind; its
+// opening tag says what it is.
 async function assertCardUnopenable(certificate) {
   for (const file of ['en/index.html', 'ar/index.html']) {
     const html = await readFile(path.join(dist, file), 'utf8');

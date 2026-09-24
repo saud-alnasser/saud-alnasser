@@ -5,6 +5,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { parse as parseYaml } from 'yaml';
 import { fill, strings } from '../src/lib/i18n';
 import { profileIcon } from '../src/lib/networks';
+import { sections as sectionIds } from '../src/lib/sections';
 import { isShown } from '../src/lib/shown';
 import { technologyMark } from '../src/lib/technologies';
 import { at, locales, type Locale } from './pages';
@@ -50,10 +51,6 @@ const skillEntries = visibleEntries('skills').map((file) => entryData('skills', 
 // Every certificate the site shows, courses and certifications alike, which
 // is what the certificates tile counts.
 const certificates = visibleEntries('certificates');
-
-// The five sections, in the order the page holds them, each by the id its
-// heading carries.
-const sectionIds = ['about', 'experience', 'projects', 'education', 'skills'];
 
 // The entries whose cards carry an id of their own, which an address can
 // still name on this page.

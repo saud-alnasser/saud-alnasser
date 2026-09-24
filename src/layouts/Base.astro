@@ -4,6 +4,7 @@ import { getEntry } from 'astro:content';
 import { localeInfo, otherLocale, strings, type Locale } from '../lib/i18n';
 import { localized } from '../lib/localized';
 import { absolute, withBase } from '../lib/paths';
+import { sections as sectionIds } from '../lib/sections';
 import { credits } from '../lib/technologies';
 import Icon from '../components/Icon.astro';
 import LanguageMenu from '../components/LanguageMenu.astro';
@@ -56,7 +57,7 @@ const logoCredits = credits();
 // page, each by the anchor its heading carries, so from a document they lead
 // back to the section; and the two documents, the one being read marked as
 // the current page.
-const sections = (['about', 'experience', 'projects', 'education', 'skills'] as const).map((id) => ({
+const sections = sectionIds.map((id) => ({
   id,
   href: `${home}#${id}`,
   label: t.nav[id],
@@ -553,9 +554,9 @@ const link =
         }
 
         // The entrance curve, --ease-enter in the stylesheet,
-        // cubic-bezier(0.05, 0.7, 0.1, 1): how far along the count is at a
-        // given fraction of the time, found by halving for the curve's
-        // parameter at that time.
+        // cubic-bezier(0.05, 0.7, 0.1, 1): how far along a count or a glide
+        // is at a given fraction of the time, found by halving for the
+        // curve's parameter at that time.
         function enter(time) {
           function at(t, a, b) {
             return 3 * (1 - t) * (1 - t) * t * a + 3 * (1 - t) * t * t * b + t * t * t;

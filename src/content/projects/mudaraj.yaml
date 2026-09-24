@@ -13,7 +13,7 @@ role:
 #
 # Later the same day, by Saud's decision, the entry left the resume: the
 # `resume: true` marker it carried is gone, so it prints on the CV and the
-# work page alone, and the shortening above no longer buys the resume
+# home page alone, and the shortening above no longer buys the resume
 # anything. It stays because the CV reads the same field.
 summary:
   en: "A centralised e-ticketing and fan loyalty platform for Saudi football: match browsing and seat selection, QR-code tickets validated at the stadium, and a points-based loyalty programme, in English and Arabic, developed with Scrum."

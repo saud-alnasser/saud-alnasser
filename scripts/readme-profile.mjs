@@ -1,13 +1,11 @@
 // Writes the profile block of README.md, the page GitHub shows for the
 // account, from the content source and the site config: the summary, the
-// profiles other than GitHub, and the site's address in both languages. The
-// CV and the resume are one press away from the site's header, so the block
-// does not link them itself. Who
-// Saud is stays authored once, in
-// src/content/, and the profile page repeats it without a second hand-written
-// copy. The skills, the projects, and the rest of the record are on the site;
-// the README points at it rather than growing a copy. Run after editing the
-// profile:
+// profiles other than GitHub, and the site's address in both languages. The CV
+// and the resume are one press away from the site's header, so the block does
+// not link them itself. Who Saud is stays authored once, in src/content/, and
+// the profile page repeats it without a second hand-written copy. The skills,
+// the projects, and the rest of the record are on the site; the README points
+// at it rather than growing a copy. Run after editing the profile:
 //
 //   pnpm readme           # rewrites the block between the markers
 //   pnpm readme --check   # exits non-zero when the README is behind

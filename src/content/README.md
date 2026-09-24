@@ -44,17 +44,16 @@ people; where the two disagree, the code is right and this file is corrected.
 ## `profile.yaml`
 
 One file, `src/content/profile.yaml`, with a single top-level key `profile:`
-holding the person. The profile block of the repository's `README.md`,
-between the `<!-- profile -->` markers, is written from `summary` here by
-`pnpm readme`, over one line per profile other than GitHub, which the README
-already is the page of, and then links to the site in both languages, which
-leads to the CV and the resume, so who Saud is stays authored once; the dist
-check fails when the README is behind. The record itself — the skills, the projects, the rest —
-is on the site, and the README links to it rather than repeating it. The
-languages Saud speaks are not here either: they are entries under
-`languages/`, read by the two hiring documents and the JSON Resume document
-alone, the way `nationality` below is a fact for those documents and not for
-the site.
+holding the person. The profile block of the repository's `README.md`, between
+the `<!-- profile -->` markers, is written from `summary` here by `pnpm
+readme`, over one line per profile other than GitHub, which the README already
+is the page of, and then links to the site in both languages, which leads to
+the CV and the resume, so who Saud is stays authored once; the dist check fails
+when the README is behind. The record itself — the skills, the projects, the
+rest — is on the site, and the README links to it rather than repeating it. The
+languages Saud speaks are not here either: they are entries under `languages/`,
+read by the two hiring documents and the JSON Resume document alone, the way
+`nationality` below is a fact for those documents and not for the site.
 
 **There are two summaries, because there are two documents.** Each names only
 the work its own document prints as an entry, which is what one field could
@@ -133,11 +132,11 @@ university comes first, the online courses next, and high school last. That
 node stands for the courses, dated or not: it counts them, runs from the
 earliest dated one to the latest, and leads to the courses grid below the
 timeline, newest first with the undated last, where the certifications sit
-under their own heading beside it, while any exists. The CV's education section is the same timeline: the institutions
-with one self-study entry in the node's place, which is how the CV reads the
-courses (see `self-study.yaml` below), and its Certifications section prints
-only while a certification exists, like the site's section and the home
-page's card.
+under their own heading beside it, while any exists. The CV's education section
+is the same timeline: the institutions with one self-study entry in the node's
+place, which is how the CV reads the courses (see `self-study.yaml` below), and
+its Certifications section prints only while a certification exists, like the
+site's section.
 
 | Field | Type | Per language | Meaning |
 | --- | --- | --- | --- |

@@ -152,9 +152,10 @@ export async function resumeFor(locale: Locale, site: URL) {
     getCollection('languages'),
   ]);
 
-  // The same orders the pages use (src/lib/order.ts): work and education
-  // newest first, certificates by date with undated ones last, projects,
-  // skills, and languages by authored order.
+  // The orders every output reads (src/lib/order.ts): work and education
+  // newest first; certificates by date, oldest first with undated ones last,
+  // as the CV lists its certifications, where the site lists them newest
+  // first; projects, skills, and languages by authored order.
   experience.sort((a, b) => byStartDescending(a.data, b.data));
   education.sort((a, b) => byStartDescending(a.data, b.data));
   certificates.sort((a, b) => byDateAscending(a.data, b.data));

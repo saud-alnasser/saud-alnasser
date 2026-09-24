@@ -115,9 +115,9 @@ const projects = defineCollection({
       status: z.enum(projectStatuses),
       resume,
       order: z.number().int().optional(),
-      // The one project the home page puts forward, as a wider card ahead
-      // of the others. Absent means no. Only a project that
-      // is shown may carry it, and src/lib/shown.ts refuses two.
+      // The one project the home page puts forward, as a wider card ahead of
+      // the others. Absent means no. Only a project that is shown may carry
+      // it, and src/lib/shown.ts refuses two.
       featured: z.boolean().optional(),
     })
     .strict()

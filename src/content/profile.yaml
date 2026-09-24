@@ -30,7 +30,7 @@ profile:
   # document, and no JSON file. The clause was the only place it was named
   # anywhere, and a reader following it arrived at nothing. Do not restore it
   # on the grounds that the entry is in the source: when its status changes,
-  # Nova reaches the work page and the CV on its own, the way every other
+  # Nova reaches the home page and the CV on its own, the way every other
   # project gets there.
   #
   # Keeping them apart is the cost of the split, and it is the reason they sit

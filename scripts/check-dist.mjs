@@ -26,6 +26,7 @@ import { levelLine } from '../src/lib/languages.ts';
 import { gapReport, pick } from '../src/lib/localized.ts';
 import { forwards } from '../src/lib/forwards.ts';
 import { codedProfile } from '../src/lib/networks.ts';
+import { sections as sectionIds } from '../src/lib/sections.ts';
 import { byDateAscending, byOrderThenName, byStartAscending, byStartDescending } from '../src/lib/order.ts';
 import { joinBase } from '../src/lib/paths.ts';
 import { isCourse, isShown } from '../src/lib/shown.ts';
@@ -1450,15 +1451,11 @@ async function languagesWhereTheyBelong() {
   return lines;
 }
 
-// The README's profile block is written from the content source and the
-// config (scripts/readme-profile.mjs), so who Saud is stays authored once; a
-// README behind them fails here rather than drifting on the profile page.
 // The home page holds the whole portfolio: in each language its five
 // sections' headings, by the ids that are their anchors and in the order the
 // page reads them. And nothing the sections replaced is left on any page: the
 // monogram, the timeline from study to work, and the grid of cards leading
 // to each section, each by the attribute on its element.
-const sectionIds = ['about', 'experience', 'projects', 'education', 'skills'];
 
 async function onePage() {
   const name = 'one page';
@@ -1526,6 +1523,9 @@ async function forwardsLand() {
   return lines;
 }
 
+// The README's profile block is written from the content source and the
+// config (scripts/readme-profile.mjs), so who Saud is stays authored once; a
+// README behind them fails here rather than drifting on the profile page.
 async function readmeProfile() {
   const name = 'readme profile';
   const { current, next } = await readmeWithProfile();
