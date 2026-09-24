@@ -74,27 +74,23 @@ for (const locale of ['en', 'ar'] as const) {
   });
 }
 
-// The two surfaces the page-wide audits see closed: a project card's folded
-// badges and the footer's logo credits. Opened here, in both palettes and
-// both directions.
+// The surface the page-wide audits see closed: the footer's logo credits.
+// Opened here, in both palettes and both directions.
 for (const locale of ['en', 'ar'] as const) {
   const page = at(`/${locale}/`);
 
-  test(`the badge fold and the logo credits on ${page} meet WCAG AA open`, async ({ page: browser, colorScheme }) => {
+  test(`the logo credits on ${page} meet WCAG AA open`, async ({ page: browser, colorScheme }) => {
     await browser.goto(page);
-    const fold = browser.locator('[data-entry="project"] details').first();
-    await fold.locator('summary').click();
-    await expect(fold).toHaveAttribute('open', '');
     const credits = browser.locator('[data-logo-credits]');
     await credits.locator('summary').click();
     await expect(credits).toHaveAttribute('open', '');
     const failures = await browser.evaluate(lowContrastPairs);
-    expect(failures, `${colorScheme} palette on ${page} with both open`).toEqual([]);
+    expect(failures, `${colorScheme} palette on ${page} with the credits open`).toEqual([]);
     if (locale === 'en') {
       const results = await new AxeBuilder({ page: browser }).withTags(['wcag2a', 'wcag2aa']).analyze();
       expect(
         results.violations.map((violation) => `${violation.id}: ${violation.help}`),
-        `${colorScheme} palette on ${page} with both open`,
+        `${colorScheme} palette on ${page} with the credits open`,
       ).toEqual([]);
     }
   });

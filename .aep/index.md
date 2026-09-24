@@ -180,7 +180,7 @@ Every task of every effort. The tracker carries the effort, never its tasks.
 | [[efforts/33-one-page-portfolio/tickets/06-a-plainer-description]] feat(content): a plainer description, and a README without the documents | 33-one-page-portfolio | resolved | — |
 | [[efforts/35-the-owners-review/tickets/01-skills-from-the-code]] feat(content): skills read from the code, rentable's whole stack, and five weaker projects hidden | 35-the-owners-review | resolved | — |
 | [[efforts/35-the-owners-review/tickets/02-more-marks-and-the-code-glyph]] feat(site): five more technology marks, and the code glyph on every badge without one | 35-the-owners-review | resolved | 01 |
-| [[efforts/35-the-owners-review/tickets/03-the-whole-stack-on-every-card]] feat(site): every project card shows its whole stack | 35-the-owners-review | open | 02 |
+| [[efforts/35-the-owners-review/tickets/03-the-whole-stack-on-every-card]] feat(site): every project card shows its whole stack | 35-the-owners-review | resolved | 02 |
 | [[efforts/35-the-owners-review/tickets/04-the-courses-inside-the-timeline]] feat(site): the online courses open inside the education timeline, and the courses grid goes | 35-the-owners-review | open | 03 |
 | [[efforts/35-the-owners-review/tickets/05-the-name-once-and-a-footer]] feat(site): the header's name follows the reader past the first screen, and a footer that carries the copyright, the profiles, and the source | 35-the-owners-review | open | 04 |
 | [[efforts/5-sections-and-resume/tickets/01-contract-and-predicate]] feat(content): a completion status on projects, a kind on certificates, a resume marker, and the one predicate every output reads | 5-sections-and-resume | resolved | — |

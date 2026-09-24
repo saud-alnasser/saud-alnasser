@@ -73,7 +73,6 @@ const en = {
     nouns: {
       courses: { one: 'course', other: 'courses' } as PluralForms,
       highlights: { one: 'highlight', other: 'highlights' } as PluralForms,
-      technologies: { one: 'technology', other: 'technologies' } as PluralForms,
     },
   },
   // The foot of every page: the credits a logo's licence asks for, folded
@@ -265,7 +264,6 @@ const ar: Strings = {
     nouns: {
       courses: { one: 'مقرر', two: 'مقرران', few: 'مقررات', many: 'مقرراً', other: 'مقرر' },
       highlights: { one: 'مهمة', two: 'مهمتان', few: 'مهام', many: 'مهمة', other: 'مهمة' },
-      technologies: { one: 'تقنية', two: 'تقنيتان', few: 'تقنيات', many: 'تقنية', other: 'تقنية' },
     },
   },
   footer: {
