@@ -376,8 +376,9 @@ const nav = [
         //
         // A revealed element holding a stat tile's number also counts it up,
         // once, from nothing to the figure the page was built with, over
-        // 350ms and slowing as it lands. The figure is already in the page, so
-        // wherever this does not run the tile simply shows it.
+        // 350ms on the stylesheet's entrance curve, so it lands the way every
+        // other arrival on the page does. The figure is already in the page,
+        // so wherever this does not run the tile simply shows it.
         function reveal() {
           if (typeof IntersectionObserver !== 'function') return;
           if (!matchMedia('(prefers-reduced-motion: no-preference)').matches) return;
@@ -405,6 +406,24 @@ const nav = [
           root.setAttribute('data-reveal', '');
         }
 
+        // The entrance curve, --ease-enter in the stylesheet,
+        // cubic-bezier(0.05, 0.7, 0.1, 1): how far along the count is at a
+        // given fraction of the time, found by halving for the curve's
+        // parameter at that time.
+        function enter(time) {
+          function at(t, a, b) {
+            return 3 * (1 - t) * (1 - t) * t * a + 3 * (1 - t) * t * t * b + t * t * t;
+          }
+          var low = 0;
+          var high = 1;
+          for (var i = 0; i < 24; i += 1) {
+            var middle = (low + high) / 2;
+            if (at(middle, 0.05, 0.1) < time) low = middle;
+            else high = middle;
+          }
+          return at((low + high) / 2, 0.7, 1);
+        }
+
         function count(counter) {
           var target = Number(counter.getAttribute('data-count'));
           if (!(target > 0)) return;
@@ -412,7 +431,7 @@ const nav = [
           function step(now) {
             if (start === null) start = now;
             var progress = Math.min((now - start) / 350, 1);
-            counter.textContent = String(Math.round(target * (1 - Math.pow(1 - progress, 3))));
+            counter.textContent = String(Math.round(target * enter(progress)));
             if (progress < 1) requestAnimationFrame(step);
           }
           counter.textContent = '0';
