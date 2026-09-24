@@ -36,6 +36,8 @@ The Arabic line is a label and a number, "المشاريع المعروضة: 7",
 
 `data-technologies` sits on each grid item, the `li` the card is in, as `data-reveal` does since ticket 03. That element is the one the filter hides, so the grid closes up around what is left.
 
+Changed on 2026-09-24 after the second review round, by Saud's decision: the featured card now follows the filter in its own slot above the grid, hidden under a chip it does not name. The spec's requirement 5 carries the amendment. The count a press announces is unchanged, and it now always equals the projects on screen. Under Svelte and SvelteKit that is two, the featured card and one grid card, rather than one grid card beside a card that did not match. The filter tests assert both.
+
 ## What verified each criterion, on 2026-09-24
 
 - **The row.** "offers a chip per technology two projects share" passed on both work pages in both palettes. The group is named "Filter projects by technology" and its Arabic, and holds "All" then Rust, TypeScript, Java, Svelte, and SvelteKit, computed in the test from the content, with "All" pressed. The built HTML ships the group with `hidden`.

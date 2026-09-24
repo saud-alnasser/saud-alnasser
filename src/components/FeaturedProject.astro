@@ -19,15 +19,18 @@ interface Props {
   locale: Locale;
   entry: CollectionEntry<'projects'>;
   class?: string;
+  // Anything else goes on the card: the work page's filter reads the
+  // technologies from it.
+  [attribute: string]: unknown;
 }
 
-const { locale, entry, class: className } = Astro.props;
+const { locale, entry, class: className, ...rest } = Astro.props as Props;
 const { data } = entry;
 const t = strings[locale];
 const text = localized(locale, 'projects', entry.id);
 ---
 
-<Card as="article" variant="raised" data-featured-project class:list={['sm:p-8', className]}>
+<Card as="article" variant="raised" data-featured-project class:list={['sm:p-8', className]} {...rest}>
   <p class="flex items-center gap-1.5 text-sm font-medium text-primary">
     <Icon name="star" class="size-4" />
     {t.project.featured}

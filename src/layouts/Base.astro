@@ -439,8 +439,9 @@ const nav = [
         }
 
         // Shows the work page's technology chips and runs them: a press marks
-        // that chip pressed and every other not, hides the grid's projects
-        // that do not name its technology, and writes the chip's own line,
+        // that chip pressed and every other not, hides the projects that do
+        // not name its technology, the featured card in its place above the
+        // grid among them, and writes the chip's own line,
         // counted and declined when the page was built, into the status
         // region, which a screen reader announces. The empty technology is
         // "All". Without this the row stays hidden and every project shows.
@@ -449,7 +450,9 @@ const nav = [
           var status = document.querySelector('[data-filter-status]');
           if (!group || !status) return;
           var chips = group.querySelectorAll('[data-filter-chip]');
-          var items = document.querySelectorAll('[data-grid="projects"] > [data-technologies]');
+          var items = document.querySelectorAll(
+            '[data-grid="projects"] > [data-technologies], [data-featured-project][data-technologies]',
+          );
           group.hidden = false;
           group.addEventListener('click', function (event) {
             var chip = event.target.closest ? event.target.closest('[data-filter-chip]') : null;

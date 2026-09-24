@@ -91,13 +91,24 @@ const experience = (await getCollection('experience')).sort((a, b) => byStartDes
       <Icon name="folder-code" class="size-5 text-primary" />
       {t.sections.projects}
     </h2>
-    {featured && <FeaturedProject locale={locale} entry={featured} class="mt-6" />}
+    {
+      featured && (
+        <FeaturedProject
+          locale={locale}
+          entry={featured}
+          class="mt-6"
+          data-technologies={featured.data.technologies.join('|')}
+        />
+      )
+    }
     {/*
       The filter ships hidden, and the inline script shows it and runs it; with
-      no script there is no row and every project shows. It filters the grid
-      only: the featured card above is the page's pick and keeps its place.
-      Which technology is chosen is a view of the page and is not written to
-      the address, so a reload shows every project.
+      no script there is no row and every project shows. It filters the
+      featured card as it does the grid, in its own place above the grid, so
+      what a chip leaves on screen is exactly the projects naming its
+      technology and the number announced counts them. Which technology is
+      chosen is a view of the page and is not written to the address, so a
+      reload shows every project.
     */}
     {
       chips.length > 0 && (

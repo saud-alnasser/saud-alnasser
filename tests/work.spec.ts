@@ -396,9 +396,10 @@ test.describe('the featured project', () => {
 
 // The filter: one chip per technology two or more shown projects name, the
 // featured one among them, most used first and then by name, after "All".
-// A press leaves exactly the grid's projects naming the technology, marks the
-// chip pressed and no other, and announces how many shown projects name it.
-// The featured card is never filtered. With no script there is no row.
+// A press leaves exactly the projects naming the technology, the featured
+// card in its place among them, marks the chip pressed and no other, and
+// announces how many shown projects name it, which is how many are on
+// screen. With no script there is no row.
 const uses = new Map<string, number>();
 for (const entry of projects) for (const technology of new Set(entry.technologies)) uses.set(technology, (uses.get(technology) ?? 0) + 1);
 const chipNames = [...uses]
@@ -448,7 +449,15 @@ test.describe('the project filter', () => {
           const expected = gridProjects.filter((entry) => name === '' || entry.technologies.includes(name)).map((entry) => entry.technologies);
           expect(visible, `the grid under ${name || 'All'}`).toEqual(expected);
           await expect(status).toHaveText(announced(locale, name === '' ? projects.length : uses.get(name)!));
-          if (featured) await expect(page.locator('[data-featured-project]')).toBeVisible();
+          if (featured) {
+            const card = page.locator('[data-featured-project]');
+            if (name === '' || featured.technologies.includes(name)) await expect(card).toBeVisible();
+            else await expect(card).toBeHidden();
+          }
+          const onScreen = expected.length + (featured && (name === '' || featured.technologies.includes(name)) ? 1 : 0);
+          expect(onScreen, `the projects on screen under ${name || 'All'} match the count announced`).toBe(
+            name === '' ? projects.length : uses.get(name)!,
+          );
         }
       });
     }

@@ -296,7 +296,9 @@ async function assertFeatured(baseline) {
     await assertTreeUntouched('with no project marked featured', baseline, { allowContent: true });
     await build('with no project marked featured');
     for (const page of ['en/work/index.html', 'ar/work/index.html', 'en/index.html', 'ar/index.html']) {
-      if ((await readFile(path.join(dist, page), 'utf8')).includes('data-featured-project')) {
+      // The attribute on an element, not the selector the inline script names
+      // it by on every page.
+      if (/<[a-z][^>]*\sdata-featured-project[\s>=]/.test(await readFile(path.join(dist, page), 'utf8'))) {
         throw new Failure('featured-shown', `dist/${page} shows a featured card with no project marked featured`);
       }
     }
