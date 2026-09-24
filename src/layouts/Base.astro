@@ -526,8 +526,13 @@ const link =
           if (typeof IntersectionObserver !== 'function') return;
           // Opened at an anchor, the page is already where the reader asked
           // to be, and a heading held low there would land under the header.
-          // Read from the address, since `:target` may not match yet here.
-          if (location.hash.length > 1 && document.getElementById(decodeURIComponent(location.hash.slice(1)))) return;
+          // Read from the address, since `:target` may not match yet here;
+          // an anchor that is not a valid escape names nothing.
+          var anchor = null;
+          try {
+            anchor = location.hash.length > 1 ? document.getElementById(decodeURIComponent(location.hash.slice(1))) : null;
+          } catch (error) {}
+          if (anchor) return;
           if (!matchMedia('(prefers-reduced-motion: no-preference)').matches) return;
           var marked = document.querySelectorAll('[data-reveal]');
           if (!marked.length) return;

@@ -213,3 +213,15 @@ for (const { width, height, phone } of sizes) {
     }
   });
 }
+
+// An address whose anchor is not a valid escape, as a link cut short leaves
+// it, names no section, and everything the script wires still runs.
+test('a malformed anchor leaves the page working', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.goto(`${at('/en/')}#%`);
+  await expect(page.locator('[data-filter]')).toBeVisible();
+  await page.locator('[data-theme-toggle]').click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', /light|dark/);
+  expect(errors).toEqual([]);
+});
