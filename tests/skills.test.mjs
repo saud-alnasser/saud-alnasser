@@ -49,10 +49,6 @@ export const backing = {
     by: ['projects/monkey-lang', 'projects/pl-0'],
     how: "monkey-lang's lexer and its parser, built on the chumsky combinators, and pl-0's hand-written lexer and recursive descent parser",
   },
-  'Bytecode virtual machines': {
-    by: ['projects/monkey-lang'],
-    how: 'it lowers the syntax tree to a basic-block intermediate representation and runs it on its own interpreter',
-  },
   'Data structures and algorithms': {
     by: ['projects/leetcode', 'projects/advent-of-code'],
     how: 'problem solutions in Rust, beside the self-study topic "data structures"',
