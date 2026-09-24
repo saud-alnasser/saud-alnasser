@@ -6,6 +6,7 @@ import { parse as parseYaml } from 'yaml';
 import { fill, plural, strings } from '../src/lib/i18n';
 import { profileIcon } from '../src/lib/networks';
 import { isCertification, isCourse, isShown } from '../src/lib/shown';
+import { technologyMark } from '../src/lib/technologies';
 import { at, locales, type Locale } from './pages';
 
 // The home page: the hero, the contact actions, the skill cards, and one card
@@ -234,7 +235,18 @@ for (const locale of locales) {
       for (const entry of skillEntries) {
         const card = cards.filter({ has: page.getByRole('heading', { name: entry.name[locale], exact: true }) });
         await expect(card, `the card for ${entry.name.en}`).toHaveCount(1);
-        await expect(card).toContainText(entry.keywords.join(strings[locale].listSeparator));
+        // Every keyword a badge, in the content's order and spelling, with a
+        // mark exactly where src/lib/technologies.ts has one, drawn in the
+        // text colour and hidden from assistive technology.
+        const badges = await card.locator('[data-badge]').evaluateAll((nodes) =>
+          nodes.map((node) => {
+            const svg = node.querySelector('svg');
+            return { name: node.textContent?.trim(), mark: svg ? `${svg.getAttribute('aria-hidden')} ${svg.getAttribute('fill')}` : null };
+          }),
+        );
+        expect(badges, `the badges on ${entry.name.en}`).toEqual(
+          entry.keywords.map((name: string) => ({ name, mark: technologyMark(name) ? 'true currentColor' : null })),
+        );
         if (entry.level) await expect(card).toContainText(entry.level[locale]);
       }
     });

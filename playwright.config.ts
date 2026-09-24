@@ -21,6 +21,9 @@ const port = 4173;
 
 export default defineConfig({
   testDir: './tests',
+  // The browser tests only; tests/technologies.test.mjs is a Node test that
+  // `pnpm test:content` runs.
+  testMatch: '**/*.spec.ts',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: 0,

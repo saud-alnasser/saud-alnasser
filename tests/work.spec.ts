@@ -6,6 +6,7 @@ import { parse as parseYaml } from 'yaml';
 import { fill, formatPeriod, plural, strings } from '../src/lib/i18n';
 import { byOrderThenStartDescending, byStartDescending } from '../src/lib/order';
 import { isShown } from '../src/lib/shown';
+import { technologyMark } from '../src/lib/technologies';
 import { at, locales, type Locale } from './pages';
 
 // The work page as a pair of card grids: every project and every placement
@@ -26,6 +27,7 @@ interface Project {
   order?: number;
   visibility: 'public' | 'described' | 'hidden';
   status: 'completed' | 'in-progress';
+  technologies: string[];
   links?: { repository?: string; live?: string };
 }
 
@@ -158,6 +160,38 @@ test.describe('the work page', () => {
       await expect(project.locator(`[aria-label="${strings[locale].project.technologies}"] li`)).not.toHaveCount(0);
     });
 
+    // Every technology a badge, in the content's order and spelling, with a
+    // mark exactly where src/lib/technologies.ts has one, drawn in the text
+    // colour and hidden from assistive technology. The first five are in
+    // view and the rest folded behind a control that counts them.
+    test(`${url} shows every technology as a badge, with its mark where it has one`, async ({ page }) => {
+      await page.goto(url);
+      const found = await page.locator('[data-entry="project"]').evaluateAll((nodes) =>
+        nodes.map((node) => ({
+          badges: [...node.querySelectorAll('[data-badge]')].map((badge) => {
+            const svg = badge.querySelector('svg');
+            return { name: badge.textContent?.trim(), mark: svg ? `${svg.getAttribute('aria-hidden')} ${svg.getAttribute('fill')}` : null };
+          }),
+          inView: node.querySelectorAll('[data-badge]:not(details [data-badge])').length,
+          summary: node.querySelector('details summary .fold-when-closed')?.textContent?.trim() ?? null,
+        })),
+      );
+      const expected = projects.map((entry) => ({
+        badges: entry.technologies.map((name) => ({ name, mark: technologyMark(name) ? 'true currentColor' : null })),
+        inView: Math.min(entry.technologies.length, 5),
+        summary:
+          entry.technologies.length > 5
+            ? fill(strings[locale].fold.show, {
+                count: String(entry.technologies.length - 5),
+                noun: plural(locale, entry.technologies.length - 5, strings[locale].fold.nouns.technologies),
+              })
+            : null,
+      }));
+      expect(found).toEqual(expected);
+      expect(expected.some((entry) => entry.badges.some((badge) => badge.mark)), 'some badge carries a mark').toBe(true);
+      expect(expected.some((entry) => entry.badges.some((badge) => !badge.mark)), 'some badge is the name alone').toBe(true);
+    });
+
     test(`${url} links a public project and leaves a described one unlinked`, async ({ page }) => {
       await page.goto(url);
       const found = await page.locator('[data-entry="project"]').evaluateAll((nodes) =>
@@ -288,4 +322,20 @@ test.describe('with JavaScript disabled', () => {
       await expect(details.locator('ul li')).toHaveCount(placement.highlights.length);
     });
   }
+});
+
+// A row of badges starts where the language reads from: the first badge at
+// the list's right edge in Arabic and its left edge in English.
+test('badge rows fill from the right in Arabic and the left in English', async ({ page }) => {
+  const edges = async (url: string) => {
+    await page.goto(url);
+    const list = page.locator(`[data-entry="project"] [aria-label] >> nth=0`);
+    const box = (await list.boundingBox())!;
+    const first = (await list.locator('[data-badge]').first().boundingBox())!;
+    return { left: first.x - box.x, right: box.x + box.width - (first.x + first.width) };
+  };
+  const arabic = await edges(at('/ar/work/'));
+  expect(arabic.right, 'the first Arabic badge at the right edge').toBeLessThanOrEqual(1);
+  const english = await edges(at('/en/work/'));
+  expect(english.left, 'the first English badge at the left edge').toBeLessThanOrEqual(1);
 });

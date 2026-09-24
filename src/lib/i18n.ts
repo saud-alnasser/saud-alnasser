@@ -67,7 +67,17 @@ const en = {
     nouns: {
       courses: { one: 'course', other: 'courses' } as PluralForms,
       highlights: { one: 'highlight', other: 'highlights' } as PluralForms,
+      technologies: { one: 'technology', other: 'technologies' } as PluralForms,
     },
+  },
+  // The foot of every page: the credits a logo's licence asks for, folded
+  // behind one control, one line per mark with its licence and its source.
+  footer: {
+    credits: 'Logo credits',
+    // What a CC BY licence asks to be told: every mark here is changed from
+    // its original, drawn in the text colour rather than its own.
+    adapted: 'Each mark is drawn in the text colour rather than its own.',
+    source: 'source',
   },
   titleSeparator: ' - ',
   // Between items of an inline list: technologies, courses, keywords.
@@ -249,7 +259,13 @@ const ar: Strings = {
     nouns: {
       courses: { one: 'مقرر', two: 'مقرران', few: 'مقررات', many: 'مقرراً', other: 'مقرر' },
       highlights: { one: 'مهمة', two: 'مهمتان', few: 'مهام', many: 'مهمة', other: 'مهمة' },
+      technologies: { one: 'تقنية', two: 'تقنيتان', few: 'تقنيات', many: 'تقنية', other: 'تقنية' },
     },
+  },
+  footer: {
+    credits: 'حقوق الشعارات',
+    adapted: 'كل شعار مرسوم بلون النص لا بألوانه الأصلية.',
+    source: 'المصدر',
   },
   titleSeparator: ' - ',
   listSeparator: '، ',

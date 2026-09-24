@@ -1,0 +1,33 @@
+---
+// One technology as a chip: its mark, where src/lib/technologies.ts has one
+// for the name, then the name exactly as the content spells it. The mark is
+// drawn in the text colour and hidden from assistive technology, since the
+// name beside it says the same thing. A name with no mark is the same chip
+// with the name alone, so a row of badges reads as one kind of thing.
+//
+// The name is isolated in its own direction, so an Arabic page keeps "C#"
+// as written rather than moving its trailing symbol to the other side.
+
+import { technologyMark } from '../lib/technologies';
+
+interface Props {
+  name: string;
+}
+
+const { name } = Astro.props;
+const mark = technologyMark(name);
+---
+
+<span
+  data-badge
+  class="inline-flex min-h-6 items-center gap-1.5 rounded-md border border-border bg-background px-2 py-0.5 text-xs font-medium text-muted-foreground"
+>
+  {
+    mark && (
+      <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor" class="size-3.5 shrink-0">
+        <path d={mark.path} />
+      </svg>
+    )
+  }
+  <bdi>{name}</bdi>
+</span>

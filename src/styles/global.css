@@ -464,10 +464,11 @@ details[open] > summary .fold-chevron {
   }
 
   /* The chrome around the document, which on paper would be noise: the
-     navigation, the theme control, the language switch, and the download
-     control the page opens with. One rule, so what prints and what does not
-     is one decision. */
+     navigation, the theme control, the language switch, the footer with its
+     logo credits, and the download control the page opens with. One rule, so
+     what prints and what does not is one decision. */
   body > header,
+  body > footer,
   .cv-actions {
     display: none;
   }

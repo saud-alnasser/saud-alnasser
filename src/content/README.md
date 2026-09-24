@@ -98,7 +98,7 @@ One file per project.
 | `period` | `start`, optional `end` | no | when the work happened |
 | `role` | text | yes | Saud's role, such as "Sole developer" |
 | `summary` | text | yes | what the project is, in a sentence or two |
-| `technologies` | list of text | no | languages, frameworks, and tools used |
+| `technologies` | list of text | no | languages, frameworks, and tools used. Each shows on the site as a badge, with its logo where `src/lib/technologies.ts` maps the name exactly as written here, and as the name alone otherwise. A new name is a badge without a logo until it is mapped there, which is also where its licence is checked |
 | `links` | `repository`, `live` | no | optional. Either key may be absent; omit `links` entirely for a project with no public link |
 | `visibility` | one of `public`, `described`, `hidden` | no | `public` shows the entry with its links; `described` shows the name and summary without links, for private work; `hidden` keeps the file but shows nothing anywhere |
 | `status` | one of `completed`, `in-progress` | no | whether the work is finished. Only a `completed` project is shown: an `in-progress` one stays in the file and appears in no output, not on the work page, not in the home page's count, not in the CV, the resume, or the JSON Resume document. A project whose state is not known is `in-progress` until it is |

@@ -4,9 +4,15 @@
 // it, each with the icon that says what it opens. The technologies and the
 // links are pushed to the foot, so cards in a row line up on their last line
 // however long a summary runs.
+//
+// The technologies are badges, the first five in view and the rest folded
+// behind a control that says how many, so a long stack does not push the
+// card's links out of line with its neighbours'.
 
 import type { CollectionEntry } from 'astro:content';
+import Badge from './Badge.astro';
 import Card from './Card.astro';
+import Fold from './Fold.astro';
 import Icon from './Icon.astro';
 import { formatPeriod, strings, type Locale } from '../lib/i18n';
 import { localized } from '../lib/localized';
@@ -24,6 +30,9 @@ const text = localized(locale, 'projects', entry.id);
 // Only a public project shows its links. A described one is private work,
 // shown by name and summary so nothing points at it.
 const links = data.visibility === 'public' ? (data.links ?? {}) : {};
+
+const inView = data.technologies.slice(0, 5);
+const folded = data.technologies.slice(5);
 ---
 
 <Card as="article" data-entry="project" class="h-full">
@@ -36,16 +45,28 @@ const links = data.visibility === 'public' ? (data.links ?? {}) : {};
     <p class="mt-3 leading-7">{text('summary', data.summary)}</p>
 
     <div class="mt-auto">
-      <ul aria-label={t.project.technologies} class="mt-4 flex flex-wrap gap-x-1 text-sm text-muted-foreground">
+      <ul aria-label={t.project.technologies} class="mt-4 flex flex-wrap gap-1.5">
         {
-          data.technologies.map((technology, index) => (
+          inView.map((technology) => (
             <li>
-              {technology}
-              {index < data.technologies.length - 1 && <span aria-hidden="true">{t.listSeparator.trim()}</span>}
+              <Badge name={technology} />
             </li>
           ))
         }
       </ul>
+      {
+        folded.length > 0 && (
+          <Fold locale={locale} count={folded.length} noun="technologies" class="mt-3">
+            <ul class="flex flex-wrap gap-1.5">
+              {folded.map((technology) => (
+                <li>
+                  <Badge name={technology} />
+                </li>
+              ))}
+            </ul>
+          </Fold>
+        )
+      }
       {
         (links.repository || links.live) && (
           <p class="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm">

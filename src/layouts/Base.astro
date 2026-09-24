@@ -4,6 +4,8 @@ import { getEntry } from 'astro:content';
 import { localeInfo, otherLocale, strings, type Locale } from '../lib/i18n';
 import { localized } from '../lib/localized';
 import { absolute, withBase } from '../lib/paths';
+import { credits } from '../lib/technologies';
+import Icon from '../components/Icon.astro';
 import LanguageMenu from '../components/LanguageMenu.astro';
 import ThemeToggle from '../components/ThemeToggle.astro';
 
@@ -45,6 +47,8 @@ const fonts = [
   'SourceSans3-Bold',
   ...(locale === 'ar' ? ['NotoNaskhArabic-Regular', 'NotoNaskhArabic-Bold'] : []),
 ];
+
+const logoCredits = credits();
 
 const nav = [
   { href: home, label: t.nav.home, current: path === '/' },
@@ -471,6 +475,41 @@ const nav = [
     <main id="content" class:list={['mx-auto w-full px-6 py-16 sm:py-20', width]}>
       <slot />
     </main>
+
+    <!--
+      The foot of every page: the site's name, and the attribution the
+      technology marks' licences ask for, folded behind one native control
+      so it is there for whoever looks and out of the way of everyone else.
+      One line per mark: its name, its licence, and a link to where it is
+      from, under the note the licences ask for that each mark was changed. On paper the documents print without it, as without the header.
+    -->
+    <footer class:list={['mx-auto w-full px-6 pb-12 text-sm text-muted-foreground', width]}>
+      <div class="flex flex-wrap items-start justify-between gap-x-8 gap-y-3 border-t border-border pt-6">
+        <p>{siteName}</p>
+        {
+          logoCredits.length > 0 && (
+            <details data-logo-credits>
+              <summary class="flex min-h-6 cursor-pointer list-none items-center gap-1.5 select-none hover:text-primary motion-safe:transition-colors">
+                {t.footer.credits}
+                <Icon name="chevron-down" class="fold-chevron size-4 motion-safe:transition-transform" />
+              </summary>
+              <p class="mt-3">{t.footer.adapted}</p>
+              <ul class="mt-2 space-y-1">
+                {logoCredits.map((credit) => (
+                  <li>
+                    <bdi>{credit.name}</bdi>: <bdi>{credit.licence}</bdi>
+                    {t.listSeparator}
+                    <a href={credit.source} class="text-primary underline underline-offset-4 hover:decoration-2">
+                      {t.footer.source}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )
+        }
+      </div>
+    </footer>
 
     <!--
       A page's dialog, if it has one, sits here rather than inside <main>:
