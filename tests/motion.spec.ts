@@ -91,11 +91,14 @@ test.describe('with motion allowed', () => {
   }
 
   // The page entrance: each child of main enters 60ms after the one before,
-  // and the last is settled within 700ms of the first.
+  // and the last is settled within 700ms of the first. On the home page the
+  // first screen is one block that stays still while its own children step
+  // in, so those are what is read there.
   test('the page enters in a stagger that ends within 700ms', async ({ page }) => {
     await page.goto(at('/en/'));
+    expect(await page.locator('main > [data-hero]').evaluate((node) => node.getAnimations().length), 'the block itself').toBe(0);
     const timings = await page.evaluate(() =>
-      [...document.querySelectorAll('main > *')].map((child) => {
+      [...document.querySelectorAll('main > :not([data-hero]), [data-hero] > *')].map((child) => {
         const [animation] = child.getAnimations();
         const timing = animation?.effect?.getComputedTiming();
         return timing ? Number(timing.delay) + Number(timing.duration) : null;

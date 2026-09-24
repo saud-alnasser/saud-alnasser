@@ -62,7 +62,10 @@ const countOf = (count: number) =>
   <h1 class="text-3xl font-semibold tracking-tight sm:text-4xl">{t.pages.education.title}</h1>
 
   <section aria-labelledby="studies" class="mt-12">
-    <h2 id="studies" data-reveal class="text-xl font-semibold tracking-tight">{t.sections.studies}</h2>
+    <h2 id="studies" data-reveal class="flex items-center gap-2 text-xl font-semibold tracking-tight">
+      <Icon name="graduation-cap" class="size-5 text-primary" />
+      {t.sections.studies}
+    </h2>
     <ol class="mt-8 border-s border-border">
       {
         items.map((item) => (
@@ -106,7 +109,10 @@ const countOf = (count: number) =>
     anchor the node leads to.
   */}
   <section aria-labelledby="courses" class="mt-16">
-    <h2 id="courses" data-reveal class="text-xl font-semibold tracking-tight">{t.sections.courses}</h2>
+    <h2 id="courses" data-reveal class="flex items-center gap-2 text-xl font-semibold tracking-tight">
+      <Icon name="book-open" class="size-5 text-primary" />
+      {t.sections.courses}
+    </h2>
     <ul data-grid="courses" class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
       {
         courses.map((entry) => (
@@ -129,7 +135,8 @@ const countOf = (count: number) =>
   {
     certifications.length > 0 && (
       <section aria-labelledby="certificates" class="mt-16">
-        <h2 id="certificates" data-reveal class="text-xl font-semibold tracking-tight">
+        <h2 id="certificates" data-reveal class="flex items-center gap-2 text-xl font-semibold tracking-tight">
+          <Icon name="award" class="size-5 text-primary" />
           {t.sections.certifications}
         </h2>
         <ul data-grid="certifications" class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">

@@ -135,3 +135,48 @@ for (const locale of ['en', 'ar'] as const) {
     }
   });
 }
+
+// The light behind the first screen is a gradient, which the pair measure
+// above cannot see: it reads the nearest painted background colour, and the
+// light is a sibling drawn behind the text. So the text colours the first
+// screen uses are measured here against the page with the light at its
+// strongest, its first colour stop laid over the page's background.
+for (const locale of ['en', 'ar'] as const) {
+  const page = at(`/${locale}/`);
+
+  test(`the text over the first screen's light on ${page} meets WCAG AA`, async ({ page: browser, colorScheme }) => {
+    await browser.goto(page);
+    const found = await browser.evaluate(() => {
+      const parse = (value: string) => (value.match(/[\d.]+/g) ?? []).map(Number);
+      const luminance = ([r, g, b]: number[]) => {
+        const channel = (v: number) => {
+          const c = v / 255;
+          return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+        };
+        return 0.2126 * channel(r!) + 0.7152 * channel(g!) + 0.0722 * channel(b!);
+      };
+      const ratio = (a: number[], b: number[]) => {
+        const [light, dark] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+        return (light! + 0.05) / (dark! + 0.05);
+      };
+      const image = getComputedStyle(document.querySelector('[data-glow]')!).backgroundImage;
+      const stop = image.match(/rgba?\([^)]+\)/)?.[0];
+      if (!stop) return { image, pairs: [] };
+      const [r, g, b, a = 1] = parse(stop);
+      const page = parse(getComputedStyle(document.documentElement).backgroundColor);
+      const lit = [0, 1, 2].map((index) => [r, g, b][index]! * a + page[index]! * (1 - a));
+      const hero = document.querySelector('[data-hero]')!;
+      const colours = new Set<string>();
+      for (const node of hero.querySelectorAll('h1, p, span, a')) {
+        if (node.closest('[data-stat-tile], [data-contact-actions] a, [data-monogram]')) continue;
+        if ((node.textContent ?? '').trim() === '') continue;
+        colours.add(getComputedStyle(node).color);
+      }
+      return { image, pairs: [...colours].map((colour) => ({ colour, ratio: ratio(parse(colour), lit) })) };
+    });
+    expect(found.pairs.length, `a colour stop read from ${found.image}`).toBeGreaterThan(0);
+    for (const pair of found.pairs) {
+      expect(pair.ratio, `${pair.colour} over the light, ${colorScheme} palette on ${page}`).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+}

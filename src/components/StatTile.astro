@@ -1,0 +1,36 @@
+---
+// One number the first screen leads with: an icon, the number, and what it
+// counts, on a raised card. The number is written at its final value, so a
+// page with no script, a visitor who asked for reduced motion, and a
+// screen reader all read the real figure. Where motion is allowed, the
+// inline script in the base layout counts the visible number up to it once,
+// when the tile first shows; the visible number and label are hidden from
+// assistive technology, and a line beside them carries the final figure and
+// the label, so a screen reader never meets a number on its way up.
+//
+// The count is given by the page, which reads it from the collections through
+// src/lib/shown.ts, never written here.
+
+import Card from './Card.astro';
+import Icon from './Icon.astro';
+import type { IconName } from '../lib/icons';
+
+interface Props {
+  icon: IconName;
+  count: number;
+  label: string;
+  // The line a screen reader hears for the tile, the count in it.
+  spoken: string;
+  // Which tile this is, for the tests: "projects", "technologies".
+  tile: string;
+}
+
+const { icon, count, label, spoken, tile } = Astro.props;
+---
+
+<Card variant="raised" data-stat-tile={tile} class="h-full p-4! sm:p-5!">
+  <Icon name={icon} class="size-5 text-primary" />
+  <p aria-hidden="true" data-count={count} class="mt-3 text-3xl font-semibold tracking-tight tabular-nums">{count}</p>
+  <p aria-hidden="true" class="mt-1 text-sm leading-5 text-muted-foreground">{label}</p>
+  <span class="sr-only">{spoken}</span>
+</Card>

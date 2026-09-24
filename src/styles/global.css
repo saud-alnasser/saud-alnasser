@@ -191,35 +191,37 @@
 @media (prefers-reduced-motion: no-preference) {
   /* The page arriving: each child of `main` enters a step after the one
      before, 60ms apart, and the steps stop at the sixth so the last child is
-     settled within 650ms however long the page. The heading, the lead, a
-     section, and a document rise without fading, for the reason on
-     enter-rise: any of them may hold the page's largest text, and which one
-     does moves with the language and the width. */
-  main > * {
+     settled within 650ms however long the page. The home page's first screen
+     is one block, `data-hero`, which does not move itself: its children
+     step in the same way in its place. The heading, the lead, a section, and
+     a document rise without fading, for the reason on enter-rise: any of
+     them may hold the page's largest text, and which one does moves with the
+     language and the width. */
+  :is(main, [data-hero]) > * {
     --i: 5;
     animation: --theme(--animate-enter);
     animation-delay: calc(var(--i) * 60ms);
   }
-  main > :nth-child(1) {
+  :is(main, [data-hero]) > :nth-child(1) {
     --i: 0;
   }
-  main > :nth-child(2) {
+  :is(main, [data-hero]) > :nth-child(2) {
     --i: 1;
   }
-  main > :nth-child(3) {
+  :is(main, [data-hero]) > :nth-child(3) {
     --i: 2;
   }
-  main > :nth-child(4) {
+  :is(main, [data-hero]) > :nth-child(4) {
     --i: 3;
   }
-  main > :nth-child(5) {
+  :is(main, [data-hero]) > :nth-child(5) {
     --i: 4;
   }
-  main > h1,
-  main > section,
-  main > article,
-  main > [data-hero-summary] {
+  :is(main, [data-hero]) > :is(h1, section, article, [data-hero-summary]) {
     animation-name: enter-rise;
+  }
+  main > [data-hero] {
+    animation: none;
   }
 
   /* A section heading or a grid's card below the first screen rises into
@@ -359,6 +361,18 @@
 }
 
 /*
+ * The light behind the home page's first screen: the accent at low alpha,
+ * strongest at its centre and gone at every edge of its box, so no edge of it
+ * ever shows, it needs no mirroring for Arabic, and it never reaches past the
+ * column. It is
+ * decoration only; the text over it keeps its contrast against the lightest
+ * and the darkest point of it (tests/contrast.spec.ts).
+ */
+[data-glow] {
+  background: radial-gradient(closest-side, var(--glow), transparent);
+}
+
+/*
  * The two disclosures, the language menu and a card's fold, are native
  * <details> elements: they open and close with no script. The rules here are
  * what utilities cannot express, keyed on the element's own open state.
@@ -479,7 +493,7 @@ details[open] > summary .fold-chevron {
     padding: 0;
   }
 
-  main > * {
+  :is(main, [data-hero]) > * {
     animation: none;
   }
 

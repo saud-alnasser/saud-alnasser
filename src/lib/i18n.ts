@@ -94,6 +94,17 @@ const en = {
   },
   home: {
     contact: 'Contact',
+    // The row of stat tiles on the first screen: its heading, read only by a
+    // screen reader, each tile's label, and the one line a screen reader hears
+    // for a tile in place of the number that counts up.
+    glance: 'At a glance',
+    tiles: {
+      projects: 'Projects',
+      certificates: 'Courses and certifications',
+      technologies: 'Technologies',
+      languages: 'Languages',
+      spoken: '{count} {label}',
+    },
     location: 'Location',
     sections: 'On this site',
     // One line per section card, saying what that section holds. The card
@@ -301,6 +312,14 @@ const ar: Strings = {
   },
   home: {
     contact: 'التواصل',
+    glance: 'لمحة سريعة',
+    tiles: {
+      projects: 'المشاريع',
+      certificates: 'الدورات والشهادات',
+      technologies: 'التقنيات',
+      languages: 'اللغات',
+      spoken: '{label}: {count}',
+    },
     location: 'الموقع الجغرافي',
     sections: 'في هذا الموقع',
     experience: 'الوظائف والتدريب العملي.',

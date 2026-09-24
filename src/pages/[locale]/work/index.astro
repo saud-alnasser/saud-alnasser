@@ -2,6 +2,7 @@
 import { getCollection, getEntry } from 'astro:content';
 import Base from '../../../layouts/Base.astro';
 import FeaturedProject from '../../../components/FeaturedProject.astro';
+import Icon from '../../../components/Icon.astro';
 import Project from '../../../components/Project.astro';
 import Experience from '../../../components/Experience.astro';
 import { fill, locales, plural, strings, type Locale } from '../../../lib/i18n';
@@ -70,7 +71,10 @@ const experience = (await getCollection('experience')).sort((a, b) => byStartDes
     cards and the reading order is the order the collection was sorted into.
   */}
   <section aria-labelledby="experience" class="mt-12">
-    <h2 id="experience" data-reveal class="text-xl font-semibold tracking-tight">{t.sections.experience}</h2>
+    <h2 id="experience" data-reveal class="flex items-center gap-2 text-xl font-semibold tracking-tight">
+      <Icon name="briefcase" class="size-5 text-primary" />
+      {t.sections.experience}
+    </h2>
     <ol data-grid="experience" class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
       {
         experience.map((entry) => (
@@ -83,7 +87,10 @@ const experience = (await getCollection('experience')).sort((a, b) => byStartDes
   </section>
 
   <section aria-labelledby="projects" class="mt-16">
-    <h2 id="projects" data-reveal class="text-xl font-semibold tracking-tight">{t.sections.projects}</h2>
+    <h2 id="projects" data-reveal class="flex items-center gap-2 text-xl font-semibold tracking-tight">
+      <Icon name="folder-code" class="size-5 text-primary" />
+      {t.sections.projects}
+    </h2>
     {featured && <FeaturedProject locale={locale} entry={featured} class="mt-6" />}
     {/*
       The filter ships hidden, and the inline script shows it and runs it; with

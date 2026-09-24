@@ -150,11 +150,18 @@ function positions(page: Page, selectors: string[]) {
   }, selectors);
 }
 
+// The first screen in the order a visitor reads it, then what follows it:
+// the featured project, the timeline, the skills, and the section cards.
 const reading = [
+  '[data-monogram]',
   'main h1',
   '[data-hero-label]',
+  '[data-hero-location]',
   '[data-hero-summary]',
   '[data-contact-actions]',
+  '[data-stat-tiles]',
+  '[data-featured-project]',
+  '[data-journey]',
   '[data-skill-grid]',
   '[data-section-grid]',
 ];
@@ -201,10 +208,15 @@ for (const locale of locales) {
       await expect(github).toHaveAttribute('href', profile.profiles[0]!.url);
       await expect(github.locator('svg')).toHaveAttribute('data-icon', 'github');
       await expect(github).toHaveAccessibleName('GitHub');
-      // GitHub is the first action as it is the first profile; every other
+      // The CV leads, filled in the accent as the one primary action, the
+      // resume beside it, then GitHub as the first profile; every other
       // profile follows it, each with its network's mark where the icon set
       // has one (src/lib/networks.ts), the LinkedIn profile among them.
-      await expect(actions.first()).toHaveAttribute('data-contact', 'github');
+      const order = await actions.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-contact')));
+      expect(order.slice(0, 3)).toEqual(['cv', 'resume', 'github']);
+      const fills = await actions.evaluateAll((nodes) => nodes.map((node) => getComputedStyle(node).backgroundColor));
+      expect(new Set(fills.slice(1)).size, 'every other action shares one fill').toBe(1);
+      expect(fills[0], 'the CV is filled differently from the rest').not.toBe(fills[1]);
       for (const entry of profile.profiles.slice(1)) {
         const action = page.locator(`[data-contact="${entry.network.toLowerCase()}"]`);
         await expect(action).toHaveAttribute('href', entry.url);
@@ -220,12 +232,12 @@ for (const locale of locales) {
 
       const cv = page.locator('[data-contact="cv"]');
       await expect(cv).toHaveAttribute('href', at(`/${locale}/cv/`));
-      await expect(cv.locator('svg')).toHaveAttribute('data-icon', 'file');
+      await expect(cv.locator('svg')).toHaveAttribute('data-icon', 'file-text');
       await expect(cv).toHaveAccessibleName(strings[locale].nav.cv);
 
       const resume = page.locator('[data-contact="resume"]');
       await expect(resume).toHaveAttribute('href', at(`/${locale}/resume/`));
-      await expect(resume.locator('svg')).toHaveAttribute('data-icon', 'file');
+      await expect(resume.locator('svg')).toHaveAttribute('data-icon', 'file-text');
       await expect(resume).toHaveAccessibleName(strings[locale].nav.resume);
     });
 
@@ -487,4 +499,179 @@ for (const locale of locales) {
       for (const node of await nodes.all()) await expect(node).toBeVisible();
     });
   });
+}
+
+// The first screen. The four tiles count what the pages render, read here
+// from src/content/ through the same predicates, and the number is final in
+// the page as built, so a visitor with no script or with reduced motion reads
+// it at once. Where motion is allowed it counts up once, from nothing.
+const shownProjects = visibleEntries('projects').map((file) => entryData('projects', file) as { technologies: string[] });
+const tileCounts = {
+  projects: shownProjects.length,
+  certificates: certificates.length,
+  technologies: new Set(shownProjects.flatMap((entry) => entry.technologies)).size,
+  languages: visibleEntries('languages').length,
+};
+const tileIcons = { projects: 'folder-code', certificates: 'award', technologies: 'cpu', languages: 'languages' };
+
+type Watched = { changes: number; seen: Record<string, string[]> };
+
+for (const locale of locales) {
+  const t = strings[locale];
+
+  test.describe(`the first screen of /${locale}/`, () => {
+    test('opens on the monogram and the light, both hidden from assistive technology', async ({ page }) => {
+      await page.goto(at(`/${locale}/`));
+      await expect(page.locator('[data-monogram]')).toHaveAttribute('aria-hidden', 'true');
+      await expect(page.locator('[data-monogram]')).toHaveText('SA');
+      const glow = page.locator('[data-glow]');
+      await expect(glow).toHaveAttribute('aria-hidden', 'true');
+      expect(await glow.evaluate((node) => node.textContent)).toBe('');
+      await expect(page.locator('[data-hero-location] svg[data-icon="map-pin"]')).toHaveAttribute('aria-hidden', 'true');
+    });
+
+    test('counts four tiles from the content, with their icons', async ({ page }) => {
+      await page.goto(at(`/${locale}/`));
+      await expect(page.locator('[data-stat-tile]')).toHaveCount(4);
+      for (const [tile, count] of Object.entries(tileCounts)) {
+        const node = page.locator(`[data-stat-tile="${tile}"]`);
+        const label = t.home.tiles[tile as keyof typeof tileCounts];
+        await expect(node.locator('[data-count]')).toHaveAttribute('data-count', String(count));
+        await expect(node.locator('[data-count]')).toHaveAttribute('aria-hidden', 'true');
+        await expect(node.locator('.sr-only')).toHaveText(fill(t.home.tiles.spoken, { count: String(count), label }));
+        await expect(node.locator(`svg[data-icon="${tileIcons[tile as keyof typeof tileIcons]}"]`)).toHaveAttribute(
+          'aria-hidden',
+          'true',
+        );
+      }
+    });
+
+    // Every section heading on the three pages, every section card, and
+    // every tile carries its icon, hidden where the text names the thing.
+    test('puts an icon on every section heading, section card, and tile', async ({ page }) => {
+      for (const route of ['/', '/work/', '/education/']) {
+        await page.goto(at(`/${locale}${route}`));
+        const headings = await page.locator('main h2:not(.sr-only)').evaluateAll((nodes) =>
+          nodes.map((node) => ({
+            text: node.textContent?.trim(),
+            icon: node.querySelector('svg[data-icon]')?.getAttribute('aria-hidden') ?? null,
+          })),
+        );
+        expect(headings.length, `headings on ${route}`).toBeGreaterThan(0);
+        for (const heading of headings) expect(heading.icon, `the icon on "${heading.text}" on ${route}`).toBe('true');
+      }
+      await page.goto(at(`/${locale}/`));
+      for (const card of await page.locator('[data-section-card]').all()) {
+        await expect(card.locator('h3 svg[data-icon]')).toHaveAttribute('aria-hidden', 'true');
+        await expect(card.locator('svg[data-icon="arrow-right"]')).toHaveAttribute('aria-hidden', 'true');
+      }
+      // The arrow points along the reading direction, so it mirrors in Arabic.
+      const scale = await page
+        .locator('[data-section-card] svg[data-icon="arrow-right"]')
+        .first()
+        .evaluate((node) => {
+          // Tailwind mirrors through the `scale` property rather than a
+          // transform: "-1 1" in Arabic, "none" where nothing is scaled.
+          const scale = getComputedStyle(node).scale;
+          return scale === 'none' ? 1 : Number.parseFloat(scale);
+        });
+      if (locale === 'ar') expect(scale, 'the arrow mirrors in Arabic').toBeLessThan(0);
+      else expect(scale, 'the arrow points right in English').toBe(1);
+    });
+  });
+
+  test.describe(`the first screen of /${locale}/ with JavaScript disabled`, () => {
+    test.use({ javaScriptEnabled: false });
+
+    test('shows every number at its final figure', async ({ page }) => {
+      await page.goto(at(`/${locale}/`));
+      for (const [tile, count] of Object.entries(tileCounts)) {
+        await expect(page.locator(`[data-stat-tile="${tile}"] [data-count]`)).toHaveText(String(count));
+      }
+    });
+  });
+
+  test.describe(`the first screen of /${locale}/ under reduced motion`, () => {
+    test.use({ reducedMotion: 'reduce' });
+
+    test('shows every number at its final figure at load, and never changes it', async ({ page }) => {
+      await page.addInitScript(() => {
+        const watched = window as unknown as Watched;
+        watched.changes = 0;
+        // From the end of parsing, so the parser writing the page is not
+        // mistaken for a script changing it.
+        document.addEventListener('DOMContentLoaded', () => {
+          new MutationObserver((records) => {
+            for (const record of records) {
+              const target = record.target instanceof Element ? record.target : record.target.parentElement;
+              if (target?.closest('[data-count]')) watched.changes += 1;
+            }
+          }).observe(document, { subtree: true, childList: true, characterData: true });
+        });
+      });
+      await page.goto(at(`/${locale}/`));
+      for (const [tile, count] of Object.entries(tileCounts)) {
+        await expect(page.locator(`[data-stat-tile="${tile}"] [data-count]`)).toHaveText(String(count));
+      }
+      expect(await page.evaluate(() => (window as unknown as Watched).changes)).toBe(0);
+    });
+  });
+
+  test.describe(`the first screen of /${locale}/ with motion allowed`, () => {
+    test.use({ reducedMotion: 'no-preference', viewport: { width: 1440, height: 900 } });
+
+    test('counts each number up once, from nothing to its figure', async ({ page }) => {
+      await page.addInitScript(() => {
+        const watched = window as unknown as Watched;
+        watched.seen = {};
+        new MutationObserver(() => {
+          for (const node of document.querySelectorAll('[data-stat-tile]')) {
+            const key = node.getAttribute('data-stat-tile')!;
+            const text = node.querySelector('[data-count]')!.textContent!;
+            const list = (watched.seen[key] ??= []);
+            if (list.at(-1) !== text) list.push(text);
+          }
+        }).observe(document, { subtree: true, childList: true, characterData: true });
+      });
+      await page.goto(at(`/${locale}/`));
+      for (const [tile, count] of Object.entries(tileCounts)) {
+        await expect(page.locator(`[data-stat-tile="${tile}"] [data-count]`)).toHaveText(String(count));
+      }
+      await page.waitForTimeout(500);
+      const seen = await page.evaluate(() => (window as unknown as Watched).seen);
+      for (const [tile, count] of Object.entries(tileCounts)) {
+        const values = (seen[tile] ?? []).map(Number);
+        const from = values.indexOf(0);
+        expect(from, `${tile} starts its count at nothing`).toBeGreaterThanOrEqual(0);
+        const run = values.slice(from);
+        expect(run.at(-1), `${tile} ends at its figure`).toBe(count);
+        expect(run.filter((value) => value === 0).length, `${tile} counts once`).toBe(1);
+        for (let index = 1; index < run.length; index += 1) expect(run[index]!).toBeGreaterThanOrEqual(run[index - 1]!);
+      }
+    });
+  });
+
+  // What is on the first screen at the two sizes the spec names, in both
+  // palettes (the project decides the palette): at 1440 by 900 the whole
+  // block, tiles included; on a 390 by 844 phone everything down to the
+  // contact actions.
+  const sizes = [
+    { width: 1440, height: 900, parts: ['[data-monogram]', 'main h1', '[data-hero-label]', '[data-hero-location]', '[data-contact-actions]', '[data-stat-tiles]'] },
+    { width: 390, height: 844, parts: ['[data-monogram]', 'main h1', '[data-hero-label]', '[data-hero-location]', '[data-contact-actions]'] },
+  ];
+  for (const { width, height, parts } of sizes) {
+    test.describe(`the first screen of /${locale}/ at ${width} by ${height}`, () => {
+      test.use({ viewport: { width, height } });
+
+      test('holds the block above the fold', async ({ page }) => {
+        await page.goto(at(`/${locale}/`));
+        await page.evaluate(() => document.fonts.ready);
+        for (const part of parts) {
+          const box = (await page.locator(part).boundingBox())!;
+          expect(box.y + box.height, `${part} ends within the first ${height} pixels`).toBeLessThanOrEqual(height);
+        }
+        expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+      });
+    });
+  }
 }

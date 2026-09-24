@@ -98,13 +98,14 @@ const nav = [
       paint, so the page never flashes the other palette, wires the theme
       control once the document is parsed, closes the language menu on Escape
       and on a click outside it, rises the headings and cards below the first
-      screen into place as they scroll in, runs the work page's technology
+      screen into place as they scroll in and counts the home page's numbers
+      up as they first show, runs the work page's technology
       filter, opens a certificate card in the page's dialog, and turns a
       document page's download control into the form that fills the contact
       line and prints, which it does only where the page's address carries
       the marker. The last five all work without it: the menu opens and
-      closes on its own, nothing is ever hidden for the reveal to undo, the
-      filter's row stays hidden and every project shows, a certificate card is
+      closes on its own, nothing is ever hidden for the reveal to undo and
+      every number is already its final figure, the filter's row stays hidden and every project shows, a certificate card is
       the link to its PDF that it already is, and the download control is the
       link to the published PDF that it already is, which is what every
       unmarked click gets too.
@@ -373,16 +374,25 @@ const nav = [
         // with no script at all never have anything hidden, and what is on
         // screen at load is never hidden either: that belongs to the page's
         // entrance.
+        //
+        // A revealed element holding a stat tile's number also counts it up,
+        // once, from nothing to the figure the page was built with, over
+        // 350ms and slowing as it lands. The figure is already in the page, so
+        // wherever this does not run the tile simply shows it.
         function reveal() {
           if (typeof IntersectionObserver !== 'function') return;
           if (!matchMedia('(prefers-reduced-motion: no-preference)').matches) return;
           var marked = document.querySelectorAll('[data-reveal]');
           if (!marked.length) return;
+          function shown(element) {
+            element.setAttribute('data-revealed', '');
+            Array.prototype.forEach.call(element.querySelectorAll('[data-count]'), count);
+          }
           var observer = new IntersectionObserver(
             function (entries) {
               entries.forEach(function (entry) {
                 if (!entry.isIntersecting) return;
-                entry.target.setAttribute('data-revealed', '');
+                shown(entry.target);
                 observer.unobserve(entry.target);
               });
             },
@@ -390,10 +400,24 @@ const nav = [
           );
           var fold = window.innerHeight;
           Array.prototype.forEach.call(marked, function (element) {
-            if (element.getBoundingClientRect().top < fold) element.setAttribute('data-revealed', '');
+            if (element.getBoundingClientRect().top < fold) shown(element);
             else observer.observe(element);
           });
           root.setAttribute('data-reveal', '');
+        }
+
+        function count(counter) {
+          var target = Number(counter.getAttribute('data-count'));
+          if (!(target > 0)) return;
+          var start = null;
+          function step(now) {
+            if (start === null) start = now;
+            var progress = Math.min((now - start) / 350, 1);
+            counter.textContent = String(Math.round(target * (1 - Math.pow(1 - progress, 3))));
+            if (progress < 1) requestAnimationFrame(step);
+          }
+          counter.textContent = '0';
+          requestAnimationFrame(step);
         }
 
         // Shows the work page's technology chips and runs them: a press marks

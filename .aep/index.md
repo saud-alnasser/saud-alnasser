@@ -169,7 +169,7 @@ Every task of every effort. The tracker carries the effort, never its tasks.
 | [[efforts/31-portfolio-rework/tickets/05-the-featured-project]] feat(content): one project marked featured, shown as a wider card at the head of the work page | 31-portfolio-rework | resolved | 04 |
 | [[efforts/31-portfolio-rework/tickets/06-the-project-filter]] feat(site): the project grid filtered by technology, announcing how many projects remain | 31-portfolio-rework | resolved | 05 |
 | [[efforts/31-portfolio-rework/tickets/07-one-timeline-from-study-to-work]] feat(site): one timeline on the home page from study to work, each node leading to its detail | 31-portfolio-rework | resolved | 01 |
-| [[efforts/31-portfolio-rework/tickets/08-the-first-screen]] feat(site): a first screen with a monogram, stat tiles counted from the content, and icons on every section | 31-portfolio-rework | open | 05, 07 |
+| [[efforts/31-portfolio-rework/tickets/08-the-first-screen]] feat(site): a first screen with a monogram, stat tiles counted from the content, and icons on every section | 31-portfolio-rework | resolved | 05, 07 |
 | [[efforts/5-sections-and-resume/tickets/01-contract-and-predicate]] feat(content): a completion status on projects, a kind on certificates, a resume marker, and the one predicate every output reads | 5-sections-and-resume | resolved | — |
 | [[efforts/5-sections-and-resume/tickets/02-sections]] feat(site): experience before projects, courses and certifications as their own grids, and the home page's section index | 5-sections-and-resume | resolved | 01 |
 | [[efforts/5-sections-and-resume/tickets/03-documents]] feat(cv): one document component rendering the CV and a one-page resume, each as a page and a PDF | 5-sections-and-resume | resolved | 01 |

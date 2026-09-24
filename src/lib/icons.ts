@@ -1,6 +1,7 @@
 // The site's icon bodies: the inner markup of one 24 by 24 SVG each, by name.
-// The site uses about ten icons, so they are paths here rather than a
-// dependency or a request.
+// The site uses about twenty icons, so they are paths here rather than a
+// dependency or a request. The technology marks are a different set with
+// their own licences, and live in src/lib/technologies.ts.
 //
 // They live in a module rather than inside Icon.astro because two components
 // need them. Icon.astro draws any of them; QrCode.astro draws one, the mark
@@ -73,6 +74,34 @@ export const icons = {
   'book-open': {
     kind: 'stroke',
     body: '<path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/>',
+  },
+  'file-text': {
+    kind: 'stroke',
+    body: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>',
+  },
+  'map-pin': {
+    kind: 'stroke',
+    body: '<path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/>',
+  },
+  cpu: {
+    kind: 'stroke',
+    body: '<rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/>',
+  },
+  wrench: {
+    kind: 'stroke',
+    body: '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
+  },
+  'folder-code': {
+    kind: 'stroke',
+    body: '<path d="M10 10.5 8 13l2 2.5"/><path d="m14 10.5 2 2.5-2 2.5"/><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2z"/>',
+  },
+  award: {
+    kind: 'stroke',
+    body: '<path d="m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526"/><circle cx="12" cy="8" r="6"/>',
+  },
+  'arrow-right': {
+    kind: 'stroke',
+    body: '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
   },
   star: {
     kind: 'stroke',
