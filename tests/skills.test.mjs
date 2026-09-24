@@ -16,9 +16,11 @@
 //
 // The table is here rather than in the content because the content contract
 // is fixed, and because this test is the only thing that reads it. A line
-// that points at a hidden project, at a file that does not exist, or at a
-// keyword no group lists fails too, so the table cannot outlive what it
-// vouches for.
+// that points at a hidden project, at a file that does not exist, at
+// anything but a project or an experience entry, or at a keyword no group
+// lists fails too, so the table cannot outlive what it vouches for. A course
+// backs a keyword only through a self-study topic, as the README says, so a
+// line cannot name a certificate.
 
 import assert from 'node:assert/strict';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
@@ -79,6 +81,10 @@ test('every line of the table points at shown entries that exist', () => {
     assert.ok(line.by.length > 0 && line.how, `"${keyword}": a line names at least one entry and says how it backs the keyword`);
     for (const ref of line.by) {
       const [collection, id] = ref.split('/');
+      assert.ok(
+        collection === 'projects' || collection === 'experience',
+        `"${keyword}" is backed by ${ref}; a line names a shown project or an experience entry, and a course backs a keyword through a self-study topic`,
+      );
       assert.ok(existsSync(path.join(content, collection, `${id}.yaml`)), `"${keyword}" is backed by ${ref}, which does not exist`);
       if (collection === 'projects') {
         assert.ok(isShown(read(collection, `${id}.yaml`)), `"${keyword}" is backed by ${ref}, which is not shown`);

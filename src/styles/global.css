@@ -211,8 +211,9 @@
      under `data-name-follows`, which the script sets; the fade only under
      `data-name-moving`, a frame later, so the load itself fades nothing.
      Visibility steps at the far end of a fade out and the near end of a fade
-     in, so the name is never focusable while it cannot be seen. */
-  html[data-name-follows] [data-home-name]:not([data-name-shown]) {
+     in, so the name is never focusable while it cannot be seen, and a name
+     that holds focus stays, so scrolling back up never takes focus away. */
+  html[data-name-follows] [data-home-name]:not([data-name-shown], :focus) {
     opacity: 0;
     visibility: hidden;
   }

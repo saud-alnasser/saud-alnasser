@@ -38,12 +38,15 @@ const count = fill(t.education.onlineCourses.count, {
 
 const items = courses.map((entry) => {
   const name = localized(locale, 'certificates', entry.id)('name', entry.data.name);
+  const opens = documentAttributes(entry.data.document, `${name}${t.listSeparator}${entry.data.issuer}`);
   return {
     id: entry.id,
     name,
     issuer: entry.data.issuer,
     date: entry.data.date,
-    opens: documentAttributes(entry.data.document, `${name}${t.listSeparator}${entry.data.issuer}`),
+    opens,
+    // A link where there is a document to open, and a plain row where not.
+    Tag: opens ? ('a' as const) : ('div' as const),
   };
 });
 const row = 'flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 rounded-md px-2 py-1.5';
@@ -70,32 +73,20 @@ const row = 'flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 rou
     {
       items.map((item) => (
         <li>
-          {item.opens ? (
-            <a
-              href={item.opens['data-document']}
-              data-entry="course"
-              class:list={[row, 'hover:bg-background hover:text-primary motion-safe:transition-colors']}
-              {...item.opens}
-            >
-              <span data-certificate-name class="font-medium">
-                {item.name}
-              </span>
-              <span class="text-sm text-muted-foreground tabular-nums">
-                {item.issuer}
-                {item.date && `${t.listSeparator}${formatDate(locale, item.date)}`}
-              </span>
-            </a>
-          ) : (
-            <div data-entry="course" class={row}>
-              <span data-certificate-name class="font-medium">
-                {item.name}
-              </span>
-              <span class="text-sm text-muted-foreground tabular-nums">
-                {item.issuer}
-                {item.date && `${t.listSeparator}${formatDate(locale, item.date)}`}
-              </span>
-            </div>
-          )}
+          <item.Tag
+            href={item.opens?.['data-document']}
+            data-entry="course"
+            class:list={[row, item.opens && 'hover:bg-background hover:text-primary motion-safe:transition-colors']}
+            {...item.opens}
+          >
+            <span data-certificate-name class="font-medium">
+              {item.name}
+            </span>
+            <span class="text-sm text-muted-foreground tabular-nums">
+              {item.issuer}
+              {item.date && `${t.listSeparator}${formatDate(locale, item.date)}`}
+            </span>
+          </item.Tag>
         </li>
       ))
     }

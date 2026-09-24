@@ -135,7 +135,11 @@ for (const locale of locales) {
         const source = footer.locator(`a[href="${repository}"]`);
         await expect(source).toHaveText(strings[locale].footer.sourceCode);
         await expect(source.locator('svg')).toHaveAttribute('data-icon', 'code');
-        await expect(footer.locator('[data-logo-credits] li')).toHaveCount(credits().length);
+        // Only the marks a shown project or a skill keyword draws are
+        // credited, so a mark mapped for a hidden project is not.
+        const drawn = [...shownProjects.flatMap((entry) => entry.technologies), ...skillEntries.flatMap((entry) => entry.keywords)];
+        await expect(footer.locator('[data-logo-credits] li')).toHaveCount(credits(drawn).length);
+        expect(credits(drawn).length, 'fewer credits than the whole mapping asks for').toBeLessThan(credits().length);
       });
     }
 

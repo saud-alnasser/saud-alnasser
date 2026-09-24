@@ -1,11 +1,12 @@
 ---
 import '../styles/global.css';
-import { getEntry } from 'astro:content';
-import { localeInfo, otherLocale, strings, type Locale } from '../lib/i18n';
+import { getCollection, getEntry } from 'astro:content';
+import { fill, localeInfo, otherLocale, strings, type Locale } from '../lib/i18n';
 import { localized } from '../lib/localized';
 import { profileIcon } from '../lib/networks';
 import { absolute, repository, withBase } from '../lib/paths';
 import { sections as sectionIds } from '../lib/sections';
+import { isShown } from '../lib/shown';
 import { credits } from '../lib/technologies';
 import Icon from '../components/Icon.astro';
 import LanguageMenu from '../components/LanguageMenu.astro';
@@ -52,12 +53,18 @@ const fonts = [
   ...(locale === 'ar' ? ['NotoNaskhArabic-Regular', 'NotoNaskhArabic-Bold'] : []),
 ];
 
-const logoCredits = credits();
+// The credits the marks on the site ask for: only the marks a shown
+// project's technologies or a skill keyword draw.
+const drawn = [
+  ...(await getCollection('projects', ({ data }) => isShown(data))).flatMap(({ data }) => data.technologies),
+  ...(await getCollection('skills')).flatMap(({ data }) => data.keywords),
+];
+const logoCredits = credits(drawn);
 
 // The footer's line: the copyright in the year the site was built, which is
 // the year of its latest change, since every change rebuilds it; then every
 // profile the content lists, with its network's mark, and the source.
-const copyright = t.footer.copyright.replace('{year}', String(new Date().getFullYear())).replace('{name}', siteName);
+const copyright = fill(t.footer.copyright, { year: String(new Date().getFullYear()), name: siteName });
 const elsewhere = [
   ...profile.data.profiles.map((entry) => ({ href: entry.url, icon: profileIcon(entry.network), label: entry.network })),
   { href: repository, icon: 'code' as const, label: t.footer.sourceCode },
@@ -81,7 +88,7 @@ const link =
 ---
 
 <!doctype html>
-<html lang={locale} dir={dir}>
+<html lang={locale} dir={dir} data-home-page={path === '/' ? '' : undefined}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -141,6 +148,14 @@ const link =
           stored = localStorage.getItem('theme');
         } catch (error) {}
         if (stored === 'light' || stored === 'dark') root.setAttribute('data-theme', stored);
+
+        // The home page's header name starts hidden, before anything is
+        // painted, since the page opens at its first screen, where the heading
+        // says the name; `follow` then reads where the heading really is.
+        // Only where it will run: on the home page, with motion allowed.
+        if (root.hasAttribute('data-home-page') && matchMedia('(prefers-reduced-motion: no-preference)').matches) {
+          root.setAttribute('data-name-follows', '');
+        }
 
         function current() {
           return (
@@ -300,17 +315,21 @@ const link =
         // section is, and first in a frame rather than at DOMContentLoaded,
         // which can run before the stylesheet has laid the header out; a
         // frame waits for it. `data-name-follows` on the root is what lets the
-        // stylesheet hide the name, set only once the first reading has
-        // marked it, so a page opened below the first screen shows it from
-        // the start; `data-name-moving` turns the fade on a frame after that,
-        // so nothing fades at load. Without this, under reduced motion, and
-        // on a page with no such heading, the name shows.
+        // stylesheet hide the name, set in the head before the first paint,
+        // since a slow page paints long before it has parsed, and taken off
+        // again here where there is nothing to follow. A page opened below the
+        // first screen shows it from the first reading, in one step, because
+        // `data-name-moving` turns the fade on only a frame after that. With
+        // no script, under reduced motion, and on the documents, the name
+        // shows.
         function follow() {
           var name = document.querySelector('[data-home-name]');
           var heading = document.querySelector('h1#about');
           var header = document.querySelector('body > header');
-          if (!name || !heading || !header) return;
-          if (!matchMedia('(prefers-reduced-motion: no-preference)').matches) return;
+          if (!name || !heading || !header || !root.hasAttribute('data-name-follows')) {
+            root.removeAttribute('data-name-follows');
+            return;
+          }
 
           function read() {
             if (heading.getBoundingClientRect().bottom <= header.getBoundingClientRect().bottom) name.setAttribute('data-name-shown', '');
@@ -329,7 +348,6 @@ const link =
 
           requestAnimationFrame(function () {
             read();
-            root.setAttribute('data-name-follows', '');
             window.addEventListener('scroll', queue, { passive: true });
             window.addEventListener('resize', queue);
             requestAnimationFrame(function () {
@@ -784,8 +802,8 @@ const link =
     </main>
 
     <!--
-      The foot of every page: the copyright over the site's name, the
-      profiles and the source, each with its mark, and the attribution the
+      The foot of every page: the copyright with the site's name, then a
+      list of the profiles and the source, each with its mark, and the attribution the
       technology marks' licences ask for, folded behind one native control
       so it is there for whoever looks and out of the way of everyone else.
       One line per mark: its name, its licence, and a link to where it is

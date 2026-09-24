@@ -122,14 +122,18 @@ export function technologyMark(name: string): { path: string; title: string } | 
 // "CC-BY-SA-4.0" is "CC BY-SA 4.0".
 const licenceName = (type: string) => type.replace(/^CC-/, 'CC ').replace(/-(\d)/, ' $1');
 
-// The attribution every mapped mark's licence asks for, one per mark, in the
+// The attribution a mapped mark's licence asks for, one per mark, in the
 // order of the marks' titles: the mark's name, its licence, and where it is
 // from. Marks with no licence recorded, or under MIT or BSD, ask for none.
-export function credits(): { name: string; licence: string; source: string }[] {
+// Given the names the site shows, only the marks those names draw are
+// credited, so the footer never credits a logo that appears nowhere; with
+// none given, every mapped mark is, which is what the licence test reads.
+export function credits(shown?: Iterable<string>): { name: string; licence: string; source: string }[] {
+  const names = shown ? new Set(shown) : undefined;
   const seen = new Set<string>();
   const lines: { name: string; licence: string; source: string }[] = [];
-  for (const mark of Object.values(marks)) {
-    if (!mark || seen.has(mark.slug)) continue;
+  for (const [name, mark] of Object.entries(marks)) {
+    if (!mark || seen.has(mark.slug) || (names && !names.has(name))) continue;
     seen.add(mark.slug);
     const type = mark.license?.type;
     if (type && /^CC-BY(-SA)?-[\d.]+$/.test(type)) lines.push({ name: mark.title, licence: licenceName(type), source: mark.source });

@@ -14,8 +14,9 @@ export function joinBase(base: string, path: string): string {
 }
 
 // The repository the site is built from, which the footer links as its
-// source. It is also the name GitHub Pages serves the site under, which is
-// why `base` above is what it is.
+// source. GitHub Pages serves a project site under the repository's name, so
+// astro.config.mjs derives `base` from this address rather than writing the
+// name a second time.
 export const repository = 'https://github.com/saud-alnasser/saud-alnasser';
 
 // A path on the site, under the base the build was given.

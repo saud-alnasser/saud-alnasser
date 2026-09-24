@@ -83,8 +83,9 @@ const en = {
     // its original, drawn in the text colour rather than its own.
     adapted: 'Each mark is drawn in the text colour rather than its own.',
     source: 'source',
-    // The footer's own line: the copyright over the name, then a link to the
-    // repository the site is built from.
+    // The footer's own line: the copyright with the name filled in, then a
+    // list, labelled `links`, of the profiles and a link to the repository
+    // the site is built from.
     copyright: '© {year} {name}',
     sourceCode: 'Source code',
     links: 'Elsewhere',

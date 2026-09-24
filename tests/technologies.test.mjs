@@ -67,6 +67,16 @@ test('the credits list exactly the marks whose licence asks for attribution', ()
 
 // A mark whose guidelines the package records is mapped only once they have
 // been read, and what they allow is written beside the mapping.
+test('given the names a site shows, the credits cover only the marks those names draw', () => {
+  const all = credits().map((credit) => credit.name);
+  assert.ok(all.includes('Godot Engine'), 'Godot is mapped and asks for credit');
+  assert.deepEqual(
+    credits(['Rust', 'TypeScript']).map((credit) => credit.name),
+    all.filter((name) => ['Rust', 'TypeScript'].some((shown) => technologyMark(shown)?.title === name)),
+  );
+  assert.ok(!credits(['Rust']).some((credit) => credit.name === 'Godot Engine'), 'a mark nothing draws is not credited');
+});
+
 test('every mapped mark with recorded guidelines has had them read', () => {
   for (const { name, recorded } of mapped) {
     if (!recorded.guidelines) continue;
@@ -74,7 +84,7 @@ test('every mapped mark with recorded guidelines has had them read', () => {
   }
 });
 
-test('a name with no mark, and a name nowhere in the mapping, both draw the name alone', () => {
+test('a name with no mark, and a name nowhere in the mapping, both have no mark', () => {
   assert.equal(technologyMark('Java'), undefined);
   assert.equal(technologyMark('SvelteKit'), undefined);
   assert.equal(technologyMark('Refactoring'), undefined);

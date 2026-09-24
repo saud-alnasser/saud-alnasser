@@ -4,7 +4,7 @@ import sitemap from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
 import { forwards } from './src/lib/forwards.ts';
 import { gapReport } from './src/lib/localized.ts';
-import { joinBase } from './src/lib/paths.ts';
+import { joinBase, repository } from './src/lib/paths.ts';
 
 // The site's address. The repository is saud-alnasser/saud-alnasser, which
 // GitHub Pages serves as a project site under the repository's name, so the
@@ -15,7 +15,7 @@ import { joinBase } from './src/lib/paths.ts';
 // Actions once, by hand, in the repository settings (docs/development.md,
 // "Deployment").
 export const site = 'https://saud-alnasser.github.io';
-export const base = '/saud-alnasser';
+export const base = `/${new URL(repository).pathname.split('/').pop()}`;
 
 // Prints the language gap report once the pages are built: every field whose
 // Arabic was missing and rendered its English instead. The pages record the

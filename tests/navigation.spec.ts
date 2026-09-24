@@ -306,3 +306,42 @@ test.describe('the header name where the script does not take it over', () => {
     });
   });
 });
+
+test.describe('the header name before the page has finished loading, with motion allowed', () => {
+  test.use({ reducedMotion: 'no-preference' });
+
+  // A slow page paints long before it has parsed, so the name is hidden
+  // from the head, before the body exists, rather than when the script
+  // that follows it runs.
+  test(`${at('/en/')} marks the name to follow before the document is parsed`, async ({ page }) => {
+    await page.addInitScript(() => {
+      document.addEventListener('readystatechange', () => {
+        if (document.readyState === 'interactive') {
+          (window as unknown as { followsAtParse: boolean }).followsAtParse =
+            document.documentElement.hasAttribute('data-name-follows');
+        }
+      });
+    });
+    await page.goto(at('/en/'));
+    expect(await page.evaluate(() => (window as unknown as { followsAtParse: boolean }).followsAtParse)).toBe(true);
+    await expect.poll(() => nameState(page)).toEqual(hidden);
+  });
+
+  test(`${at('/en/cv/')} marks nothing, since it has no first screen to follow`, async ({ page }) => {
+    await page.goto(at('/en/cv/'));
+    await expect(page.locator('html')).not.toHaveAttribute('data-name-follows');
+  });
+
+  // A reader who has tabbed to the name and then scrolls back to the top
+  // keeps it, and keeps focus on it.
+  test(`${at('/en/')} keeps the name while it holds focus`, async ({ page }) => {
+    await page.goto(at('/en/'));
+    await page.locator('h2#experience').evaluate((element) => element.scrollIntoView());
+    await expect.poll(() => nameState(page)).toEqual(shown);
+    await page.locator(homeName).focus();
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.waitForTimeout(400);
+    expect(await nameState(page)).toEqual(shown);
+    await expect(page.locator(homeName)).toBeFocused();
+  });
+});

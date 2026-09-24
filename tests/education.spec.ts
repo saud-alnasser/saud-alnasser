@@ -74,7 +74,7 @@ const order = educationTimeline(education, courses).map((item) => (item.kind ===
 
 // The institutions whose entry names a document, the degree certificate: each
 // card carries one link that opens it in the page's certificate dialog, the
-// dialog tests/certificates.spec.ts covers from the course cards. Read from
+// dialog tests/certificates.spec.ts covers from the course rows. Read from
 // the content, so an institution without one is asserted to offer nothing.
 const documented = education.filter((entry) => entry.document);
 const control = 'article [data-document]';
@@ -143,8 +143,8 @@ for (const locale of locales) {
       await page.goto(url);
       const online = page.locator(node);
       await expect(online).toContainText(t.education.onlineCourses.name);
-      // The node counts the courses grid, worded with the courses noun, and
-      // leads to it (requirement 5).
+      // The node counts the courses it lists, worded with the courses noun,
+      // and opens in place to show them.
       await expect(online).toContainText(
         fill(t.education.onlineCourses.count, {
           count: String(courses.length),
