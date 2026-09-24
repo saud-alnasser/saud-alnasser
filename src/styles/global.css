@@ -249,11 +249,13 @@
 
   /* A page to the next crossfades where the browser does it natively, with
      the header held still across the two. Elsewhere the page simply loads,
-     which is all a browser without it loses. */
+     which is all a browser without it loses. Every group is timed here, the
+     header's as well as the page's, and the old and new pictures in each
+     take their group's timing. */
   @view-transition {
     navigation: auto;
   }
-  ::view-transition-group(root) {
+  ::view-transition-group(*) {
     animation-duration: var(--duration-medium);
     animation-timing-function: var(--ease-standard);
   }

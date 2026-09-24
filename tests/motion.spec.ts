@@ -122,7 +122,7 @@ test.describe('with motion allowed', () => {
             allowed || (rule instanceof CSSMediaRule && /prefers-reduced-motion:\s*no-preference/.test(rule.conditionText));
           if (rule.constructor.name === 'CSSViewTransitionRule') result.transition.push(`${inside}`);
           if (rule instanceof CSSStyleRule) {
-            if (rule.selectorText.includes('::view-transition-group(root)'))
+            if (rule.selectorText.includes('::view-transition-group(*)'))
               result.group.push(`${inside} ${rule.style.animationDuration}`);
             if (rule.style.viewTransitionName) result.header.push(`${inside} ${rule.style.viewTransitionName}`);
           }
@@ -371,4 +371,41 @@ test.describe('the curves with motion allowed', () => {
       expect(found.wrong, `curves on ${path}`).toEqual([]);
     });
   }
+});
+
+// The crossfade itself, read while it runs. Its pseudo-elements exist only
+// during a navigation, so the sweeps above never meet them: this follows a
+// link from the home page to the work page and, as the new page is revealed,
+// reads every animation the transition runs, the header's group among them.
+test.describe('the page crossfade with motion allowed', () => {
+  test.use({ reducedMotion: 'no-preference' });
+
+  test('runs every part of the crossfade on the standard curve for 250ms', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.addEventListener('pagereveal', (event) => {
+        const transition = (event as Event & { viewTransition?: { ready: Promise<void> } }).viewTransition;
+        if (!transition) return;
+        transition.ready.then(() => {
+          // The transition's own parts only; the new page's entrance runs
+          // beside them and is held to its curves by the sweeps above.
+          (window as unknown as { crossfade: string[] }).crossfade = document
+            .getAnimations()
+            .map((animation) => (animation.effect as KeyframeEffect).pseudoElement ?? '')
+            .filter((pseudo) => pseudo.startsWith('::view-transition'))
+            .map((pseudo) => {
+              const style = getComputedStyle(document.documentElement, pseudo);
+              return `${pseudo} ${style.animationDuration} ${style.animationTimingFunction}`;
+            });
+        });
+      });
+    });
+    await page.goto(at('/en/'));
+    await page.locator('body > header nav a').nth(1).click();
+    await page.waitForURL(`**${at('/en/work/')}`);
+    const crossfade = await page.waitForFunction(() => (window as unknown as { crossfade?: string[] }).crossfade);
+    const parts = (await crossfade.jsonValue()) as string[];
+    expect(parts.some((part) => part.includes('(site-header)')), 'the header takes part').toBe(true);
+    expect(parts.some((part) => part.includes('(root)')), 'the page takes part').toBe(true);
+    for (const part of parts) expect(part, 'a part of the crossfade').toMatch(/ 0\.25s cubic-bezier\(0\.2, 0, 0, 1\)$/);
+  });
 });
