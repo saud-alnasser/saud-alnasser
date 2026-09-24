@@ -11,6 +11,11 @@ import { joinBase } from './src/lib/paths';
 // Every test runs twice, once per colour scheme, because both palettes must
 // meet the contrast criterion and the theme control has to work from either
 // starting point.
+//
+// Every test reads a settled page by default: reduced motion is asked for in
+// the shared options, so no entrance, fold, or dialog is mid-transition when a
+// test measures a colour or a box or clicks. The tests about motion ask for it
+// back in their own context.
 
 const port = 4173;
 
@@ -23,6 +28,7 @@ export default defineConfig({
   use: {
     baseURL: `http://127.0.0.1:${port}`,
     trace: 'retain-on-failure',
+    reducedMotion: 'reduce',
   },
   webServer: {
     command: `node scripts/serve-dist.mjs ${port}`,

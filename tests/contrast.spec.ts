@@ -24,7 +24,8 @@ const audited = pages;
 for (const page of audited) {
   test(`axe finds no violation on ${page}`, async ({ page: browser, colorScheme }) => {
     await browser.goto(page);
-    // The reveal is a 500ms animation; axe reads colours after it settles.
+    // axe reads colours once nothing is moving. The shared options ask for
+    // reduced motion, so this finds nothing running today.
     await browser.evaluate(() => Promise.all(document.getAnimations().map((animation) => animation.finished)));
     const results = await new AxeBuilder({ page: browser }).withTags(['wcag2a', 'wcag2aa']).analyze();
     const found = results.violations.map((violation) => {
@@ -46,5 +47,29 @@ for (const page of audited) {
     await browser.evaluate(() => Promise.all(document.getAnimations().map((animation) => animation.finished)));
     const failures = await browser.evaluate(lowContrastPairs);
     expect(failures, `${colorScheme} palette on ${page}`).toEqual([]);
+  });
+}
+
+// A card being pointed at or focused is a card raised: the higher shadow and
+// the accent on its border. The shadow sits outside the surface the text is
+// on, so the pairs should not move; measured in both palettes and both
+// directions all the same, with the card held in the raised state.
+for (const locale of ['en', 'ar'] as const) {
+  const page = at(`/${locale}/work/`);
+
+  test(`a raised card on ${page} meets WCAG AA`, async ({ page: browser, colorScheme }) => {
+    await browser.goto(page);
+    const card = browser.locator('[data-entry="project"]').first();
+    await card.hover();
+    expect(await card.evaluate((node) => getComputedStyle(node).boxShadow), 'the card is raised').toContain('24px');
+    const failures = await browser.evaluate(lowContrastPairs);
+    expect(failures, `${colorScheme} palette on ${page} with a card raised`).toEqual([]);
+    if (locale === 'en') {
+      const results = await new AxeBuilder({ page: browser }).withTags(['wcag2a', 'wcag2aa']).analyze();
+      expect(
+        results.violations.map((violation) => `${violation.id}: ${violation.help}`),
+        `${colorScheme} palette on ${page} with a card raised`,
+      ).toEqual([]);
+    }
   });
 }

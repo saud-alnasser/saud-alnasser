@@ -1,22 +1,27 @@
 ---
 // The card every entry renders through: one surface, one border, one radius,
-// one padding, so a project, a placement, an institution, a certificate, and
-// a skill group read as the same kind of thing in both themes and both
-// directions. With `href` the whole card is the link, and says so on hover
-// by taking the accent on its border; keyboard focus draws the site's ring.
-// `as` names the element otherwise, for a card that is a list item or an
-// article.
+// one padding, one shadow, so a project, a placement, an institution, a
+// certificate, and a skill group read as the same kind of thing in both
+// themes and both directions. With `href` the whole card is the link; `as`
+// names the element otherwise, for a card that is a list item or an article.
+//
+// Every card rests a hair off the page and rises when it is pointed at or
+// holds focus: the higher shadow, the accent on its border, and, where motion
+// is allowed, a 2px lift. Keyboard focus draws the site's ring besides.
+// `variant="raised"` rests at the higher shadow from the start, for the one
+// card a page means to put forward.
 
 import type { HTMLTag } from 'astro/types';
 
 interface Props {
   href?: string;
   as?: HTMLTag;
+  variant?: 'raised';
   class?: string;
   [attribute: string]: unknown;
 }
 
-const { href, as, class: className, ...rest } = Astro.props as Props;
+const { href, as, variant, class: className, ...rest } = Astro.props as Props;
 const Tag: HTMLTag = href ? 'a' : (as ?? 'div');
 ---
 
@@ -24,7 +29,10 @@ const Tag: HTMLTag = href ? 'a' : (as ?? 'div');
   href={href}
   class:list={[
     'block rounded-lg border border-border bg-card p-5 sm:p-6',
-    href && 'hover:border-primary motion-safe:transition-colors',
+    variant === 'raised' ? 'shadow-(--shadow-raised)' : 'shadow-(--shadow-rest)',
+    'hover:border-primary hover:shadow-(--shadow-raised) focus-visible:border-primary focus-visible:shadow-(--shadow-raised) focus-within:border-primary focus-within:shadow-(--shadow-raised)',
+    'motion-safe:transition-[translate,border-color,color] motion-safe:duration-(--duration-short) motion-safe:ease-(--ease-standard)',
+    'motion-safe:hover:-translate-y-0.5 motion-safe:focus-visible:-translate-y-0.5 motion-safe:focus-within:-translate-y-0.5',
     className,
   ]}
   {...rest}

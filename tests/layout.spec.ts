@@ -44,8 +44,8 @@ test.describe('at 1440 pixels wide', () => {
 test.describe('with reduced motion', () => {
   test.use({ reducedMotion: 'reduce' });
 
-  // Every page, because the reveal runs on every page's main and a card page
-  // carries transitions of its own.
+  // Every page, because the entrance runs on every page's main and a card
+  // page carries transitions of its own.
   for (const path of pages) {
     test(`nothing animates on ${path}`, async ({ page }) => {
       await page.goto(path);

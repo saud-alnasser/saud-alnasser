@@ -37,6 +37,15 @@ const site = Astro.site!;
 const home = withBase(`/${locale}/`);
 const address = (l: Locale) => absolute(`/${l}${path}`, site);
 
+// The Latin pair on every page, since names, addresses, and technologies are
+// written in it in both languages; the Arabic pair only where the page is in
+// Arabic, which is also the only place its unicode-range ever matches.
+const fonts = [
+  'SourceSans3-Regular',
+  'SourceSans3-Bold',
+  ...(locale === 'ar' ? ['NotoNaskhArabic-Regular', 'NotoNaskhArabic-Bold'] : []),
+];
+
 const nav = [
   { href: home, label: t.nav.home, current: path === '/' },
   { href: withBase(`/${locale}/work/`), label: t.nav.work, current: path === '/work/' },
@@ -53,6 +62,19 @@ const nav = [
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light dark" />
     <meta name="generator" content={Astro.generator} />
+    <!--
+      The bundled faces the page draws with, asked for before the stylesheet
+      is read, so the text is laid out once in its own face rather than in the
+      fallback and again when the face arrives. That second layout moves the
+      whole page, and it used to go uncounted only because `main` was still
+      fading in when it happened; once the entrance moved to main's children,
+      the Arabic pages measured it as a layout shift of a third of the screen.
+    -->
+    {
+      fonts.map((font) => (
+        <link rel="preload" href={withBase(`/fonts/${font}.woff2`)} as="font" type="font/woff2" crossorigin />
+      ))
+    }
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={address(locale)} />
@@ -397,14 +419,14 @@ const nav = [
       </div>
     </header>
 
-    <main id="content" class:list={['mx-auto w-full px-6 py-16 motion-safe:animate-reveal sm:py-20', width]}>
+    <main id="content" class:list={['mx-auto w-full px-6 py-16 sm:py-20', width]}>
       <slot />
     </main>
 
     <!--
       A page's dialog, if it has one, sits here rather than inside <main>:
-      main's reveal is a transform, and a transform on an ancestor takes a
-      <dialog> out of the top layer in some browsers.
+      the entrance on main's children is a transform, and a transform on an
+      ancestor takes a <dialog> out of the top layer in some browsers.
     -->
     <slot name="dialog" />
 

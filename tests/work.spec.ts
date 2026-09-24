@@ -265,10 +265,10 @@ test.describe('at 1440 pixels wide', () => {
   });
 });
 
-// Reduced motion is asked for beside it because the page's reveal is a 500ms
-// animation on `main` and this context cannot evaluate in the page, so there
-// is no `document.getAnimations()` to await as the other tests do and the
-// click never finds the summary stable. The fold behaves the same either
+// Reduced motion is asked for beside it, as the shared options already do,
+// because the page's entrance moves the fold and this context cannot evaluate
+// in the page, so there is no `document.getAnimations()` to await as the other
+// tests do and the click would never find the summary stable. The fold behaves the same either
 // way; what is under test is that it needs no script.
 test.describe('with JavaScript disabled', () => {
   test.use({ javaScriptEnabled: false, reducedMotion: 'reduce' });
