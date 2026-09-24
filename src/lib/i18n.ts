@@ -139,6 +139,16 @@ const en = {
     // The label over the one project the work page puts forward.
     featured: 'Featured',
   },
+  // The home page's timeline from study to work: its heading, and the kind
+  // of each node, which its icon shows and a screen reader is told.
+  journey: {
+    heading: 'From study to work',
+    kinds: {
+      experience: 'Work',
+      education: 'Study',
+      courses: 'Online courses',
+    },
+  },
   // The chips above the project grid: the group's accessible name, the chip
   // that restores every project, and the line the page announces after each
   // press, with the project noun from `home.counts.nouns`.
@@ -334,6 +344,14 @@ const ar: Strings = {
     live: 'الموقع المنشور',
     technologies: 'التقنيات',
     featured: 'مشروع مميز',
+  },
+  journey: {
+    heading: 'من الدراسة إلى العمل',
+    kinds: {
+      experience: 'العمل',
+      education: 'الدراسة',
+      courses: 'مقررات عبر الإنترنت',
+    },
   },
   filter: {
     label: 'تصفية المشاريع حسب التقنية',

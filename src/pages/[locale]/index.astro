@@ -2,6 +2,7 @@
 import { getCollection, getEntry } from 'astro:content';
 import Base from '../../layouts/Base.astro';
 import Icon from '../../components/Icon.astro';
+import Journey from '../../components/Journey.astro';
 import SectionCard from '../../components/SectionCard.astro';
 import Skills from '../../components/Skills.astro';
 import { fill, locales, plural, strings, type Locale, type Strings } from '../../lib/i18n';
@@ -154,6 +155,14 @@ const sections = [
         ))
       }
     </ul>
+  </section>
+
+  <section aria-labelledby="journey" class="mt-16">
+    <h2 id="journey" data-reveal class="mb-5 flex items-center gap-2 text-xl font-semibold tracking-tight">
+      <Icon name="graduation-cap" class="size-5 text-primary" />
+      {t.journey.heading}
+    </h2>
+    <Journey locale={locale} />
   </section>
 
   {

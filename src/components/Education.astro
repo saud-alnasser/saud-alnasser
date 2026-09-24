@@ -6,6 +6,9 @@
 // link sits inside the card rather than being the card, as a course card is:
 // this card holds the courses fold, a <details> element, and interactive
 // content does not nest inside a link. Without script the link is the PDF.
+//
+// The card's id, `education-` and the entry's id, is where the home page's
+// timeline leads for this institution.
 
 import type { CollectionEntry } from 'astro:content';
 import Card from './Card.astro';
@@ -61,7 +64,7 @@ const preview = data.document ? previews[key(data.document.replace(/\.pdf$/, '.w
 const caption = `${qualification}${t.listSeparator}${institution}`;
 ---
 
-<Card as="article">
+<Card as="article" id={`education-${entry.id}`} class="scroll-mt-8">
   <p class="text-sm text-muted-foreground tabular-nums" data-period>{formatPeriod(locale, data.period)}</p>
   <h3 class="mt-1 text-lg font-semibold tracking-tight">{institution}</h3>
   <p class="mt-1">{qualification}</p>

@@ -7,6 +7,8 @@ import { fill, plural, strings } from '../src/lib/i18n';
 import { profileIcon } from '../src/lib/networks';
 import { isCertification, isCourse, isShown } from '../src/lib/shown';
 import { technologyMark } from '../src/lib/technologies';
+import { byStartAscending } from '../src/lib/order';
+import { journey } from '../src/lib/timeline';
 import { at, locales, type Locale } from './pages';
 
 // The home page: the hero, the contact actions, the skill cards, and one card
@@ -380,3 +382,109 @@ test.describe('the card grids at 1440 pixels wide', () => {
     }
   });
 });
+
+// The timeline from study to work: the nodes in the order `journey` gives,
+// read from src/content/ as the page reads it; each with its kind's icon
+// hidden from assistive technology and the kind said instead; and each
+// leading to an id that exists on the page it names.
+const journeyOrder = (() => {
+  const dir = (name: string): Record<string, any>[] =>
+    readdirSync(path.join(content, name))
+      .filter((file) => file.endsWith('.yaml'))
+      .sort()
+      .map((file) => ({ id: file.replace(/\.yaml$/, ''), ...entryData(name, file) }));
+  const education = dir('education').sort(byStartAscending as (a: any, b: any) => number);
+  const courses = dir('certificates').filter((entry) => isCourse(entry as { kind: 'course' | 'certification' }));
+  const experience = dir('experience');
+  return journey(education, experience, courses, (entry: any) => entry.period.start).map((item) =>
+    item.kind === 'courses' ? { kind: 'courses', href: '/education/#courses' } : item.kind === 'experience'
+      ? { kind: 'experience', href: `/work/#experience-${(item.entry as { id: string }).id}` }
+      : { kind: 'education', href: `/education/#education-${(item.entry as { id: string }).id}` },
+  );
+})();
+
+const journeyIcons = { experience: 'briefcase', education: 'graduation-cap', courses: 'book-open' } as const;
+
+for (const locale of locales) {
+  test.describe(`the timeline on /${locale}/`, () => {
+    test('lays out every node, newest first, each with its kind', async ({ page }) => {
+      await page.goto(at(`/${locale}/`));
+      await expect(page.locator('h2#journey')).toContainText(strings[locale].journey.heading);
+      await expect(page.locator('h2#journey svg')).toHaveAttribute('aria-hidden', 'true');
+      const nodes = page.locator('[data-journey] [data-journey-node]');
+      const found = await nodes.evaluateAll((items) =>
+        items.map((item) => ({ kind: item.getAttribute('data-journey-node'), href: item.getAttribute('href') })),
+      );
+      expect(found).toEqual(journeyOrder.map((node) => ({ kind: node.kind, href: at(`/${locale}${node.href}`) })));
+      for (const [index, node] of journeyOrder.entries()) {
+        const item = nodes.nth(index);
+        await expect(item.locator(`svg[data-icon="${journeyIcons[node.kind as keyof typeof journeyIcons]}"]`)).toHaveAttribute('aria-hidden', 'true');
+        await expect(item.locator('.sr-only')).toHaveText(`${strings[locale].journey.kinds[node.kind as keyof typeof journeyIcons]}: `);
+      }
+      await expect(page.locator('[data-journey] > li')).toHaveCount(journeyOrder.length);
+    });
+
+    test('leads every node to an id on the page it names', async ({ page }) => {
+      for (const node of journeyOrder) {
+        const address = at(`/${locale}${node.href}`);
+        const [target, id] = address.split('#');
+        await page.goto(target!);
+        await expect(page.locator(`[id="${id}"]`), `${id} on ${target}`).toHaveCount(1);
+      }
+    });
+
+    test('draws the rail on the reading start, at 3:1 with its markers', async ({ page }) => {
+      await page.goto(at(`/${locale}/`));
+      const found = await page.evaluate(() => {
+        const rail = document.querySelector('[data-journey]')!;
+        const style = getComputedStyle(rail);
+        const parse = (value: string) => (value.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
+        const luminance = (rgb: number[]) => {
+          const [r, g, b] = rgb.map((v) => {
+            const c = v / 255;
+            return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+          });
+          return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
+        };
+        const page = luminance(parse(getComputedStyle(document.documentElement).backgroundColor));
+        const ratio = (colour: string) => {
+          const l = luminance(parse(colour));
+          return (Math.max(l, page) + 0.05) / (Math.min(l, page) + 0.05);
+        };
+        const marker = document.querySelector('[data-journey-marker]')!;
+        const box = rail.getBoundingClientRect();
+        const dot = marker.getBoundingClientRect();
+        return {
+          left: parseFloat(style.borderLeftWidth),
+          right: parseFloat(style.borderRightWidth),
+          rail: ratio(document.documentElement.dir === 'rtl' ? style.borderRightColor : style.borderLeftColor),
+          marker: ratio(getComputedStyle(marker).backgroundColor),
+          markerNearRight: Math.abs(dot.right - box.right) < 12,
+          markerNearLeft: Math.abs(dot.left - box.left) < 12,
+        };
+      });
+      if (locale === 'ar') {
+        expect(found.right, 'the rail on the right').toBeGreaterThan(0);
+        expect(found.left).toBe(0);
+        expect(found.markerNearRight, 'the markers on the rail').toBe(true);
+      } else {
+        expect(found.left, 'the rail on the left').toBeGreaterThan(0);
+        expect(found.right).toBe(0);
+        expect(found.markerNearLeft, 'the markers on the rail').toBe(true);
+      }
+      expect(found.rail, 'the rail against the page').toBeGreaterThanOrEqual(3);
+      expect(found.marker, 'a marker against the page').toBeGreaterThanOrEqual(3);
+    });
+  });
+
+  test.describe(`the timeline on /${locale}/ with JavaScript disabled`, () => {
+    test.use({ javaScriptEnabled: false });
+
+    test('shows every node', async ({ page }) => {
+      await page.goto(at(`/${locale}/`));
+      const nodes = page.locator('[data-journey] [data-journey-node]');
+      await expect(nodes).toHaveCount(journeyOrder.length);
+      for (const node of await nodes.all()) await expect(node).toBeVisible();
+    });
+  });
+}
