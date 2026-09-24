@@ -101,7 +101,7 @@ Start at [[protocol]].
 | 29-credentials-as-one-self-study-line | implemented | [[efforts/29-credentials-as-one-self-study-line/spec]] | 0 | 0 | 3 |
 | 3-site-redesign | implemented | [[efforts/3-site-redesign/spec]] | 0 | 1 | 8 |
 | 31-portfolio-rework | implemented | [[efforts/31-portfolio-rework/spec]] | 3 | 0 | 8 |
-| 33-one-page-portfolio | accepted | [[efforts/33-one-page-portfolio/spec]] | 0 | 1 | 5 |
+| 33-one-page-portfolio | accepted | [[efforts/33-one-page-portfolio/spec]] | 0 | 1 | 6 |
 | 5-sections-and-resume | implemented | [[efforts/5-sections-and-resume/spec]] | 0 | 0 | 6 |
 | 7-document-downloads-and-contact-details | implemented | [[efforts/7-document-downloads-and-contact-details/spec]] | 1 | 0 | 6 |
 
@@ -176,6 +176,7 @@ Every task of every effort. The tracker carries the effort, never its tasks.
 | [[efforts/33-one-page-portfolio/tickets/03-the-old-addresses-forward]] feat(site): the work and education addresses forward to their sections | 33-one-page-portfolio | resolved | 02 |
 | [[efforts/33-one-page-portfolio/tickets/04-the-sticky-header]] feat(site): a header that stays on screen and names every section once | 33-one-page-portfolio | resolved | 03 |
 | [[efforts/33-one-page-portfolio/tickets/05-the-glide-and-the-current-section]] feat(site): the header glides to a section and marks the one being read | 33-one-page-portfolio | open | 04 |
+| [[efforts/33-one-page-portfolio/tickets/06-a-plainer-description]] feat(content): a plainer description, and a README without the documents | 33-one-page-portfolio | resolved | — |
 | [[efforts/5-sections-and-resume/tickets/01-contract-and-predicate]] feat(content): a completion status on projects, a kind on certificates, a resume marker, and the one predicate every output reads | 5-sections-and-resume | resolved | — |
 | [[efforts/5-sections-and-resume/tickets/02-sections]] feat(site): experience before projects, courses and certifications as their own grids, and the home page's section index | 5-sections-and-resume | resolved | 01 |
 | [[efforts/5-sections-and-resume/tickets/03-documents]] feat(cv): one document component rendering the CV and a one-page resume, each as a page and a PDF | 5-sections-and-resume | resolved | 01 |

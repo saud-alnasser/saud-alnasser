@@ -24,6 +24,7 @@ The site reads as one page that holds the whole portfolio, in the order a hiring
 - The education timeline rule in `src/lib/timeline.ts` and every output that reads it: the site, the CV, and the resume.
 - The monogram, the home page's combined timeline, and the "On this site" grid, which go.
 - The interface strings, tests, checks, and documents that name any of the above.
+- The profile's label and two summaries, and the README's profile block (requirement 11, added on 2026-09-24).
 
 # Requirements
 
@@ -37,6 +38,7 @@ The site reads as one page that holds the whole portfolio, in the order a hiring
 8. **The old addresses still land.** `/en/work/`, `/ar/work/`, `/en/education/`, and `/ar/education/` still answer. Each sends the reader to the matching section of the home page in the same language, without script, and points search engines at the home page as its canonical address. The work page lands on Experience and the education page on Education, whatever anchor the old address carried. The sitemap lists only real pages. (Amended on 2026-09-24 at `/plan`. This first asked for every old anchor to land on its own heading, and a probe showed a forward without script cannot carry an anchor ([[efforts/33-one-page-portfolio/evidence/prototypes/meta-refresh-drops-the-fragment]]). Saud chose one target per address and no script, over a script on the forwarding pages. The only links that used the old anchors were the home page's grid and timeline, which this effort removes.)
 9. **Nothing the earlier efforts guarantee is lost.** Two languages with the Arabic header and panel mirrored, two themes, all content readable with script off, no request to another origin, the reduced-motion rules, the filter's behaviour and announcement, the certificate dialog, the count-up, and the quality gates all hold on the one page as they did across three.
 10. **Strings in both languages.** Every new interface string (the section names in the header, the menu button's accessible name, the documents' group label) exists in both languages in `src/lib/i18n.ts`, and the strings for removed surfaces go with them. The Arabic is a draft until Saud reads it on the published site.
+11. **A plainer description, and a README without the documents.** The profile's label is "Software engineer", and both summaries open with it. They are plain, professional, and short. They name only work Saud built and learned from, which is rentable. The summary read by the CV, the home page, the README, and `resume.json` says he is looking for a junior software engineering role. The README's profile block no longer links the CV or the resume. The portfolio link stays, and so do the profiles. (Added on 2026-09-24 at Saud's request while effort 33 was being built. He chose that the new wording reach every output that reads the summary, not the README alone. He named rentable, and cachescribe only if a review found it sound. The review found that no published version of cachescribe ships its built code, so installing it has never given a working import. It is left out.)
 
 # Acceptance Criteria
 
@@ -50,12 +52,13 @@ The site reads as one page that holds the whole portfolio, in the order a hiring
 8. Each of the four old addresses, fetched from the built output, carries a meta refresh to its home-page section in the same language and a canonical link to that language's home page. It has no script. A browser test opening each old address, bare and with one of its old anchors, ends on the home page with that address's section heading in view. The sitemap has no work or education page.
 9. The existing contrast, layout, motion, filter, certificate, document, and no-script suites pass against the one page, with their selectors moved rather than their assertions weakened. The dist check still finds no request to another origin. Lighthouse performance, accessibility, and best practices stay at 90 or above on the mobile profile for every page the gate runs.
 10. The strings check finds every new string in both languages and none left for a removed surface. The build's gap report does not grow.
+11. The label reads "Software engineer" in English, with its Arabic draft, on the home page, both documents, and both `resume.json` files. Both summaries begin with it and name no project but rentable. `pnpm readme --check` passes. The README's profile block holds no link to `/cv/` or `/resume/` and still links the portfolio in both languages. The resume stays one page with the margin `pnpm render:pdf` requires.
 
 # Constraints
 
 - **Static hosting, no server redirects.** GitHub Pages serves files only, so an old address can forward only from a page of its own. That is why criterion 8 asks for a refresh and a canonical link rather than a status code.
 - **One inline script.** The site has exactly one script, in `src/layouts/Base.astro`, and every behaviour is progressive: content and navigation work without it. The section tracking and the menu's closing join that script under the same rule. It is the repository's standing constraint, not a preference.
-- **The content contract does not change.** No content file is edited for this. The order, the sections, and the redirects are all derived from the content the site already has.
+- **The content contract does not change.** No content file is edited for this, except `src/content/profile.yaml`'s label and two summaries under requirement 11. The schema stays as it is. The order, the sections, and the redirects are all derived from the content the site already has.
 - **Motion stays on the tokens.** Any scrolling or menu motion this adds runs on the easing and duration tokens [[efforts/31-portfolio-rework/spec]] set, and disappears under reduced motion, where the jump is instant.
 
 # Out of Scope
@@ -63,7 +66,7 @@ The site reads as one page that holds the whole portfolio, in the order a hiring
 - A page of its own for any section. Saud chose one page with a header that follows the reader over one page per section on 2026-09-24.
 - Merging the CV or the resume into the home page. Saud said on 2026-09-24 they stay reachable from home, not on it.
 - Changing what any section shows. The cards, badges, filter, folds, dialog, tiles, and featured card are carried over as they are.
-- New content, and any change to the documents beyond their education order.
+- New content, and any change to the documents beyond their education order and requirement 11's label and summaries.
 - A table of contents, breadcrumbs, or a back-to-top control. The header covers all three jobs.
 - Rewriting the Arabic drafts [[efforts/31-portfolio-rework/spec]] left for Saud to read.
 
