@@ -174,7 +174,10 @@ test.describe('what the script leaves to the browser', () => {
 });
 
 // Tabbing backward from the foot of the home page: whatever takes focus is
-// scrolled clear of the header, never left under it.
+// scrolled clear of the header, never left under it. The walk ends where
+// focus leaves the page's content for the header, or for the skip link,
+// which shows over the header by design; with fewer cards than presses it
+// gets there before the presses run out.
 test('keeps every element focused by Shift+Tab from the foot clear of the header', async ({ page }) => {
   await page.goto(at('/en/'));
   await page.locator('footer summary').focus();
@@ -182,11 +185,13 @@ test('keeps every element focused by Shift+Tab from the foot clear of the header
     await page.keyboard.press('Shift+Tab');
     const found = await page.evaluate(() => {
       const element = document.activeElement as HTMLElement | null;
-      if (!element || element === document.body || element.closest('body > header')) return null;
+      if (!element || element === document.body) return null;
+      if (element.closest('body > header') || element.matches('a[href="#content"]')) return 'left';
       const box = element.getBoundingClientRect();
       const header = document.querySelector('body > header')!.getBoundingClientRect();
       return { name: `${element.localName} ${(element.textContent ?? '').trim().slice(0, 30)}`, top: box.top, bottom: header.bottom };
     });
+    if (found === 'left') break;
     if (!found) continue;
     expect(found.top, `${found.name} below the header`).toBeGreaterThanOrEqual(found.bottom - 1);
   }

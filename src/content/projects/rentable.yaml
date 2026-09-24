@@ -8,6 +8,11 @@ role:
 summary:
   en: "An offline-first desktop tracker for rent payments, on Tauri, SvelteKit, and Turso."
   ar: "متتبع لمدفوعات الإيجار على سطح المكتب يعمل دون اتصال أولاً، مبني على Tauri وSvelteKit وTurso."
+# The stack as the repository's manifests name it, read on 2026-09-24: the
+# desktop app depends on drizzle-orm, @trpc/server, zod, tailwindcss, vite,
+# vitest, and better-sqlite3, and its Tauri crate on turso. SQLite is the
+# engine under both Turso's libSQL and better-sqlite3. These are also what
+# back the matching skill keywords (tests/skills.test.mjs).
 technologies:
   - "TypeScript"
   - "Svelte"
@@ -15,6 +20,13 @@ technologies:
   - "Rust"
   - "Tauri"
   - "Turso"
+  - "SQLite"
+  - "Drizzle ORM"
+  - "tRPC"
+  - "Zod"
+  - "Tailwind CSS"
+  - "Vite"
+  - "Vitest"
   - "SQL"
 links:
   repository: https://github.com/saud-alnasser/rentable

@@ -12,5 +12,5 @@ technologies:
   - "Rust"
 links:
   repository: https://github.com/saud-alnasser/learning-rust
-visibility: public
+visibility: hidden
 status: completed

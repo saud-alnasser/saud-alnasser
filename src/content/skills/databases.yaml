@@ -3,6 +3,7 @@ name:
   ar: "قواعد البيانات"
 keywords:
   - "PostgreSQL"
+  - "SQLite"
   - "Turso"
   - "Drizzle ORM"
   - "SQL"
