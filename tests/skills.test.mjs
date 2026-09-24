@@ -16,11 +16,14 @@
 //
 // The table is here rather than in the content because the content contract
 // is fixed, and because this test is the only thing that reads it. A line
-// that points at a hidden project, at a file that does not exist, at
-// anything but a project or an experience entry, or at a keyword no group
-// lists fails too, so the table cannot outlive what it vouches for. A course
-// backs a keyword only through a self-study topic, as the README says, so a
-// line cannot name a certificate.
+// that points at a hidden project, at a file that does not exist, at a
+// course, or at a keyword no group lists fails too, so the table cannot
+// outlive what it vouches for. A line may name a shown project, an
+// experience entry, or a certification, which the CV prints; a course backs a
+// keyword only through a self-study topic, as the README says.
+//
+// A project naming the same technology twice fails here as well: each name
+// is a badge, so a repeat would draw the badge twice.
 
 import assert from 'node:assert/strict';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
@@ -29,7 +32,7 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { parse as parseYaml } from 'yaml';
 // Node strips the types on import, as scripts/check-dist.mjs relies on.
-import { isShown } from '../src/lib/shown.ts';
+import { isCertification, isShown } from '../src/lib/shown.ts';
 
 const content = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'src', 'content');
 const read = (...file) => parseYaml(readFileSync(path.join(content, ...file), 'utf8'));
@@ -82,12 +85,18 @@ test('every line of the table points at shown entries that exist', () => {
     for (const ref of line.by) {
       const [collection, id] = ref.split('/');
       assert.ok(
-        collection === 'projects' || collection === 'experience',
-        `"${keyword}" is backed by ${ref}; a line names a shown project or an experience entry, and a course backs a keyword through a self-study topic`,
+        ['projects', 'experience', 'certificates'].includes(collection),
+        `"${keyword}" is backed by ${ref}; a line names a shown project, an experience entry, or a certification`,
       );
       assert.ok(existsSync(path.join(content, collection, `${id}.yaml`)), `"${keyword}" is backed by ${ref}, which does not exist`);
       if (collection === 'projects') {
         assert.ok(isShown(read(collection, `${id}.yaml`)), `"${keyword}" is backed by ${ref}, which is not shown`);
+      }
+      if (collection === 'certificates') {
+        assert.ok(
+          isCertification(read(collection, `${id}.yaml`)),
+          `"${keyword}" is backed by ${ref}, a course; a course backs a keyword through a self-study topic`,
+        );
       }
     }
   }
@@ -98,5 +107,15 @@ test('every line of the table is for a keyword a group lists, and one nothing el
   for (const keyword of Object.keys(backing)) {
     assert.ok(listed.has(keyword), `"${keyword}" has a line in the table and no skill group lists it`);
     assert.ok(!named.has(keyword) && !topics.includes(keyword.toLowerCase()), `"${keyword}" is already backed without its line`);
+  }
+});
+
+test('no shown project names a technology twice', () => {
+  for (const project of shownProjects) {
+    const seen = new Set();
+    for (const technology of project.data.technologies) {
+      assert.ok(!seen.has(technology), `projects/${project.id}.yaml names "${technology}" twice`);
+      seen.add(technology);
+    }
   }
 });
