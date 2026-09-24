@@ -70,9 +70,8 @@ const nav = [
       The bundled faces the page draws with, asked for before the stylesheet
       is read, so the text is laid out once in its own face rather than in the
       fallback and again when the face arrives. That second layout moves the
-      whole page, and it used to go uncounted only because `main` was still
-      fading in when it happened; once the entrance moved to main's children,
-      the Arabic pages measured it as a layout shift of a third of the screen.
+      whole page, and the Arabic pages measure it as a layout shift of a third
+      of the screen.
     -->
     {
       fonts.map((font) => (
@@ -99,16 +98,16 @@ const nav = [
       control once the document is parsed, closes the language menu on Escape
       and on a click outside it, rises the headings and cards below the first
       screen into place as they scroll in and counts the home page's numbers
-      up as they first show, runs the work page's technology
-      filter, opens a certificate card in the page's dialog, and turns a
-      document page's download control into the form that fills the contact
-      line and prints, which it does only where the page's address carries
-      the marker. The last five all work without it: the menu opens and
-      closes on its own, nothing is ever hidden for the reveal to undo and
-      every number is already its final figure, the filter's row stays hidden and every project shows, a certificate card is
-      the link to its PDF that it already is, and the download control is the
-      link to the published PDF that it already is, which is what every
-      unmarked click gets too.
+      up as they first show, runs the work page's technology filter, opens a
+      certificate card in the page's dialog, and turns a document page's
+      download control into the form that fills the contact line and prints,
+      which it does only where the page's address carries the marker. The
+      last five all work without it: the menu opens and closes on its own,
+      nothing is ever hidden for the reveal to undo and every number is
+      already its final figure, the filter's row stays hidden and every
+      project shows, a certificate card is the link to its PDF that it
+      already is, and the download control is the link to the published PDF
+      that it already is, which is what every unmarked click gets too.
     -->
     <script is:inline>
       (function () {
@@ -535,7 +534,8 @@ const nav = [
       technology marks' licences ask for, folded behind one native control
       so it is there for whoever looks and out of the way of everyone else.
       One line per mark: its name, its licence, and a link to where it is
-      from, under the note the licences ask for that each mark was changed. On paper the documents print without it, as without the header.
+      from, under the note the licences ask for that each mark was changed.
+      On paper the documents print without it, as without the header.
     -->
     <footer class:list={['mx-auto w-full px-6 pb-12 text-sm text-muted-foreground', width]}>
       <div class="flex flex-wrap items-start justify-between gap-x-8 gap-y-3 border-t border-border pt-6">
