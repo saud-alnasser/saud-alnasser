@@ -69,7 +69,7 @@ Playwright now matches `*.spec.ts` only, since it would otherwise have taken the
 
 ## What verified each criterion, on 2026-09-24
 
-- **The dependency and the module.** `package.json` lists `simple-icons` at `^16.32.0`, and the lockfile pins 16.32.0. `src/lib/technologies.ts` exports `marks`, `technologyMark`, and `credits`, and loads under Node with its types stripped. The guidelines are above.
+- **The dependency and the module.** `package.json` lists `simple-icons` at `^16.32.0`, and the lockfile pins 16.32.0. `src/lib/technologies.ts` exports `marks`, `technologyMark`, and `credits`, and since the first review round `guidelines` too, and loads under Node with its types stripped. The guidelines are above.
 - **The badge.** `Badge.astro` renders `[data-badge]` with an `<svg aria-hidden="true" fill="currentColor">` only where `technologyMark` returns a mark, then the name.
 - **The cards.** "shows every technology as a badge, with its mark where it has one" passed on both work pages in both palettes. Every card's badges equal its technologies in order, at most five are outside the fold, and the two cards with seven read "Show 2 technologies" in English and its Arabic form. The home test did the same for every skill group's keywords.
 - **The licence test.** `node --test tests/technologies.test.mjs`, run first by `pnpm test:content`, passed 6 of 6. Every mapped slug is in the package with no licence, MIT or BSD, or CC BY or CC BY-SA. None is NC or ND. The credits list exactly Git, Godot Engine, PHP, and Rust, with the package's sources. Every mapped mark with recorded guidelines is in the research file. After the first review round, the last case reads the `guidelines` record in `technologies.ts` instead, and passes the same way.
