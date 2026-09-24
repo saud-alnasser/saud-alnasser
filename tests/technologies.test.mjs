@@ -5,19 +5,15 @@
 //
 //   node --test tests/technologies.test.mjs
 //
-// The rule is the one src/lib/technologies.ts states, decided in
-// .aep/efforts/31-portfolio-rework/plan.md, decision 3.
+// The rule is the one src/lib/technologies.ts states.
 
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import path from 'node:path';
 import test from 'node:test';
-import { fileURLToPath } from 'node:url';
 // Node strips the types on import, as scripts/check-dist.mjs relies on.
-import { credits, marks, technologyMark } from '../src/lib/technologies.ts';
+import { credits, guidelines, marks, technologyMark } from '../src/lib/technologies.ts';
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const require = createRequire(import.meta.url);
 const data = JSON.parse(readFileSync(require.resolve('simple-icons/icons.json'), 'utf8'));
 const icons = Array.isArray(data) ? data : data.icons;
@@ -70,15 +66,11 @@ test('the credits list exactly the marks whose licence asks for attribution', ()
 });
 
 // A mark whose guidelines the package records is mapped only once they have
-// been read, and what they said is in the effort's evidence.
+// been read, and what they allow is written beside the mapping.
 test('every mapped mark with recorded guidelines has had them read', () => {
-  const evidence = readFileSync(
-    path.join(root, '.aep', 'efforts', '31-portfolio-rework', 'evidence', 'research', 'logo-guidelines.md'),
-    'utf8',
-  );
   for (const { name, recorded } of mapped) {
     if (!recorded.guidelines) continue;
-    assert.ok(evidence.includes(recorded.title), `${name}'s guidelines (${recorded.guidelines}) are not in logo-guidelines.md`);
+    assert.ok(guidelines[recorded.slug], `${name}'s guidelines (${recorded.guidelines}) are not recorded in technologies.ts`);
   }
 });
 

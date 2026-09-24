@@ -8,10 +8,9 @@
 // but the path of each mark a page draws, inline. Each is one monochrome
 // path, drawn here in the text colour and never in brand colours.
 //
-// A name maps to a mark only where the mark passes the rule decided in
-// .aep/efforts/31-portfolio-rework/plan.md, decision 3, and
-// tests/technologies.test.mjs holds the rule against the package's own
-// licence data on every run:
+// A name maps to a mark only where the mark passes this rule, and
+// tests/technologies.test.mjs holds it against the package's own licence
+// data on every run:
 //
 // - no licence recorded, or MIT or BSD: mapped;
 // - CC BY or CC BY-SA: mapped, and credited by name, licence, and source in
@@ -20,8 +19,9 @@
 // - absent from the set: not mapped, and a mark is never borrowed from
 //   another product, since a badge drawing it would name the wrong thing;
 // - guidelines recorded: read before the mark is mapped, and a mark whose
-//   guidelines forbid a one-colour reference is not mapped. What each said is
-//   in .aep/efforts/31-portfolio-rework/evidence/research/logo-guidelines.md.
+//   guidelines forbid a one-colour reference is not mapped. What each said
+//   is in `guidelines` below, which the test requires for every mapped mark
+//   whose package entry links guidelines.
 //
 // A name not listed at all, a practice such as "Refactoring" or a technology
 // only a hidden project names, is a badge with no mark.
@@ -83,6 +83,18 @@ export const marks: Record<string, SimpleIcon | null> = {
   SQL: null,
   // Absent too; Svelte's mark would name Svelte, not the framework.
   SvelteKit: null,
+};
+
+// The owner's guidelines for each mapped mark that records any, by its
+// Simple Icons slug: what they allow, as read on 2026-09-24. Each allows a
+// small reference mark in one colour; the marks whose guidelines did not are
+// mapped to null above, with the reason.
+export const guidelines: Record<string, string> = {
+  typescript: 'an official single-colour variant exists; the only rule on the shape is not to modify it',
+  tailwindcss: 'bars only use implying affiliation or endorsement, and says nothing of colour',
+  css: 'CC0, and lists changing colours while keeping contrast as a do',
+  rust: 'the trademark policy says nothing of colour, and the official logo is itself one colour',
+  godotengine: 'the press kit ships monochrome icons, and the licence covers saying the software was used',
 };
 
 // The mark a technology is drawn with: its path in a 24 by 24 box and the
