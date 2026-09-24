@@ -345,3 +345,27 @@ test.describe('the header name before the page has finished loading, with motion
     await expect(page.locator(homeName)).toBeFocused();
   });
 });
+
+// Opened at a section below the first screen, the page shows the name from
+// the start, rather than hiding it until the script has read where the
+// heading is, and still hides it once the reader goes up to the heading.
+test.describe('the header name on a page opened at a section, with motion allowed', () => {
+  test.use({ reducedMotion: 'no-preference' });
+
+  test(`${at('/en/')}#projects shows the name from the parse, and follows from there`, async ({ page }) => {
+    await page.addInitScript(() => {
+      document.addEventListener('readystatechange', () => {
+        if (document.readyState === 'interactive') {
+          (window as unknown as { followsAtParse: boolean }).followsAtParse =
+            document.documentElement.hasAttribute('data-name-follows');
+        }
+      });
+    });
+    await page.goto(`${at('/en/')}#projects`);
+    expect(await page.evaluate(() => (window as unknown as { followsAtParse: boolean }).followsAtParse)).toBe(false);
+    await expect.poll(() => nameState(page)).toEqual(shown);
+    await expect(page.locator('html')).toHaveAttribute('data-name-follows', '');
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await expect.poll(() => nameState(page)).toEqual(hidden);
+  });
+});

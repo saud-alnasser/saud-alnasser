@@ -152,8 +152,11 @@ const link =
         // The home page's header name starts hidden, before anything is
         // painted, since the page opens at its first screen, where the heading
         // says the name; `follow` then reads where the heading really is.
-        // Only where it will run: on the home page, with motion allowed.
-        if (root.hasAttribute('data-home-page') && matchMedia('(prefers-reduced-motion: no-preference)').matches) {
+        // Only where it will run: on the home page, with motion allowed, and
+        // not when the address names a section below the first screen, where
+        // the page will open and the name belongs in the header.
+        var below = location.hash.length > 1 && location.hash !== '#about';
+        if (root.hasAttribute('data-home-page') && !below && matchMedia('(prefers-reduced-motion: no-preference)').matches) {
           root.setAttribute('data-name-follows', '');
         }
 
@@ -315,18 +318,20 @@ const link =
         // section is, and first in a frame rather than at DOMContentLoaded,
         // which can run before the stylesheet has laid the header out; a
         // frame waits for it. `data-name-follows` on the root is what lets the
-        // stylesheet hide the name, set in the head before the first paint,
-        // since a slow page paints long before it has parsed, and taken off
-        // again here where there is nothing to follow. A page opened below the
-        // first screen shows it from the first reading, in one step, because
-        // `data-name-moving` turns the fade on only a frame after that. With
-        // no script, under reduced motion, and on the documents, the name
-        // shows.
+        // stylesheet hide the name. The head sets it before the first paint
+        // when the page opens at its first screen, since a slow page paints
+        // long before it has parsed; this sets it after the first reading
+        // otherwise, so a page opened at a section below shows the name from
+        // the start, and takes it off where there is nothing to follow. The
+        // fade comes on a frame after the first reading, through
+        // `data-name-moving`, so nothing fades at load. With no script, under
+        // reduced motion, and on the documents, the name shows.
         function follow() {
           var name = document.querySelector('[data-home-name]');
           var heading = document.querySelector('h1#about');
           var header = document.querySelector('body > header');
-          if (!name || !heading || !header || !root.hasAttribute('data-name-follows')) {
+          var motion = matchMedia('(prefers-reduced-motion: no-preference)').matches;
+          if (!name || !heading || !header || !motion) {
             root.removeAttribute('data-name-follows');
             return;
           }
@@ -348,6 +353,7 @@ const link =
 
           requestAnimationFrame(function () {
             read();
+            root.setAttribute('data-name-follows', '');
             window.addEventListener('scroll', queue, { passive: true });
             window.addEventListener('resize', queue);
             requestAnimationFrame(function () {
@@ -696,8 +702,9 @@ const link =
         document.addEventListener('DOMContentLoaded', function () {
           document.addEventListener('click', dismiss);
           document.addEventListener('keydown', dismiss);
-          sections();
+          // First, since the head hid the name and only this shows it again.
           follow();
+          sections();
           reveal();
           filter();
           certificates();
@@ -803,8 +810,9 @@ const link =
 
     <!--
       The foot of every page: the copyright with the site's name, then a
-      list of the profiles and the source, each with its mark, and the attribution the
-      technology marks' licences ask for, folded behind one native control
+      list of the profiles and the source, each with its mark, and the
+      attribution the technology marks' licences ask for, for the marks the
+      site draws, folded behind one native control
       so it is there for whoever looks and out of the way of everyone else.
       One line per mark: its name, its licence, and a link to where it is
       from, under the note the licences ask for that each mark was changed.
