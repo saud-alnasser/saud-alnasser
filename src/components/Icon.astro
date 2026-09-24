@@ -23,7 +23,7 @@ const { kind, body } = icons[name];
 
 // An icon that points along the reading direction mirrors in Arabic. The
 // rest are symmetric or point up and down.
-const directional: ReadonlyArray<IconName> = ['external-link'];
+const directional: ReadonlyArray<IconName> = ['external-link', 'arrow-right'];
 
 const escaped = (text: string) =>
   text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');

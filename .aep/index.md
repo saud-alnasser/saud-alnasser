@@ -100,6 +100,7 @@ Start at [[protocol]].
 | 27-the-linkedin-address-as-the-code | implemented | [[efforts/27-the-linkedin-address-as-the-code/spec]] | 0 | 0 | 2 |
 | 29-credentials-as-one-self-study-line | implemented | [[efforts/29-credentials-as-one-self-study-line/spec]] | 0 | 0 | 3 |
 | 3-site-redesign | implemented | [[efforts/3-site-redesign/spec]] | 0 | 1 | 8 |
+| 31-portfolio-rework | implemented | [[efforts/31-portfolio-rework/spec]] | 3 | 0 | 8 |
 | 5-sections-and-resume | implemented | [[efforts/5-sections-and-resume/spec]] | 0 | 0 | 6 |
 | 7-document-downloads-and-contact-details | implemented | [[efforts/7-document-downloads-and-contact-details/spec]] | 1 | 0 | 6 |
 
@@ -161,6 +162,14 @@ Every task of every effort. The tracker carries the effort, never its tasks.
 | [[efforts/3-site-redesign/tickets/06-certificate-grid-and-dialog]] feat(site): show the certificates as a card grid whose cards open the document in a dialog | 3-site-redesign | resolved | 04, 05 |
 | [[efforts/3-site-redesign/tickets/07-cv-template]] feat(cv): lay the CV page out after the white and blue ATS template and print its bands | 3-site-redesign | resolved | 01 |
 | [[efforts/3-site-redesign/tickets/08-profile-summary]] feat(content): drop the degree sentence from the profile summary so the README stops repeating it | 3-site-redesign | resolved | — |
+| [[efforts/31-portfolio-rework/tickets/01-motion-foundation]] feat(site): motion and depth tokens, raised cards, a load stagger, a page crossfade, and animated folds and dialogs | 31-portfolio-rework | resolved | — |
+| [[efforts/31-portfolio-rework/tickets/02-the-phone-header]] feat(site): a header that fits a phone in two tidy rows, with the current page marked beyond colour | 31-portfolio-rework | resolved | 01 |
+| [[efforts/31-portfolio-rework/tickets/03-reveal-and-one-origin]] feat(site): sections revealing once as they scroll in, and a dist check that refuses any request to another origin | 31-portfolio-rework | resolved | 02 |
+| [[efforts/31-portfolio-rework/tickets/04-technology-badges]] feat(site): technologies as badges with their marks where a mark's licence allows it, and a footer that credits them | 31-portfolio-rework | resolved | 03 |
+| [[efforts/31-portfolio-rework/tickets/05-the-featured-project]] feat(content): one project marked featured, shown as a wider card at the head of the work page | 31-portfolio-rework | resolved | 04 |
+| [[efforts/31-portfolio-rework/tickets/06-the-project-filter]] feat(site): the project grid filtered by technology, announcing how many projects remain | 31-portfolio-rework | resolved | 05 |
+| [[efforts/31-portfolio-rework/tickets/07-one-timeline-from-study-to-work]] feat(site): one timeline on the home page from study to work, each node leading to its detail | 31-portfolio-rework | resolved | 01 |
+| [[efforts/31-portfolio-rework/tickets/08-the-first-screen]] feat(site): a first screen with a monogram, stat tiles counted from the content, and icons on every section | 31-portfolio-rework | resolved | 05, 07 |
 | [[efforts/5-sections-and-resume/tickets/01-contract-and-predicate]] feat(content): a completion status on projects, a kind on certificates, a resume marker, and the one predicate every output reads | 5-sections-and-resume | resolved | — |
 | [[efforts/5-sections-and-resume/tickets/02-sections]] feat(site): experience before projects, courses and certifications as their own grids, and the home page's section index | 5-sections-and-resume | resolved | 01 |
 | [[efforts/5-sections-and-resume/tickets/03-documents]] feat(cv): one document component rendering the CV and a one-page resume, each as a page and a PDF | 5-sections-and-resume | resolved | 01 |

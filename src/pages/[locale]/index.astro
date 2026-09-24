@@ -1,15 +1,20 @@
 ---
 import { getCollection, getEntry } from 'astro:content';
 import Base from '../../layouts/Base.astro';
+import FeaturedProject from '../../components/FeaturedProject.astro';
 import Icon from '../../components/Icon.astro';
+import Journey from '../../components/Journey.astro';
+import Monogram from '../../components/Monogram.astro';
 import SectionCard from '../../components/SectionCard.astro';
 import Skills from '../../components/Skills.astro';
+import StatTile from '../../components/StatTile.astro';
 import { fill, locales, plural, strings, type Locale, type Strings } from '../../lib/i18n';
 import { localized } from '../../lib/localized';
 import { profileIcon, type ProfileIcon } from '../../lib/networks';
 import { byOrderThenName } from '../../lib/order';
 import { withBase } from '../../lib/paths';
-import { isCertification, isCourse, isShown } from '../../lib/shown';
+import { featuredProject, isCertification, isCourse, isShown } from '../../lib/shown';
+import type { IconName } from '../../lib/icons';
 
 export function getStaticPaths() {
   return locales.map((l) => ({ params: { locale: l.code } }));
@@ -28,21 +33,23 @@ const location = text('location', profile.data.location);
 const cv = withBase(`/${locale}/cv/`);
 const resume = withBase(`/${locale}/resume/`);
 
-// Where a visitor can go, as actions rather than a table. No email and no
-// phone number: the site publishes neither, anywhere, and a document carrying
-// them is made in a browser from a document page opened at the address that
+// Where a visitor can go, as actions rather than a table. The CV first and
+// filled in the accent, as the one thing a hiring reader most often came
+// for; the resume beside it; then every profile. No email and no phone
+// number: the site publishes neither, anywhere, and a document carrying them
+// is made in a browser from a document page opened at the address that
 // offers the form (docs/development.md).
 // A profile takes its network's mark where the icon set has one and the
 // external link icon where it does not (src/lib/networks.ts).
-const actions: { key: string; href: string; icon: 'file' | ProfileIcon; label: string }[] = [
+const actions: { key: string; href: string; icon: 'file-text' | ProfileIcon; label: string; primary?: boolean }[] = [
+  { key: 'cv', href: cv, icon: 'file-text', label: t.nav.cv, primary: true },
+  { key: 'resume', href: resume, icon: 'file-text', label: t.nav.resume },
   ...profile.data.profiles.map((p) => ({
     key: p.network.toLowerCase(),
     href: p.url,
     icon: profileIcon(p.network),
     label: p.network,
   })),
-  { key: 'cv', href: cv, icon: 'file', label: t.nav.cv },
-  { key: 'resume', href: resume, icon: 'file', label: t.nav.resume },
 ];
 
 // Skills sit on the home page, above the sections, because they are the
@@ -61,6 +68,24 @@ const education = await getCollection('education');
 const courses = await getCollection('certificates', ({ data }) => isCourse(data));
 const certifications = await getCollection('certificates', ({ data }) => isCertification(data));
 
+const languages = await getCollection('languages');
+
+// The four numbers the first screen leads with, each the length of what a
+// page renders, read through the same filters, never written by hand. The
+// technologies are the distinct names the shown projects list, not the skill
+// keywords, some of which are practices rather than technologies (the spec's
+// requirement 2, as amended on 2026-09-24).
+const technologies = new Set(projects.flatMap((project) => project.data.technologies));
+const tiles: { tile: string; icon: IconName; count: number; label: string }[] = [
+  { tile: 'projects', icon: 'folder-code', count: projects.length, label: t.home.tiles.projects },
+  { tile: 'certificates', icon: 'award', count: courses.length + certifications.length, label: t.home.tiles.certificates },
+  { tile: 'technologies', icon: 'cpu', count: technologies.size, label: t.home.tiles.technologies },
+  { tile: 'languages', icon: 'languages', count: languages.length, label: t.home.tiles.languages },
+];
+
+// The project the content marks featured, as the work page puts it forward.
+const featured = featuredProject(projects);
+
 const count = (n: number, noun: keyof Strings['home']['counts']['nouns']) =>
   fill(t.home.counts.line, { count: String(n), noun: plural(locale, n, t.home.counts.nouns[noun]) });
 
@@ -76,6 +101,7 @@ const educationPage = withBase(`/${locale}/education/`);
 const sections = [
   {
     section: 'experience',
+    icon: 'briefcase' as const,
     href: `${work}#experience`,
     name: t.sections.experience,
     description: t.home.experience,
@@ -83,6 +109,7 @@ const sections = [
   },
   {
     section: 'projects',
+    icon: 'folder-code' as const,
     href: `${work}#projects`,
     name: t.sections.projects,
     description: t.home.projects,
@@ -90,6 +117,7 @@ const sections = [
   },
   {
     section: 'education',
+    icon: 'graduation-cap' as const,
     href: `${educationPage}#studies`,
     name: t.nav.education,
     description: t.home.education,
@@ -97,6 +125,7 @@ const sections = [
   },
   {
     section: 'courses',
+    icon: 'book-open' as const,
     href: `${educationPage}#courses`,
     name: t.sections.courses,
     description: t.home.courses,
@@ -109,6 +138,7 @@ const sections = [
     ? [
         {
           section: 'certifications',
+    icon: 'award' as const,
           href: `${educationPage}#certificates`,
           name: t.sections.certifications,
           description: t.home.certifications,
@@ -118,48 +148,105 @@ const sections = [
     : []),
   {
     section: 'skills',
+    icon: 'wrench' as const,
     href: `${withBase(`/${locale}/`)}#skills`,
     name: t.sections.skills,
     description: t.home.skills,
     counts: [count(skills.length, 'skills')],
   },
-  { section: 'cv', href: cv, name: t.nav.cv, description: t.home.cv },
-  { section: 'resume', href: resume, name: t.nav.resume, description: t.home.resume },
+  { section: 'cv', icon: 'file-text' as const, href: cv, name: t.nav.cv, description: t.home.cv },
+  { section: 'resume', icon: 'file-text' as const, href: resume, name: t.nav.resume, description: t.home.resume },
 ];
 ---
 
 <Base locale={locale} title={name} description={summary} path="/" column="grid">
-  <h1 class="text-4xl font-semibold tracking-tight text-balance sm:text-5xl">{name}</h1>
-  <p data-hero-label class="mt-3 text-xl text-muted-foreground">{label}</p>
-  <p class="mt-1 text-sm text-muted-foreground">
-    <span class="sr-only">{t.home.location}: </span>{location}
-  </p>
-  <p data-hero-summary class="mt-8 max-w-prose text-lg leading-8">{summary}</p>
+  {/*
+    The first screen: the monogram, the name, what he does and where, the
+    whole summary as the lead, the contact actions, and four numbers counted
+    from the content, over a soft light in the accent. It is one block so its
+    parts can enter one after another (src/styles/global.css), and so the
+    light sits behind this block alone; the light is decoration and carries no
+    text. At 1440 by 900 all of it is on the first screen, and on a phone
+    everything down to the contact actions is.
+  */}
+  <div data-hero class="relative isolate">
+    <div aria-hidden="true" data-glow class="pointer-events-none absolute inset-x-0 -top-24 -z-10 h-[32rem]"></div>
+    <Monogram />
+    <h1 class="mt-5 text-4xl font-semibold tracking-tight text-balance sm:text-5xl">{name}</h1>
+    <p data-hero-label class="mt-2 text-lg text-muted-foreground sm:text-xl">{label}</p>
+    <p data-hero-location class="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
+      <Icon name="map-pin" class="size-4" />
+      <span class="sr-only">{t.home.location}: </span>{location}
+    </p>
+    <p data-hero-summary class="mt-5 max-w-prose leading-7 sm:mt-6 sm:text-lg sm:leading-8">{summary}</p>
 
-  <section aria-labelledby="contact" class="mt-8">
-    <h2 id="contact" class="sr-only">{t.home.contact}</h2>
-    <ul data-contact-actions class="flex flex-wrap gap-2">
-      {
-        actions.map((action) => (
-          <li>
-            <a
-              href={action.href}
-              data-contact={action.key}
-              class="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:border-primary hover:text-primary motion-safe:transition-colors"
-            >
-              <Icon name={action.icon} class="size-4" />
-              {action.label}
-            </a>
-          </li>
-        ))
-      }
-    </ul>
+    <section aria-labelledby="contact" class="mt-6">
+      <h2 id="contact" class="sr-only">{t.home.contact}</h2>
+      <ul data-contact-actions class="flex flex-wrap gap-2">
+        {
+          actions.map((action) => (
+            <li>
+              <a
+                href={action.href}
+                data-contact={action.key}
+                class:list={[
+                  'flex min-h-10 items-center gap-2 rounded-md border px-3 py-2 text-sm motion-safe:transition-colors',
+                  action.primary
+                    ? 'border-primary bg-primary font-medium text-primary-foreground hover:bg-primary/90'
+                    : 'border-border bg-card hover:border-primary hover:text-primary',
+                ]}
+              >
+                <Icon name={action.icon} class="size-4" />
+                {action.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    <section aria-labelledby="glance" class="mt-8">
+      <h2 id="glance" class="sr-only">{t.home.glance}</h2>
+      <ul data-stat-tiles class="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+        {
+          tiles.map((tile) => (
+            <li data-reveal>
+              <StatTile
+                tile={tile.tile}
+                icon={tile.icon}
+                count={tile.count}
+                label={tile.label}
+                spoken={fill(t.home.tiles.spoken, { count: String(tile.count), label: tile.label })}
+              />
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+  </div>
+
+  {
+    featured && (
+      <section aria-labelledby="featured" class="mt-12">
+        <h2 id="featured" class="sr-only">{t.project.featured}</h2>
+        <FeaturedProject locale={locale} entry={featured} />
+      </section>
+    )
+  }
+
+  <section aria-labelledby="journey" class="mt-16">
+    <h2 id="journey" data-reveal class="mb-5 flex items-center gap-2 text-xl font-semibold tracking-tight">
+      <Icon name="graduation-cap" class="size-5 text-primary" />
+      {t.journey.heading}
+    </h2>
+    <Journey locale={locale} />
   </section>
 
   {
     skills.length > 0 && (
       <section aria-labelledby="skills" class="mt-16">
-        <h2 id="skills" class="mb-5 text-xl font-semibold tracking-tight">
+        <h2 id="skills" data-reveal class="mb-5 flex items-center gap-2 text-xl font-semibold tracking-tight">
+          <Icon name="wrench" class="size-5 text-primary" />
           {t.sections.skills}
         </h2>
         <Skills locale={locale} entries={skills} />
@@ -168,11 +255,14 @@ const sections = [
   }
 
   <section aria-labelledby="sections" class="mt-16">
-    <h2 id="sections" class="mb-5 text-xl font-semibold tracking-tight">{t.home.sections}</h2>
+    <h2 id="sections" data-reveal class="mb-5 flex items-center gap-2 text-xl font-semibold tracking-tight">
+      <Icon name="arrow-right" class="size-5 text-primary" />
+      {t.home.sections}
+    </h2>
     <ul data-section-grid class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {
         sections.map((section) => (
-          <li class="h-full">
+          <li data-reveal class="h-full">
             <SectionCard locale={locale} {...section} />
           </li>
         ))

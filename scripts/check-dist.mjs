@@ -869,6 +869,81 @@ async function basePaths() {
   return [`base paths: ${count} root-relative paths in ${files.length} files, all under ${context.prefix}`];
 }
 
+// Every image-set(...) in a stylesheet's text, each taken whole: from its
+// name to the parenthesis that closes it, counting the ones inside.
+function imageSets(css) {
+  const sets = [];
+  for (let start = css.indexOf('image-set('); start !== -1; start = css.indexOf('image-set(', start + 1)) {
+    let depth = 0;
+    let end = start + 'image-set'.length;
+    for (; end < css.length; end += 1) {
+      if (css[end] === '(') depth += 1;
+      else if (css[end] === ')' && --depth === 0) break;
+    }
+    sets.push(css.slice(start, end + 1));
+  }
+  return sets;
+}
+
+// Nothing the site loads comes from another origin: no font, stylesheet,
+// script, image, or icon is fetched from anywhere but the site itself, so a
+// visit tells no third party it happened and the page cannot break because
+// someone else's server did. Read from every built page and stylesheet: a
+// `src`, `srcset`, `poster`, `data`, `href`, or `xlink:href` on any element
+// (an SVG's `<use>` and `<image>` among them), and a CSS `url()`, `@import`,
+// or `image-set()` string, including those inside a page's own styles. A link
+// a visitor follows, `<a href>` or `<area href>`, is not a request the page
+// makes, so the profile and repository links in the content are left alone.
+// The site's own origin, from astro.config.mjs, counts as its own, which is
+// what the canonical and alternate links carry.
+async function oneOrigin() {
+  const name = 'one origin';
+  const own = new URL(site).origin;
+  const origin = (value) => {
+    const address = value.trim();
+    if (address === '' || address.startsWith('data:') || address.startsWith('#')) return own;
+    try {
+      return new URL(address, `${own}/`).origin;
+    } catch {
+      return own;
+    }
+  };
+  const files = (await walk(context.dist)).filter((file) => ['.html', '.css'].includes(path.extname(file)));
+  let count = 0;
+  for (const file of files) {
+    const text = await readFile(path.join(context.dist, file), 'utf8');
+    // A page's own style attributes write their quotes as entities, so the
+    // CSS is read with them turned back into quotes.
+    const css = text.replace(/&quot;|&#34;/g, '"').replace(/&#39;|&apos;/g, "'");
+    const found = [
+      ...[...css.matchAll(/url\(\s*(["']?)(.*?)\1\s*\)/g)].map((match) => match[2]),
+      ...[...css.matchAll(/@import\s+(?:url\(\s*)?["']?([^"')\s;]+)/g)].map((match) => match[1]),
+      // image-set() may name its images as bare strings rather than url(),
+      // and may hold url() among them, so each is read to its own closing
+      // parenthesis rather than to the first one.
+      ...imageSets(css).flatMap((set) => [...set.matchAll(/["']([^"']+)["']/g)].map((string) => string[1])),
+    ];
+    if (file.endsWith('.html')) {
+      for (const [, tag, attributes] of text.matchAll(/<([a-z][\w:-]*)\b([^>]*)>/gi)) {
+        if (['a', 'area'].includes(tag.toLowerCase())) continue;
+        const map = attributesOf(`<${tag}${attributes}>`, tag) ?? {};
+        for (const name of ['src', 'poster', 'data', 'href', 'xlink:href']) {
+          if (map[name] !== undefined) found.push(map[name]);
+        }
+        if (map.srcset !== undefined) found.push(...map.srcset.split(',').map((candidate) => candidate.trim().split(/\s+/)[0]));
+      }
+    }
+    for (const value of found) {
+      const from = origin(value);
+      if (from !== own) {
+        throw new CheckFailure(name, `dist/${file} loads ${value} from ${from}; everything a page loads is served by the site itself, from ${own}`);
+      }
+    }
+    count += found.length;
+  }
+  return [`one origin: ${count} addresses loaded by ${files.length} pages and stylesheets, all from ${own} or the page itself`];
+}
+
 // Every page a visitor lands on carries a title, a description, and the
 // Open Graph fields a social preview reads. Titles are unique across the
 // site, since two pages sharing one are one page to a search result.
@@ -1371,7 +1446,7 @@ async function readmeProfile() {
 // alone, and a topic or provider with no witness would otherwise surface
 // first as a reading-order failure over a PDF, named for the line rather
 // than the cause.
-const checks = [jsonResume, selfStudy, documentPdfs, qrCode, resumePages, localeTwins, hrefs, basePaths, metadata, sitemap, robots, identifiers, noContactDetails, nationalityWhereItBelongs, languagesWhereTheyBelong, gaps, noOverclaim, documentHazards, readmeProfile];
+const checks = [jsonResume, selfStudy, documentPdfs, qrCode, resumePages, localeTwins, hrefs, basePaths, oneOrigin, metadata, sitemap, robots, identifiers, noContactDetails, nationalityWhereItBelongs, languagesWhereTheyBelong, gaps, noOverclaim, documentHazards, readmeProfile];
 
 for (const check of checks) {
   try {

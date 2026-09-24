@@ -1,7 +1,9 @@
 ---
 // A placement card. The position, the period, the organisation, and the
 // summary are what a card is scanned for; the highlights are a list that
-// would swamp it, so they sit behind the fold and open in place.
+// would swamp it, so they sit behind the fold and open in place. The card's
+// id, `experience-` and the entry's id, is where the home page's timeline
+// leads for this placement.
 
 import type { CollectionEntry } from 'astro:content';
 import Card from './Card.astro';
@@ -20,7 +22,7 @@ const t = strings[locale];
 const text = localized(locale, 'experience', entry.id);
 ---
 
-<Card as="article" data-entry="experience" class="h-full">
+<Card as="article" data-entry="experience" id={`experience-${entry.id}`} class="h-full scroll-mt-8">
   <div class="flex h-full flex-col">
     <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
       <h3 class="text-lg font-semibold tracking-tight">{text('position', data.position)}</h3>

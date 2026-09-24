@@ -22,3 +22,4 @@ visibility: public
 status: completed
 resume: true
 order: 1
+featured: true

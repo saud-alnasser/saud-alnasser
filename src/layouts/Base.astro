@@ -4,6 +4,8 @@ import { getEntry } from 'astro:content';
 import { localeInfo, otherLocale, strings, type Locale } from '../lib/i18n';
 import { localized } from '../lib/localized';
 import { absolute, withBase } from '../lib/paths';
+import { credits } from '../lib/technologies';
+import Icon from '../components/Icon.astro';
 import LanguageMenu from '../components/LanguageMenu.astro';
 import ThemeToggle from '../components/ThemeToggle.astro';
 
@@ -37,6 +39,17 @@ const site = Astro.site!;
 const home = withBase(`/${locale}/`);
 const address = (l: Locale) => absolute(`/${l}${path}`, site);
 
+// The Latin pair on every page, since names, addresses, and technologies are
+// written in it in both languages; the Arabic pair only where the page is in
+// Arabic, which is also the only place its unicode-range ever matches.
+const fonts = [
+  'SourceSans3-Regular',
+  'SourceSans3-Bold',
+  ...(locale === 'ar' ? ['NotoNaskhArabic-Regular', 'NotoNaskhArabic-Bold'] : []),
+];
+
+const logoCredits = credits();
+
 const nav = [
   { href: home, label: t.nav.home, current: path === '/' },
   { href: withBase(`/${locale}/work/`), label: t.nav.work, current: path === '/work/' },
@@ -53,6 +66,18 @@ const nav = [
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light dark" />
     <meta name="generator" content={Astro.generator} />
+    <!--
+      The bundled faces the page draws with, asked for before the stylesheet
+      is read, so the text is laid out once in its own face rather than in the
+      fallback and again when the face arrives. That second layout moves the
+      whole page, and the Arabic pages measure it as a layout shift of a third
+      of the screen.
+    -->
+    {
+      fonts.map((font) => (
+        <link rel="preload" href={withBase(`/fonts/${font}.woff2`)} as="font" type="font/woff2" crossorigin />
+      ))
+    }
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={address(locale)} />
@@ -71,13 +96,18 @@ const nav = [
       The only script on the site. It applies a stored theme before first
       paint, so the page never flashes the other palette, wires the theme
       control once the document is parsed, closes the language menu on Escape
-      and on a click outside it, opens a certificate card in the page's
-      dialog, and turns a document page's download control into the form that
-      fills the contact line and prints, which it does only where the page's
-      address carries the marker. The last three all work without it: the menu
-      opens and closes on its own, a certificate card is the link to its PDF
-      that it already is, and the download control is the link to the published
-      PDF that it already is, which is what every unmarked click gets too.
+      and on a click outside it, rises the headings and cards below the first
+      screen into place as they scroll in and counts the home page's numbers
+      up as they first show, runs the work page's technology filter, opens a
+      certificate card in the page's dialog, and turns a document page's
+      download control into the form that fills the contact line and prints,
+      which it does only where the page's address carries the marker. The
+      last five all work without it: the menu opens and closes on its own,
+      nothing is ever hidden for the reveal to undo and every number is
+      already its final figure, the filter's row stays hidden and every
+      project shows, a certificate card is the link to its PDF that it
+      already is, and the download control is the link to the published PDF
+      that it already is, which is what every unmarked click gets too.
     -->
     <script is:inline>
       (function () {
@@ -333,9 +363,116 @@ const nav = [
           });
         }
 
+        // Rises each section heading and grid card below the first screen
+        // into place once, the first time a tenth of it scrolls into view.
+        // The hidden state is the stylesheet's, and it applies only while the
+        // root carries `data-reveal`, which is set here, last, after every
+        // marked element already on screen has been marked revealed and every
+        // other one handed to the observer that ends it. So a visitor who
+        // asked for reduced motion, a browser with no observer, and a page
+        // with no script at all never have anything hidden, and what is on
+        // screen at load is never hidden either: that belongs to the page's
+        // entrance.
+        //
+        // A revealed element holding a stat tile's number also counts it up,
+        // once, from nothing to the figure the page was built with, over
+        // 350ms on the stylesheet's entrance curve, so it lands the way every
+        // other arrival on the page does. The figure is already in the page,
+        // so wherever this does not run the tile simply shows it.
+        function reveal() {
+          if (typeof IntersectionObserver !== 'function') return;
+          if (!matchMedia('(prefers-reduced-motion: no-preference)').matches) return;
+          var marked = document.querySelectorAll('[data-reveal]');
+          if (!marked.length) return;
+          function shown(element) {
+            element.setAttribute('data-revealed', '');
+            Array.prototype.forEach.call(element.querySelectorAll('[data-count]'), count);
+          }
+          var observer = new IntersectionObserver(
+            function (entries) {
+              entries.forEach(function (entry) {
+                if (!entry.isIntersecting) return;
+                shown(entry.target);
+                observer.unobserve(entry.target);
+              });
+            },
+            { threshold: 0.1 },
+          );
+          var fold = window.innerHeight;
+          Array.prototype.forEach.call(marked, function (element) {
+            if (element.getBoundingClientRect().top < fold) shown(element);
+            else observer.observe(element);
+          });
+          root.setAttribute('data-reveal', '');
+        }
+
+        // The entrance curve, --ease-enter in the stylesheet,
+        // cubic-bezier(0.05, 0.7, 0.1, 1): how far along the count is at a
+        // given fraction of the time, found by halving for the curve's
+        // parameter at that time.
+        function enter(time) {
+          function at(t, a, b) {
+            return 3 * (1 - t) * (1 - t) * t * a + 3 * (1 - t) * t * t * b + t * t * t;
+          }
+          var low = 0;
+          var high = 1;
+          for (var i = 0; i < 24; i += 1) {
+            var middle = (low + high) / 2;
+            if (at(middle, 0.05, 0.1) < time) low = middle;
+            else high = middle;
+          }
+          return at((low + high) / 2, 0.7, 1);
+        }
+
+        function count(counter) {
+          var target = Number(counter.getAttribute('data-count'));
+          if (!(target > 0)) return;
+          var start = null;
+          function step(now) {
+            if (start === null) start = now;
+            var progress = Math.min((now - start) / 350, 1);
+            counter.textContent = String(Math.round(target * enter(progress)));
+            if (progress < 1) requestAnimationFrame(step);
+          }
+          counter.textContent = '0';
+          requestAnimationFrame(step);
+        }
+
+        // Shows the work page's technology chips and runs them: a press marks
+        // that chip pressed and every other not, hides the projects that do
+        // not name its technology, the featured card in its place above the
+        // grid among them, and writes the chip's own line,
+        // counted and declined when the page was built, into the status
+        // region, which a screen reader announces. The empty technology is
+        // "All". Without this the row stays hidden and every project shows.
+        function filter() {
+          var group = document.querySelector('[data-filter]');
+          var status = document.querySelector('[data-filter-status]');
+          if (!group || !status) return;
+          var chips = group.querySelectorAll('[data-filter-chip]');
+          var items = document.querySelectorAll(
+            '[data-grid="projects"] > [data-technologies], [data-featured-project][data-technologies]',
+          );
+          group.hidden = false;
+          group.addEventListener('click', function (event) {
+            var chip = event.target.closest ? event.target.closest('[data-filter-chip]') : null;
+            if (!chip) return;
+            var chosen = chip.getAttribute('data-filter-chip');
+            Array.prototype.forEach.call(chips, function (other) {
+              other.setAttribute('aria-pressed', other === chip ? 'true' : 'false');
+            });
+            Array.prototype.forEach.call(items, function (item) {
+              item.hidden = chosen !== '' && item.getAttribute('data-technologies').split('|').indexOf(chosen) === -1;
+            });
+            status.textContent = chip.getAttribute('data-status');
+          });
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
           document.addEventListener('click', dismiss);
           document.addEventListener('keydown', dismiss);
+          reveal();
+          filter();
           certificates();
           documents();
 
@@ -360,14 +497,25 @@ const nav = [
       {t.skipToContent}
     </a>
 
+    <!--
+      On a phone the header is two rows: the name at the start and the two
+      controls at the end, then the navigation across the whole width, spaced
+      evenly and never wrapping. From `sm` up it is one row, the navigation
+      beside the controls. The source order is the wide one, name, navigation,
+      controls, which is also the order a keyboard reaches them in; on a phone
+      the navigation is moved last by `order` alone.
+
+      The current page is underlined by a bar in the accent as well as marked
+      `aria-current`, so which page this is does not rest on a text colour.
+      Every link and button here is at least 24 pixels each way.
+    -->
     <header class:list={['mx-auto w-full px-6 pt-8 sm:pt-12', width]}>
-      <!-- `relative` anchors the language menu's list to this row. -->
-      <div class="relative flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
-        <a href={home} class="text-base font-semibold tracking-tight hover:text-primary">
+      <div class="flex flex-wrap items-center justify-between gap-x-5 gap-y-2">
+        <a href={home} class="inline-flex min-h-6 items-center py-1 text-base font-semibold tracking-tight hover:text-primary">
           {siteName}
         </a>
-        <nav aria-label={t.nav.label} class="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
-          <ul class="flex gap-x-5">
+        <nav aria-label={t.nav.label} class="order-last w-full text-sm sm:order-none sm:ms-auto sm:w-auto">
+          <ul class="flex justify-between sm:justify-start sm:gap-x-5">
             {
               nav.map((item) => (
                 <li>
@@ -375,8 +523,10 @@ const nav = [
                     href={item.href}
                     aria-current={item.current ? 'page' : undefined}
                     class:list={[
-                      'py-1 hover:text-primary motion-safe:transition-colors',
-                      item.current ? 'text-foreground underline underline-offset-4 decoration-border' : 'text-muted-foreground',
+                      'relative inline-flex min-h-6 min-w-6 items-center justify-center py-2 whitespace-nowrap hover:text-primary motion-safe:transition-colors',
+                      item.current
+                        ? 'text-foreground after:absolute after:inset-x-0 after:bottom-0.5 after:h-0.5 after:rounded-full after:bg-primary'
+                        : 'text-muted-foreground',
                     ]}
                   >
                     {item.label}
@@ -385,26 +535,62 @@ const nav = [
               ))
             }
           </ul>
-          <ul class="flex items-center gap-x-1 border-s border-border ps-3">
-            <li>
-              <LanguageMenu locale={locale} path={path} />
-            </li>
-            <li>
-              <ThemeToggle locale={locale} />
-            </li>
-          </ul>
         </nav>
+        <ul class="flex items-center gap-x-1">
+          <li>
+            <LanguageMenu locale={locale} path={path} />
+          </li>
+          <li>
+            <ThemeToggle locale={locale} />
+          </li>
+        </ul>
       </div>
     </header>
 
-    <main id="content" class:list={['mx-auto w-full px-6 py-16 motion-safe:animate-reveal sm:py-20', width]}>
+    <main id="content" class:list={['mx-auto w-full px-6 py-16 sm:py-20', width]}>
       <slot />
     </main>
 
     <!--
+      The foot of every page: the site's name, and the attribution the
+      technology marks' licences ask for, folded behind one native control
+      so it is there for whoever looks and out of the way of everyone else.
+      One line per mark: its name, its licence, and a link to where it is
+      from, under the note the licences ask for that each mark was changed.
+      On paper the documents print without it, as without the header.
+    -->
+    <footer class:list={['mx-auto w-full px-6 pb-12 text-sm text-muted-foreground', width]}>
+      <div class="flex flex-wrap items-start justify-between gap-x-8 gap-y-3 border-t border-border pt-6">
+        <p>{siteName}</p>
+        {
+          logoCredits.length > 0 && (
+            <details data-logo-credits>
+              <summary class="flex min-h-6 cursor-pointer list-none items-center gap-1.5 select-none hover:text-primary motion-safe:transition-colors">
+                {t.footer.credits}
+                <Icon name="chevron-down" class="fold-chevron size-4 motion-safe:transition-transform" />
+              </summary>
+              <p class="mt-3">{t.footer.adapted}</p>
+              <ul class="mt-2 space-y-1">
+                {logoCredits.map((credit) => (
+                  <li>
+                    <bdi>{credit.name}</bdi>: <bdi>{credit.licence}</bdi>
+                    {t.listSeparator}
+                    <a href={credit.source} class="text-primary underline underline-offset-4 hover:decoration-2">
+                      {t.footer.source}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )
+        }
+      </div>
+    </footer>
+
+    <!--
       A page's dialog, if it has one, sits here rather than inside <main>:
-      main's reveal is a transform, and a transform on an ancestor takes a
-      <dialog> out of the top layer in some browsers.
+      the entrance on main's children is a transform, and a transform on an
+      ancestor takes a <dialog> out of the top layer in some browsers.
     -->
     <slot name="dialog" />
 

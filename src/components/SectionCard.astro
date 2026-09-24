@@ -1,7 +1,9 @@
 ---
-// One section of the site as a card on the home page: its name, the one line
-// saying what it holds, and how many entries it holds. The whole card is the
-// link to the section, which `Card` handles.
+// One section of the site as a card on the home page: its icon and name, the
+// one line saying what it holds, and how many entries it holds. The whole card
+// is the link to the section, which `Card` handles, and an arrow at its end
+// says so; the arrow points along the reading direction, so it mirrors in
+// Arabic.
 //
 // The counts arrive already worded by the page, because they are computed
 // from the collections the section renders (src/pages/[locale]/index.astro).
@@ -9,6 +11,8 @@
 // passes none and shows none.
 
 import Card from './Card.astro';
+import Icon from './Icon.astro';
+import type { IconName } from '../lib/icons';
 import { strings, type Locale } from '../lib/i18n';
 
 interface Props {
@@ -22,14 +26,22 @@ interface Props {
   counts?: string[];
   // Which section this is, for the tests: "experience", "courses", "cv".
   section: string;
+  // The icon the section carries everywhere it is named.
+  icon: IconName;
 }
 
-const { locale, href, name, description, counts = [], section } = Astro.props;
+const { locale, href, name, description, counts = [], section, icon } = Astro.props;
 const t = strings[locale];
 ---
 
-<Card href={href} data-section-card={section} class="h-full">
-  <h3 class="font-semibold tracking-tight">{name}</h3>
+<Card href={href} data-section-card={section} class="group h-full">
+  <div class="flex items-center justify-between gap-3">
+    <h3 class="flex items-center gap-2 font-semibold tracking-tight">
+      <Icon name={icon} class="size-5 text-primary" />
+      {name}
+    </h3>
+    <Icon name="arrow-right" class="size-4 text-muted-foreground group-hover:text-primary motion-safe:transition-colors" />
+  </div>
   <p class="mt-2 text-sm leading-6 text-muted-foreground">{description}</p>
   {
     counts.length > 0 && (

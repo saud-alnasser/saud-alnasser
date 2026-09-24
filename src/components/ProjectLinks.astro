@@ -1,0 +1,39 @@
+---
+// A project's destinations: its repository and its live site, each with the
+// icon that says what it opens. Only a public project shows them; a described
+// one is private work, shown by name and summary so nothing points at it, and
+// renders nothing here. Shared by the grid card and the featured card, so the
+// two say the same thing about the same project.
+
+import type { CollectionEntry } from 'astro:content';
+import Icon from './Icon.astro';
+import { strings, type Locale } from '../lib/i18n';
+
+interface Props {
+  locale: Locale;
+  entry: CollectionEntry<'projects'>;
+}
+
+const { locale, entry } = Astro.props;
+const t = strings[locale];
+const links = entry.data.visibility === 'public' ? (entry.data.links ?? {}) : {};
+---
+
+{
+  (links.repository || links.live) && (
+    <p class="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm">
+      {links.repository && (
+        <a href={links.repository} class="group inline-flex items-center gap-1.5 text-primary">
+          <Icon name="github" class="size-4" />
+          <span class="underline underline-offset-4 group-hover:decoration-2">{t.project.repository}</span>
+        </a>
+      )}
+      {links.live && (
+        <a href={links.live} class="group inline-flex items-center gap-1.5 text-primary">
+          <Icon name="external-link" class="size-4" />
+          <span class="underline underline-offset-4 group-hover:decoration-2">{t.project.live}</span>
+        </a>
+      )}
+    </p>
+  )
+}

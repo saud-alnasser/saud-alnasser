@@ -67,7 +67,17 @@ const en = {
     nouns: {
       courses: { one: 'course', other: 'courses' } as PluralForms,
       highlights: { one: 'highlight', other: 'highlights' } as PluralForms,
+      technologies: { one: 'technology', other: 'technologies' } as PluralForms,
     },
+  },
+  // The foot of every page: the credits a logo's licence asks for, folded
+  // behind one control, one line per mark with its licence and its source.
+  footer: {
+    credits: 'Logo credits',
+    // What a CC BY licence asks to be told: every mark here is changed from
+    // its original, drawn in the text colour rather than its own.
+    adapted: 'Each mark is drawn in the text colour rather than its own.',
+    source: 'source',
   },
   titleSeparator: ' - ',
   // Between items of an inline list: technologies, courses, keywords.
@@ -84,6 +94,17 @@ const en = {
   },
   home: {
     contact: 'Contact',
+    // The row of stat tiles on the first screen: its heading, read only by a
+    // screen reader, each tile's label, and the one line a screen reader hears
+    // for a tile in place of the number that counts up.
+    glance: 'At a glance',
+    tiles: {
+      projects: 'Projects',
+      certificates: 'Courses and certifications',
+      technologies: 'Technologies',
+      languages: 'Languages',
+      spoken: '{count} {label}',
+    },
     location: 'Location',
     sections: 'On this site',
     // One line per section card, saying what that section holds. The card
@@ -126,6 +147,26 @@ const en = {
     repository: 'Repository',
     live: 'Live site',
     technologies: 'Technologies',
+    // The label over the one project the work page puts forward.
+    featured: 'Featured',
+  },
+  // The home page's timeline from study to work: its heading, and the kind
+  // of each node, which its icon shows and a screen reader is told.
+  journey: {
+    heading: 'From study to work',
+    kinds: {
+      experience: 'Work',
+      education: 'Study',
+      courses: 'Online courses',
+    },
+  },
+  // The chips above the project grid: the group's accessible name, the chip
+  // that restores every project, and the line the page announces after each
+  // press, with the project noun from `home.counts.nouns`.
+  filter: {
+    label: 'Filter projects by technology',
+    all: 'All',
+    status: 'Showing {count} {noun}',
   },
   experience: {
     training: 'Practical training',
@@ -249,7 +290,13 @@ const ar: Strings = {
     nouns: {
       courses: { one: 'مقرر', two: 'مقرران', few: 'مقررات', many: 'مقرراً', other: 'مقرر' },
       highlights: { one: 'مهمة', two: 'مهمتان', few: 'مهام', many: 'مهمة', other: 'مهمة' },
+      technologies: { one: 'تقنية', two: 'تقنيتان', few: 'تقنيات', many: 'تقنية', other: 'تقنية' },
     },
+  },
+  footer: {
+    credits: 'حقوق الشعارات',
+    adapted: 'كل شعار مرسوم بلون النص لا بألوانه الأصلية.',
+    source: 'المصدر',
   },
   titleSeparator: ' - ',
   listSeparator: '، ',
@@ -265,6 +312,14 @@ const ar: Strings = {
   },
   home: {
     contact: 'التواصل',
+    glance: 'لمحة سريعة',
+    tiles: {
+      projects: 'المشاريع',
+      certificates: 'الدورات والشهادات',
+      technologies: 'التقنيات',
+      languages: 'اللغات',
+      spoken: '{label}: {count}',
+    },
     location: 'الموقع الجغرافي',
     sections: 'في هذا الموقع',
     experience: 'الوظائف والتدريب العملي.',
@@ -307,6 +362,22 @@ const ar: Strings = {
     repository: 'المستودع',
     live: 'الموقع المنشور',
     technologies: 'التقنيات',
+    featured: 'مشروع مميز',
+  },
+  journey: {
+    heading: 'من الدراسة إلى العمل',
+    kinds: {
+      experience: 'العمل',
+      education: 'الدراسة',
+      courses: 'مقررات عبر الإنترنت',
+    },
+  },
+  filter: {
+    label: 'تصفية المشاريع حسب التقنية',
+    all: 'الكل',
+    // Said as a label and its number, which reads correctly at every count,
+    // where a verb and a counted noun would need the noun in the accusative.
+    status: 'المشاريع المعروضة: {count}',
   },
   experience: {
     training: 'تدريب عملي',

@@ -15,7 +15,7 @@
     "check:dist": "node scripts/check-dist.mjs",
     "render:pdf": "node scripts/render-pdf.mjs",
     "test": "playwright test",
-    "test:content": "node scripts/test-content-mechanism.mjs",
+    "test:content": "node --test tests/technologies.test.mjs tests/timeline.test.mjs && node scripts/test-content-mechanism.mjs",
     "lighthouse": "node scripts/lighthouse.mjs",
     "check:live": "bash scripts/check-live.sh",
     "readme": "node scripts/readme-profile.mjs",
@@ -28,6 +28,7 @@
     "@tailwindcss/vite": "^4.3.3",
     "astro": "^7.3.2",
     "qrcode": "^1.5.4",
+    "simple-icons": "^16.32.0",
     "tailwindcss": "^4.3.3"
   },
   "devDependencies": {

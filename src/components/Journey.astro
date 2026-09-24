@@ -1,0 +1,92 @@
+---
+// The home page's one line from study to work, newest first, as `journey` in
+// src/lib/timeline.ts orders it. Each node is a card that leads to the entry
+// in full on the page that holds it: a placement to its card on the work
+// page, an institution to its card on the education page, and the online
+// courses to their grid there. A node shows its kind's icon, with the kind
+// said to a screen reader, its years, what it was, and where.
+//
+// The rail is a line on the inline start, so it runs down the left in
+// English and down the right in Arabic with no rule of its own, and the rail
+// and its markers are drawn in colours that keep 3:1 against the page.
+
+import { getCollection } from 'astro:content';
+import Card from './Card.astro';
+import Icon from './Icon.astro';
+import { fill, formatPeriod, plural, strings, type Locale } from '../lib/i18n';
+import { localized } from '../lib/localized';
+import { byStartAscending } from '../lib/order';
+import { isCourse } from '../lib/shown';
+import { withBase } from '../lib/paths';
+import { journey } from '../lib/timeline';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = strings[locale];
+
+// The same inputs the education page gives the education timeline, so the
+// courses sit where they sit there.
+const education = (await getCollection('education')).sort((a, b) => byStartAscending(a.data, b.data));
+const courses = (await getCollection('certificates', ({ data }) => isCourse(data))).map((entry) => entry.data);
+const experience = await getCollection('experience');
+
+const items = journey(education, experience, courses, (entry) => entry.data.period.start);
+
+const icons = { experience: 'briefcase', education: 'graduation-cap', courses: 'book-open' } as const;
+
+const nodes = items.map((item) => {
+  if (item.kind === 'experience') {
+    const text = localized(locale, 'experience', item.entry.id);
+    return {
+      kind: item.kind,
+      href: withBase(`/${locale}/work/#experience-${item.entry.id}`),
+      years: formatPeriod(locale, item.entry.data.period),
+      title: text('position', item.entry.data.position),
+      where: text('organisation', item.entry.data.organisation),
+    };
+  }
+  if (item.kind === 'education') {
+    const { data } = item.entry;
+    const text = localized(locale, 'education', item.entry.id);
+    return {
+      kind: item.kind,
+      href: withBase(`/${locale}/education/#education-${item.entry.id}`),
+      years: formatPeriod(locale, data.period),
+      title: `${text('studyType', data.studyType)}${t.listSeparator}${text('area', data.area)}`,
+      where: text('institution', data.institution),
+    };
+  }
+  return {
+    kind: item.kind,
+    href: withBase(`/${locale}/education/#courses`),
+    years: item.period ? formatPeriod(locale, item.period) : undefined,
+    title: fill(t.education.onlineCourses.count, {
+      count: String(item.count),
+      noun: plural(locale, item.count, t.education.onlineCourses.noun),
+    }),
+    where: t.education.onlineCourses.name,
+  };
+});
+---
+
+<ol data-journey class="border-s border-muted-foreground">
+  {
+    nodes.map((node) => (
+      <li data-reveal class="relative ps-6 pb-4 last:pb-0 sm:ps-8">
+        <span aria-hidden="true" data-journey-marker class="absolute -start-[5px] top-6 size-2.5 rounded-full bg-primary" />
+        <Card href={node.href} data-journey-node={node.kind} class="p-4! sm:p-5!">
+          <p class="flex items-center gap-2 text-sm text-muted-foreground tabular-nums">
+            <Icon name={icons[node.kind]} class="size-4 text-primary" />
+            <span class="sr-only">{t.journey.kinds[node.kind]}: </span>
+            {node.years}
+          </p>
+          <p class="mt-1 font-semibold tracking-tight">{node.title}</p>
+          <p class="text-sm text-muted-foreground">{node.where}</p>
+        </Card>
+      </li>
+    ))
+  }
+</ol>

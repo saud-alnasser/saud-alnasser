@@ -478,8 +478,9 @@ for (const locale of locales) {
       test('meets the contrast criterion with the form open', async ({ page, colorScheme }) => {
         await page.goto(marked);
         await settled(page);
-        // No second settle: opening the dialog cancels the page's reveal, and
-        // a cancelled animation rejects the promise that waits on it.
+        // No second settle: were motion allowed, opening the dialog would
+        // cancel the page's entrance, and a cancelled animation rejects the
+        // promise that waits on it.
         await page.locator(control).click();
         await expect(page.locator(dialog)).toHaveAttribute('open', '');
 

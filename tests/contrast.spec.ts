@@ -24,7 +24,8 @@ const audited = pages;
 for (const page of audited) {
   test(`axe finds no violation on ${page}`, async ({ page: browser, colorScheme }) => {
     await browser.goto(page);
-    // The reveal is a 500ms animation; axe reads colours after it settles.
+    // axe reads colours once nothing is moving. The shared options ask for
+    // reduced motion, so this finds nothing running today.
     await browser.evaluate(() => Promise.all(document.getAnimations().map((animation) => animation.finished)));
     const results = await new AxeBuilder({ page: browser }).withTags(['wcag2a', 'wcag2aa']).analyze();
     const found = results.violations.map((violation) => {
@@ -46,5 +47,136 @@ for (const page of audited) {
     await browser.evaluate(() => Promise.all(document.getAnimations().map((animation) => animation.finished)));
     const failures = await browser.evaluate(lowContrastPairs);
     expect(failures, `${colorScheme} palette on ${page}`).toEqual([]);
+  });
+}
+
+// A card being pointed at or focused is a card raised: the higher shadow and
+// the accent on its border. The shadow sits outside the surface the text is
+// on, so the pairs should not move; measured in both palettes and both
+// directions all the same, with the card held in the raised state.
+for (const locale of ['en', 'ar'] as const) {
+  const page = at(`/${locale}/work/`);
+
+  test(`a raised card on ${page} meets WCAG AA`, async ({ page: browser, colorScheme }) => {
+    await browser.goto(page);
+    const card = browser.locator('[data-entry="project"]').first();
+    await card.hover();
+    expect(await card.evaluate((node) => getComputedStyle(node).boxShadow), 'the card is raised').toContain('24px');
+    const failures = await browser.evaluate(lowContrastPairs);
+    expect(failures, `${colorScheme} palette on ${page} with a card raised`).toEqual([]);
+    if (locale === 'en') {
+      const results = await new AxeBuilder({ page: browser }).withTags(['wcag2a', 'wcag2aa']).analyze();
+      expect(
+        results.violations.map((violation) => `${violation.id}: ${violation.help}`),
+        `${colorScheme} palette on ${page} with a card raised`,
+      ).toEqual([]);
+    }
+  });
+}
+
+// The two surfaces the page-wide audits see closed: a project card's folded
+// badges and the footer's logo credits. Opened here, in both palettes and
+// both directions.
+for (const locale of ['en', 'ar'] as const) {
+  const page = at(`/${locale}/work/`);
+
+  test(`the badge fold and the logo credits on ${page} meet WCAG AA open`, async ({ page: browser, colorScheme }) => {
+    await browser.goto(page);
+    const fold = browser.locator('[data-entry="project"] details').first();
+    await fold.locator('summary').click();
+    await expect(fold).toHaveAttribute('open', '');
+    const credits = browser.locator('[data-logo-credits]');
+    await credits.locator('summary').click();
+    await expect(credits).toHaveAttribute('open', '');
+    const failures = await browser.evaluate(lowContrastPairs);
+    expect(failures, `${colorScheme} palette on ${page} with both open`).toEqual([]);
+    if (locale === 'en') {
+      const results = await new AxeBuilder({ page: browser }).withTags(['wcag2a', 'wcag2aa']).analyze();
+      expect(
+        results.violations.map((violation) => `${violation.id}: ${violation.help}`),
+        `${colorScheme} palette on ${page} with both open`,
+      ).toEqual([]);
+    }
+  });
+}
+
+// The filter's chips, at rest and pressed: every label at AA on its own
+// chip, and the pressed chip's fill at 3:1 or better against a chip at rest,
+// so the pressed state does not rest on a text colour.
+for (const locale of ['en', 'ar'] as const) {
+  const page = at(`/${locale}/work/`);
+
+  test(`the filter chips on ${page} meet WCAG AA at rest and pressed`, async ({ page: browser, colorScheme }) => {
+    await browser.goto(page);
+    const chips = browser.locator('[data-filter] button');
+    await chips.nth(1).click();
+    await expect(chips.nth(1)).toHaveAttribute('aria-pressed', 'true');
+    const failures = await browser.evaluate(lowContrastPairs);
+    expect(failures, `${colorScheme} palette on ${page} with a chip pressed`).toEqual([]);
+    const ratio = await browser.evaluate(() => {
+      const [rest, pressed] = [
+        document.querySelector('[data-filter] button[aria-pressed="false"]')!,
+        document.querySelector('[data-filter] button[aria-pressed="true"]')!,
+      ].map((node) => (getComputedStyle(node).backgroundColor.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number));
+      const luminance = (rgb: number[]) => {
+        const [r, g, b] = rgb.map((v) => {
+          const c = v / 255;
+          return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+        });
+        return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
+      };
+      const [a, b] = [luminance(rest!), luminance(pressed!)];
+      return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+    });
+    expect(ratio, `a pressed chip against one at rest on ${page}`).toBeGreaterThanOrEqual(3);
+    if (locale === 'en') {
+      const results = await new AxeBuilder({ page: browser }).withTags(['wcag2a', 'wcag2aa']).analyze();
+      expect(results.violations.map((violation) => `${violation.id}: ${violation.help}`)).toEqual([]);
+    }
+  });
+}
+
+// The light behind the first screen is a gradient, which the pair measure
+// above cannot see: it reads the nearest painted background colour, and the
+// light is a sibling drawn behind the text. So the text colours the first
+// screen uses are measured here against the page with the light at its
+// strongest, its first colour stop laid over the page's background.
+for (const locale of ['en', 'ar'] as const) {
+  const page = at(`/${locale}/`);
+
+  test(`the text over the first screen's light on ${page} meets WCAG AA`, async ({ page: browser, colorScheme }) => {
+    await browser.goto(page);
+    const found = await browser.evaluate(() => {
+      const parse = (value: string) => (value.match(/[\d.]+/g) ?? []).map(Number);
+      const luminance = ([r, g, b]: number[]) => {
+        const channel = (v: number) => {
+          const c = v / 255;
+          return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+        };
+        return 0.2126 * channel(r!) + 0.7152 * channel(g!) + 0.0722 * channel(b!);
+      };
+      const ratio = (a: number[], b: number[]) => {
+        const [light, dark] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+        return (light! + 0.05) / (dark! + 0.05);
+      };
+      const image = getComputedStyle(document.querySelector('[data-glow]')!).backgroundImage;
+      const stop = image.match(/rgba?\([^)]+\)/)?.[0];
+      if (!stop) return { image, pairs: [] };
+      const [r, g, b, a = 1] = parse(stop);
+      const page = parse(getComputedStyle(document.documentElement).backgroundColor);
+      const lit = [0, 1, 2].map((index) => [r, g, b][index]! * a + page[index]! * (1 - a));
+      const hero = document.querySelector('[data-hero]')!;
+      const colours = new Set<string>();
+      for (const node of hero.querySelectorAll('h1, p, span, a')) {
+        if (node.closest('[data-stat-tile], [data-contact-actions] a, [data-monogram]')) continue;
+        if ((node.textContent ?? '').trim() === '') continue;
+        colours.add(getComputedStyle(node).color);
+      }
+      return { image, pairs: [...colours].map((colour) => ({ colour, ratio: ratio(parse(colour), lit) })) };
+    });
+    expect(found.pairs.length, `a colour stop read from ${found.image}`).toBeGreaterThan(0);
+    for (const pair of found.pairs) {
+      expect(pair.ratio, `${pair.colour} over the light, ${colorScheme} palette on ${page}`).toBeGreaterThanOrEqual(4.5);
+    }
   });
 }

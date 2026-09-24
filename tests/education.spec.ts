@@ -286,8 +286,9 @@ for (const locale of locales) {
   });
 
   test.describe(`${url} with JavaScript disabled`, () => {
-    // Reduced motion with it, because the page's reveal is what a click waits
-    // out and no script can be run to wait for it here.
+    // Reduced motion with it, as the shared options already ask, because the
+    // page's entrance is what a click waits out and no script can be run to
+    // wait for it here.
     test.use({ javaScriptEnabled: false, reducedMotion: 'reduce' });
 
     test('opens the courses fold', async ({ page }) => {

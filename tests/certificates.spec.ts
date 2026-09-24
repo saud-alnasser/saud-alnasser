@@ -70,7 +70,9 @@ const columnsOf = (page: Page, grid: string) =>
     .locator(`[data-grid="${grid}"]`)
     .evaluate((node) => getComputedStyle(node).gridTemplateColumns.split(/\s+/).filter(Boolean).length);
 
-// The reveal is a 500ms animation; a click waits it out first.
+// Waits out anything still moving before a click. The shared options ask for
+// reduced motion, so on every test today there is nothing to wait for; this
+// keeps a click steady if a test asks for motion back.
 const settled = (page: Page) => page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished)));
 
 for (const locale of locales) {
