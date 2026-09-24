@@ -189,7 +189,7 @@ const certificates = defineCollection({
     .object({
       name: localized,
       issuer: z.string().min(1),
-      // Required: the courses grid and the certifications grid are split on
+      // Required: the courses node and the certifications grid are split on
       // it, so an entry without one has no place to render.
       kind: z.enum(certificateKinds),
       date: iso8601.optional(),

@@ -1,10 +1,10 @@
 ---
-// A certificate card, for a course completion or for a certification: the
-// entry's `kind` decides which grid on the home page holds it and is what
-// the card says it is, so a reclassification in the content moves the card
-// and nothing else changes. Its name is a heading at `level`, 3 unless the
-// page says otherwise: the home page's grids sit under third-level headings
-// of their own, so their cards pass 4.
+// A certificate card, for a certification. The courses are listed inside the
+// education timeline's online-courses node instead (CourseList.astro), and
+// the entry's `kind` decides which of the two shows it, so a reclassification
+// in the content moves the entry and nothing else changes. Its name is a
+// heading at `level`, 3 unless the page says otherwise: the home page's grid
+// sits under a third-level heading of its own, so its cards pass 4.
 //
 // Where the entry names a document, the whole card is a link to that PDF, so
 // with no script a click opens the document itself; the inline script in the
@@ -17,6 +17,7 @@
 import type { CollectionEntry } from 'astro:content';
 import Card from './Card.astro';
 import Icon from './Icon.astro';
+import { documentAttributes } from '../lib/certificates';
 import { formatDate, strings, type Locale } from '../lib/i18n';
 import { localized } from '../lib/localized';
 
@@ -26,30 +27,6 @@ interface Props {
   level?: 3 | 4;
 }
 
-// The documents and their previews, read once for the whole build rather than
-// per card: the PDFs as the addresses Vite gives the files under _astro/, the
-// previews as image metadata, whose address is the committed file under
-// _astro/ and whose width and height let the dialog reserve the image's box
-// before it arrives. Both are keyed by the path the entry's `document` field
-// names, relative to the certificates directory (src/content.config.ts). The
-// preview is served as it was committed, 1600 pixels wide and 19 to 116 KB
-// (scripts/certificate-previews.mjs), which is wider than the dialog is on any
-// viewport and so stays sharp on a dense screen; deriving a smaller copy
-// through Astro's image pipeline made the build emit the original beside it,
-// unreferenced. Nothing on this page loads the preview: the card carries its
-// address and size, and the script sets them on the dialog's <img> when the
-// card is opened.
-const documents = import.meta.glob('../content/certificates/files/*.pdf', {
-  query: '?url',
-  import: 'default',
-  eager: true,
-}) as Record<string, string>;
-
-const previews = import.meta.glob('../content/certificates/files/*.webp', {
-  import: 'default',
-  eager: true,
-}) as Record<string, ImageMetadata>;
-
 const { locale, entry, level = 3 } = Astro.props;
 const Heading = `h${level}` as const;
 const { data } = entry;
@@ -57,14 +34,10 @@ const t = strings[locale];
 const text = localized(locale, 'certificates', entry.id);
 
 const name = text('name', data.name);
-const key = (relative: string) => `../content/certificates/${relative}`;
-
-const address = data.document ? documents[key(data.document)] : undefined;
-const preview = data.document ? previews[key(data.document.replace(/\.pdf$/, '.webp'))] : undefined;
-
-// What the dialog says the image is, and what a screen reader hears in place
-// of it: the certificate and who issued it.
-const caption = `${name}${t.listSeparator}${data.issuer}`;
+// The document's address and the dialog's attributes (src/lib/certificates.ts),
+// captioned with the certificate and who issued it.
+const opens = documentAttributes(data.document, `${name}${t.listSeparator}${data.issuer}`);
+const address = opens?.['data-document'];
 ---
 
 <Card
@@ -72,15 +45,11 @@ const caption = `${name}${t.listSeparator}${data.issuer}`;
   href={address}
   class="group h-full"
   data-entry={data.kind}
-  data-document={address}
-  data-preview={preview?.src}
-  data-preview-width={preview ? String(preview.width) : undefined}
-  data-preview-height={preview ? String(preview.height) : undefined}
-  data-caption={address ? caption : undefined}
+  {...opens}
 >
   <div class="flex h-full flex-col">
     <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-      <Heading class="font-semibold tracking-tight">{name}</Heading>
+      <Heading data-certificate-name class="font-semibold tracking-tight">{name}</Heading>
       {data.date && <p class="text-sm text-muted-foreground tabular-nums">{formatDate(locale, data.date)}</p>}
     </div>
     <p class="mt-1 text-sm text-muted-foreground">{data.issuer}</p>

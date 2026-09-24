@@ -3,6 +3,7 @@ import { getCollection, getEntry } from 'astro:content';
 import Base from '../../layouts/Base.astro';
 import Card from '../../components/Card.astro';
 import Certificate from '../../components/Certificate.astro';
+import CourseList from '../../components/CourseList.astro';
 import CertificateDialog from '../../components/CertificateDialog.astro';
 import Education from '../../components/Education.astro';
 import Experience from '../../components/Experience.astro';
@@ -11,7 +12,7 @@ import Icon from '../../components/Icon.astro';
 import Project from '../../components/Project.astro';
 import Skills from '../../components/Skills.astro';
 import StatTile from '../../components/StatTile.astro';
-import { fill, formatPeriod, locales, plural, strings, type Locale } from '../../lib/i18n';
+import { fill, locales, plural, strings, type Locale } from '../../lib/i18n';
 import { localized } from '../../lib/localized';
 import { profileIcon, type ProfileIcon } from '../../lib/networks';
 import {
@@ -126,15 +127,12 @@ const chip =
 // "education/", says the same for whoever edits the content.
 //
 // The node stands for the courses, dated entries and undated alike: it
-// counts every course and runs from the earliest dated one to the latest.
-// The courses themselves are below the timeline, under the heading it links
-// to.
+// counts every course, runs from the earliest dated one to the latest, and
+// opens in place to list them all (CourseList.astro).
 const items = educationTimeline(
   education,
   courses.map((entry) => entry.data),
 );
-const countOf = (count: number) =>
-  fill(t.education.onlineCourses.count, { count: String(count), noun: plural(locale, count, t.education.onlineCourses.noun) });
 
 const heading = 'flex items-center gap-2 text-xl font-semibold tracking-tight';
 const subheading = 'flex items-center gap-2 text-lg font-semibold tracking-tight';
@@ -294,10 +292,10 @@ const subheading = 'flex items-center gap-2 text-lg font-semibold tracking-tight
   </section>
 
   {/*
-    Education: the studies timeline, then the courses and the certifications
-    as grids of cards under headings of their own, one column on a phone and
-    two from 48rem up. The courses heading carries the anchor the timeline's
-    node leads to.
+    Education: the studies timeline, whose online-courses node opens in place
+    to list the courses (CourseList.astro), then the certifications as a grid
+    of cards under a heading of its own, one column on a phone and two from
+    48rem up, while any exists.
   */}
   <section aria-labelledby="education" class="mt-16">
     <h2 id="education" data-section data-reveal class={heading}>
@@ -309,8 +307,8 @@ const subheading = 'flex items-center gap-2 text-lg font-semibold tracking-tight
         items.map((item) => (
           <li data-reveal class="relative ps-7 pb-6 last:pb-0">
             {/* The marker on the rail. The courses node takes the accent,
-                because it is the one item on the timeline that leads
-                somewhere else on the page. */}
+                because it is the one item on the timeline that opens to
+                more. */}
             <span
               aria-hidden="true"
               class:list={[
@@ -321,43 +319,15 @@ const subheading = 'flex items-center gap-2 text-lg font-semibold tracking-tight
             {item.kind === 'education' ? (
               <Education locale={locale} entry={item.entry} />
             ) : (
-              <Card href="#courses" data-courses-node>
-                {item.period && (
-                  <p class="text-sm text-muted-foreground tabular-nums" data-period>
-                    {formatPeriod(locale, item.period)}
-                  </p>
-                )}
-                <h3 class="mt-1 text-lg font-semibold tracking-tight">{t.education.onlineCourses.name}</h3>
-                <p class="mt-1">{countOf(item.count)}</p>
-                <p class="mt-2 flex items-center gap-1.5 text-sm text-primary">
-                  {t.education.onlineCourses.link}
-                  <Icon name="chevron-down" class="size-4" />
-                </p>
-              </Card>
+              <CourseList locale={locale} courses={courses} period={item.period} />
             )}
           </li>
         ))
       }
     </ol>
 
-    <section aria-labelledby="courses" class="mt-12">
-      <h3 id="courses" data-reveal class={subheading}>
-        <Icon name="book-open" class="size-5 text-primary" />
-        {t.sections.courses}
-      </h3>
-      <ul data-grid="courses" class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
-        {
-          courses.map((entry) => (
-            <li data-reveal>
-              <Certificate locale={locale} entry={entry} level={4} />
-            </li>
-          ))
-        }
-      </ul>
-    </section>
-
     {/*
-      The certifications, the same grid of the same cards, rendered only while
+      The certifications, a grid of certificate cards, rendered only while
       an entry exists, the way the CV prints a section only where it holds
       something: a heading over an empty grid would say "no credential" in so
       many words. Its heading keeps the id the certificates section had, so an

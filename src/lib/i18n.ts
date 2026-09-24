@@ -119,7 +119,6 @@ const en = {
   sections: {
     projects: 'Projects',
     experience: 'Experience',
-    courses: 'Courses',
     certifications: 'Certifications',
     skills: 'Skills',
   },
@@ -151,14 +150,15 @@ const en = {
     },
     courses: 'Courses',
     // The one node on the timeline that is not an institution: the phase of
-    // online courses between school and university. It stands for the
-    // courses section, so `count` says how many courses, with `noun` in the
-    // form the number takes, and `link` leads to that section.
+    // online courses between school and university. It holds the courses,
+    // so `count` says how many, with `noun` in the form the number takes,
+    // and `show` and `hide` are what its disclosure says in each state.
     onlineCourses: {
       name: 'Online courses',
       count: '{count} {noun}',
       noun: { one: 'course', other: 'courses' } as PluralForms,
-      link: 'View the courses',
+      show: 'Show the courses',
+      hide: 'Hide the courses',
     },
   },
   // A certificate card and the dialog it opens. `open` is what the card says
@@ -299,7 +299,6 @@ const ar: Strings = {
   sections: {
     projects: 'المشاريع',
     experience: 'الخبرة العملية',
-    courses: 'الدورات',
     certifications: 'الشهادات',
     skills: 'المهارات',
   },
@@ -331,7 +330,8 @@ const ar: Strings = {
       count: '{count} {noun}',
       // The counted noun in the form Arabic gives each range, as `fold` above.
       noun: { one: 'دورة', two: 'دورتان', few: 'دورات', many: 'دورةً', other: 'دورة' },
-      link: 'عرض الدورات',
+      show: 'عرض الدورات',
+      hide: 'إخفاء الدورات',
     },
   },
   certificate: {

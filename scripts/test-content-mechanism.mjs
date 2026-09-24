@@ -22,10 +22,11 @@
 // tolerates their own uncommitted work while still catching a build that
 // writes outside dist/.
 //
-// Neither fixture certificate names a document, so its card on the home page
-// has nothing to open and must be neither a link nor a button. Every
-// real certificate carries its document, so this is the one place that card
-// is rendered and checked.
+// Neither fixture certificate names a document, so its entry on the home page,
+// the course's row in the education timeline's courses node and the
+// certification's card, has nothing to open and must be neither a link nor a
+// button. Every real certificate carries its document, so this is the one
+// place such an entry is rendered and checked.
 //
 // The fixture project is finished and marked for the resume, so it reaches
 // the resume page as well as the CV. The fixture course carries no marker and

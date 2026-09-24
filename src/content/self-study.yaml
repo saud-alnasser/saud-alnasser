@@ -3,8 +3,9 @@
 # prints them.
 # The count of courses and the years are not here; the build reads them from
 # the course entries under certificates/, so a course added or removed moves
-# them with no edit to this file. The home page still shows every
-# course as its own card, and the JSON Resume documents list every one.
+# them with no edit to this file. The home page still lists every
+# course, inside the education timeline's courses node, and the JSON Resume
+# documents list every one.
 #
 # A topic is a claim that a course taught it, so every topic is backed: its
 # English is contained, case-insensitively, in the English name of at least

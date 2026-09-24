@@ -87,8 +87,7 @@ const reading = [
   '[data-grid="projects"]',
   'h2#education',
   '[data-courses-node]',
-  '#courses',
-  '[data-grid="courses"]',
+  '[data-course-list]',
   'h2#skills',
   '[data-skill-grid]',
 ];
@@ -214,11 +213,11 @@ for (const locale of locales) {
         const name = (await page.locator(`#${id}`).innerText()).trim();
         await expect(page.getByRole('region', { name, exact: true }), `the ${id} landmark`).toHaveCount(1);
       }
-      // The courses and the certifications are subsections of Education, a
-      // level down, so their cards are a level below that.
-      await expect(page.locator('section[aria-labelledby="education"] h3#courses')).toHaveCount(1);
-      await expect(page.locator('[data-grid="courses"] h3')).toHaveCount(0);
-      expect(await page.locator('[data-grid="courses"] h4').count()).toBeGreaterThan(0);
+      // The courses node is a timeline item of Education, a level down, and
+      // the courses it lists are rows rather than headings.
+      await expect(page.locator('section[aria-labelledby="education"] [data-courses-node]#courses h3')).toHaveCount(1);
+      await expect(page.locator('[data-course-list] :is(h3, h4)')).toHaveCount(0);
+      expect(await page.locator('[data-course-list] > li').count()).toBeGreaterThan(0);
     });
 
     test('keeps every entry id an address can name', async ({ page }) => {
@@ -349,7 +348,7 @@ for (const locale of locales) {
     // asserted above.
     test('puts an icon on every section heading', async ({ page }) => {
       await page.goto(at(`/${locale}/`));
-      const headings = await page.locator('main :is(h2:not(.sr-only), h3#courses, h3#certificates)').evaluateAll((nodes) =>
+      const headings = await page.locator('main :is(h2:not(.sr-only), h3#certificates)').evaluateAll((nodes) =>
         nodes.map((node) => ({
           text: node.textContent?.trim(),
           icon: node.querySelector('svg[data-icon]')?.getAttribute('aria-hidden') ?? null,

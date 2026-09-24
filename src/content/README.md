@@ -129,10 +129,11 @@ One file per institution attended. The home page's education section is one
 timeline, newest first: the institutions by `period.start`, with one node for
 the online-courses phase placed just after the most recent institution, so
 university comes first, the online courses next, and high school last. That
-node stands for the courses, dated or not: it counts them, runs from the
-earliest dated one to the latest, and leads to the courses grid below the
-timeline, newest first with the undated last, where the certifications sit
-under their own heading beside it, while any exists. The CV's education section
+node holds the courses, dated or not: it counts them, runs from the
+earliest dated one to the latest, and opens in place to list every one,
+newest first with the undated last, each opening its certificate in the
+page's dialog. The certifications sit under their own heading below the
+timeline, while any exists. The CV's education section
 is the same timeline: the institutions with one self-study entry in the node's
 place, which is how the CV reads the courses (see `self-study.yaml` below), and
 its Certifications section prints only while a certification exists, like the
@@ -215,7 +216,7 @@ for the online-courses phase: "Self-study" with the years at the far edge,
 then the count of courses at the providers, then the topics. The count and
 the years are read from the course entries under `certificates/` at build
 time and are not authored here; a course added or removed moves them with no
-edit to this file. The home page's courses grid and the JSON Resume
+edit to this file. The home page's courses node and the JSON Resume
 documents still carry every course. The resume prints no self-study entry.
 
 | Field | Type | Per language | Meaning |

@@ -77,7 +77,7 @@ const order = educationTimeline(education, courses).map((item) => (item.kind ===
 // dialog tests/certificates.spec.ts covers from the course cards. Read from
 // the content, so an institution without one is asserted to offer nothing.
 const documented = education.filter((entry) => entry.document);
-const control = '[data-document]';
+const control = 'article [data-document]';
 const dialog = '[data-certificate-dialog]';
 
 // The phase runs from the earliest dated certificate to the latest.
@@ -152,18 +152,40 @@ for (const locale of locales) {
         }),
       );
       await expect(online).toContainText(formatPeriod(locale, period));
-      await expect(online).toHaveAttribute('href', '#courses');
-      await expect(online).toContainText(t.education.onlineCourses.link);
+      // It is the anchor an inbound link to the courses lands on, and a
+      // disclosure that says it opens.
+      await expect(online).toHaveAttribute('id', 'courses');
+      await expect(online).toHaveJSProperty('tagName', 'DETAILS');
+      await expect(online.locator('summary')).toContainText(t.education.onlineCourses.show);
     });
 
-    test('lists the courses under the heading the node leads to, and the certifications under their own', async ({
-      page,
-    }) => {
+    // An inbound link to the courses, from before they moved into the node,
+    // lands on the node, clear of the header and on screen.
+    test('lands an address ending in #courses on the node, below the header', async ({ page }) => {
+      await page.goto(`${url}#courses`);
+      await page.evaluate(() => Promise.all(document.getAnimations().map((animation) => animation.finished)));
+      const found = await page.locator(node).evaluate((element) => ({
+        top: element.getBoundingClientRect().top,
+        header: document.querySelector('body > header')!.getBoundingClientRect().bottom,
+        height: window.innerHeight,
+      }));
+      expect(found.top, 'the node sits below the header').toBeGreaterThanOrEqual(found.header - 1);
+      expect(found.top, 'the node is on screen').toBeLessThan(found.height);
+    });
+
+    test('lists the courses inside the node, and the certifications under their own heading', async ({ page }) => {
       await page.goto(url);
 
-      const coursesHeading = page.locator(':is(h2, h3)#courses');
-      await expect(coursesHeading).toHaveText(t.sections.courses);
-      await expect(page.locator(timeline).locator('#courses')).toHaveCount(0);
+      // The courses are the node's own list, closed until it is opened, and
+      // no separate courses section or heading follows the timeline.
+      await expect(page.locator(timeline).locator('#courses')).toHaveCount(1);
+      await expect(page.locator(':is(h2, h3)#courses')).toHaveCount(0);
+      await expect(page.locator('[data-grid="courses"]')).toHaveCount(0);
+      await expect(page.locator('[data-course-list] > li').first()).not.toBeVisible();
+      await page.locator(`${node} summary`).click();
+      await expect(page.locator(node)).toHaveAttribute('open', '');
+      await expect(page.locator(`${node} summary`)).toContainText(t.education.onlineCourses.hide);
+      await expect(page.locator('[data-course-list] > li').first()).toBeVisible();
 
       // The certifications section exists only while the content has a
       // certification, so that the page never shows a heading over nothing.
@@ -174,18 +196,18 @@ for (const locale of locales) {
       await expect(certificationsHeading).toHaveCount(certifications.length > 0 ? 1 : 0);
       if (certifications.length > 0) await expect(certificationsHeading).toHaveText(t.sections.certifications);
 
-      // Each grid holds its own kind, in the order the site orders them: by
+      // Each list holds its own kind, in the order the site orders them: by
       // date newest first, the undated last.
-      for (const [grid, expected] of [
-        ['courses', courses],
-        ['certifications', certifications],
+      for (const [grid, selector, expected] of [
+        ['courses', '[data-course-list]', courses],
+        ['certifications', '[data-grid="certifications"]', certifications],
       ] as const) {
-        // A kind with no entries renders no grid at all, not an empty one.
+        // A kind with no entries renders no list at all, not an empty one.
         if (expected.length === 0) {
-          await expect(page.locator(`[data-grid="${grid}"]`), `the ${grid} grid on ${url}`).toHaveCount(0);
+          await expect(page.locator(selector), `the ${grid} list on ${url}`).toHaveCount(0);
           continue;
         }
-        const list = page.locator(`[data-grid="${grid}"] > li`);
+        const list = page.locator(`${selector} > li`);
         await expect(list, `the ${grid} grid on ${url}`).toHaveCount(expected.length);
         const ordered = [...expected].sort(byDateDescending);
         // The Arabic of a certificate's name is optional in the contract, so
@@ -268,7 +290,7 @@ for (const locale of locales) {
       // course list is the surface they cannot see.
       await page.goto(url);
       await page.evaluate(() => Promise.all(document.getAnimations().map((animation) => animation.finished)));
-      await page.locator(`${timeline} details summary`).click();
+      await page.locator(`${timeline} article details summary`).click();
       const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze();
       const found = results.violations.map((violation) => `${violation.id}: ${violation.help}`);
       expect(found, `${colorScheme} palette on ${url} with the courses open`).toEqual([]);
@@ -284,7 +306,7 @@ for (const locale of locales) {
     test('does not scroll horizontally with the courses open', async ({ page }) => {
       await page.goto(url);
       await page.evaluate(() => document.fonts.ready);
-      await page.locator(`${timeline} details summary`).click();
+      await page.locator(`${timeline} article details summary`).click();
       const width = await page.evaluate(() => document.documentElement.scrollWidth);
       expect(width, `scrollWidth of ${url} with the courses open`).toBeLessThanOrEqual(360);
     });
@@ -298,7 +320,7 @@ for (const locale of locales) {
 
     test('opens the courses fold', async ({ page }) => {
       await page.goto(url);
-      const fold = page.locator(`${timeline} details`);
+      const fold = page.locator(`${timeline} article details`);
       await fold.locator('summary').click();
       await expect(fold).toHaveAttribute('open', '');
       await expect(fold.locator('li')).toHaveCount(degree.courses!.length);

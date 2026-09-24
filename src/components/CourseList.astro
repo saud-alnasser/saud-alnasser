@@ -1,0 +1,103 @@
+---
+// The education timeline's online-courses node, which holds the courses
+// themselves: a card that is a native disclosure. Closed, it reads as the
+// node always has, its years, its name, and how many courses, with a line
+// saying it opens. Open, it lists every course in the order the page sorted
+// them, newest first with the undated last. It is the one place the courses
+// are listed, so the page carries no separate courses grid for the node to
+// point at.
+//
+// A course with a document is a link to its PDF carrying the attributes the
+// page's one dialog reads (src/lib/certificates.ts), exactly as a
+// certification card does, so the script opens it in the dialog and a
+// visitor with no script gets the PDF. A course with none is its name and
+// details as text, neither a link nor a button. Being a <details>, the node
+// opens and closes with no script, and `id="courses"` keeps the anchor an
+// inbound link to the courses always had.
+
+import type { CollectionEntry } from 'astro:content';
+import Card from './Card.astro';
+import Icon from './Icon.astro';
+import { documentAttributes } from '../lib/certificates';
+import { fill, formatDate, formatPeriod, plural, strings, type Locale } from '../lib/i18n';
+import { localized } from '../lib/localized';
+
+interface Props {
+  locale: Locale;
+  courses: CollectionEntry<'certificates'>[];
+  // From the earliest dated course to the latest, where any is dated.
+  period?: { start: string; end?: string };
+}
+
+const { locale, courses, period } = Astro.props;
+const t = strings[locale];
+const count = fill(t.education.onlineCourses.count, {
+  count: String(courses.length),
+  noun: plural(locale, courses.length, t.education.onlineCourses.noun),
+});
+
+const items = courses.map((entry) => {
+  const name = localized(locale, 'certificates', entry.id)('name', entry.data.name);
+  return {
+    id: entry.id,
+    name,
+    issuer: entry.data.issuer,
+    date: entry.data.date,
+    opens: documentAttributes(entry.data.document, `${name}${t.listSeparator}${entry.data.issuer}`),
+  };
+});
+const row = 'flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 rounded-md px-2 py-1.5';
+---
+
+<Card as="details" id="courses" data-courses-node>
+  <summary class="group cursor-pointer list-none select-none">
+    {
+      period && (
+        <p class="text-sm text-muted-foreground tabular-nums" data-period>
+          {formatPeriod(locale, period)}
+        </p>
+      )
+    }
+    <h3 class="mt-1 text-lg font-semibold tracking-tight">{t.education.onlineCourses.name}</h3>
+    <p class="mt-1">{count}</p>
+    <p class="mt-2 flex items-center gap-1.5 text-sm text-primary">
+      <span class="fold-when-closed">{t.education.onlineCourses.show}</span>
+      <span class="fold-when-open">{t.education.onlineCourses.hide}</span>
+      <Icon name="chevron-down" class="fold-chevron size-4 motion-safe:transition-transform" />
+    </p>
+  </summary>
+  <ol data-course-list class="-mx-2 mt-4 border-t border-border pt-3">
+    {
+      items.map((item) => (
+        <li>
+          {item.opens ? (
+            <a
+              href={item.opens['data-document']}
+              data-entry="course"
+              class:list={[row, 'hover:bg-background hover:text-primary motion-safe:transition-colors']}
+              {...item.opens}
+            >
+              <span data-certificate-name class="font-medium">
+                {item.name}
+              </span>
+              <span class="text-sm text-muted-foreground tabular-nums">
+                {item.issuer}
+                {item.date && `${t.listSeparator}${formatDate(locale, item.date)}`}
+              </span>
+            </a>
+          ) : (
+            <div data-entry="course" class={row}>
+              <span data-certificate-name class="font-medium">
+                {item.name}
+              </span>
+              <span class="text-sm text-muted-foreground tabular-nums">
+                {item.issuer}
+                {item.date && `${t.listSeparator}${formatDate(locale, item.date)}`}
+              </span>
+            </div>
+          )}
+        </li>
+      ))
+    }
+  </ol>
+</Card>
