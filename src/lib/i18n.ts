@@ -83,6 +83,11 @@ const en = {
     // its original, drawn in the text colour rather than its own.
     adapted: 'Each mark is drawn in the text colour rather than its own.',
     source: 'source',
+    // The footer's own line: the copyright over the name, then a link to the
+    // repository the site is built from.
+    copyright: '© {year} {name}',
+    sourceCode: 'Source code',
+    links: 'Elsewhere',
   },
   titleSeparator: ' - ',
   // Between items of an inline list: technologies, courses, keywords.
@@ -270,6 +275,9 @@ const ar: Strings = {
     credits: 'حقوق الشعارات',
     adapted: 'كل شعار مرسوم بلون النص لا بألوانه الأصلية.',
     source: 'المصدر',
+    copyright: '© {year} {name}',
+    sourceCode: 'الشيفرة المصدرية',
+    links: 'روابط أخرى',
   },
   titleSeparator: ' - ',
   listSeparator: '، ',

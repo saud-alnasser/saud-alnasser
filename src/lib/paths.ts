@@ -13,6 +13,11 @@ export function joinBase(base: string, path: string): string {
   return `${prefix}${path.startsWith('/') ? '' : '/'}${path}`;
 }
 
+// The repository the site is built from, which the footer links as its
+// source. It is also the name GitHub Pages serves the site under, which is
+// why `base` above is what it is.
+export const repository = 'https://github.com/saud-alnasser/saud-alnasser';
+
 // A path on the site, under the base the build was given.
 export function withBase(path: string): string {
   return joinBase(import.meta.env.BASE_URL, path);

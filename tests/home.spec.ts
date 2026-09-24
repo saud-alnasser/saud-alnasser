@@ -5,9 +5,10 @@ import { expect, test, type Page } from '@playwright/test';
 import { parse as parseYaml } from 'yaml';
 import { fill, strings } from '../src/lib/i18n';
 import { profileIcon } from '../src/lib/networks';
+import { repository } from '../src/lib/paths';
 import { sections as sectionIds } from '../src/lib/sections';
 import { isShown } from '../src/lib/shown';
-import { technologyMark } from '../src/lib/technologies';
+import { credits, technologyMark } from '../src/lib/technologies';
 import { at, locales, type Locale } from './pages';
 
 // The home page, which holds the whole portfolio: the first screen with the
@@ -117,6 +118,26 @@ for (const locale of locales) {
       expect(text, `the email address anywhere on /${locale}/`).not.toContain(profile.email);
       await expect(page.locator('a[href^="mailto:"]')).toHaveCount(0);
     });
+
+    // The foot of every page: the copyright in the build's year over the
+    // name, every profile with its network's mark, the source with the code
+    // glyph, and the logo credits the marks' licences ask for.
+    for (const route of ['/', '/cv/', '/resume/']) {
+      test(`closes ${route} with the copyright, the profiles, the source, and the credits`, async ({ page }) => {
+        await page.goto(at(`/${locale}${route}`));
+        const footer = page.locator('body > footer');
+        await expect(footer.locator('[data-copyright]')).toHaveText(`© ${new Date().getFullYear()} ${profile.name[locale]}`);
+        for (const entry of profile.profiles) {
+          const link = footer.locator(`a[href="${entry.url}"]`);
+          await expect(link, `the ${entry.network} link`).toHaveText(entry.network);
+          await expect(link.locator('svg')).toHaveAttribute('data-icon', profileIcon(entry.network));
+        }
+        const source = footer.locator(`a[href="${repository}"]`);
+        await expect(source).toHaveText(strings[locale].footer.sourceCode);
+        await expect(source.locator('svg')).toHaveAttribute('data-icon', 'code');
+        await expect(footer.locator('[data-logo-credits] li')).toHaveCount(credits().length);
+      });
+    }
 
     test('offers the contact actions with icons and names', async ({ page }) => {
       await page.goto(at(`/${locale}/`));

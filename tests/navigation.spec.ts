@@ -230,3 +230,79 @@ test('a malformed anchor leaves the page working', async ({ page }) => {
   await expect(page.locator('html')).toHaveAttribute('data-theme', /light|dark/);
   expect(errors).toEqual([]);
 });
+
+// The header's name on the home page, which the first screen's heading
+// already says: hidden while that heading is in view, shown once it has gone
+// under the header, and hidden again when it comes back. Hidden means unseen,
+// unreachable by Tab, and absent from the accessibility tree, which is what
+// `visibility: hidden` gives. Everywhere the script does not take it over,
+// with no script, under reduced motion, and on a document page, it shows.
+const homeName = 'body > header [data-home-name]';
+
+// Whether the name can be seen and reached: its computed visibility and
+// opacity, read as they are; the cases poll it until a fade has settled.
+async function nameState(page: Page) {
+  return page.locator(homeName).evaluate((element) => {
+    const style = getComputedStyle(element);
+    return { visibility: style.visibility, opacity: style.opacity };
+  });
+}
+
+const shown = { visibility: 'visible', opacity: '1' };
+const hidden = { visibility: 'hidden', opacity: '0' };
+
+for (const { width, height } of sizes) {
+  test.describe(`the header's name at ${width} by ${height} with motion allowed`, () => {
+    test.use({ viewport: { width, height }, reducedMotion: 'no-preference' });
+
+    for (const locale of locales) {
+      const home = at(`/${locale}/`);
+
+      test(`${home} hides the name at the top, shows it past the heading, and hides it again on return`, async ({
+        page,
+      }) => {
+        await page.goto(home);
+        await expect.poll(() => nameState(page)).toEqual(hidden);
+
+        // Nothing at the top reaches it by Tab: the first stops pass it by.
+        await page.locator('body').click({ position: { x: 1, y: 1 } });
+        for (let press = 0; press < 3; press += 1) {
+          await page.keyboard.press('Tab');
+          expect(await page.evaluate(() => document.activeElement?.hasAttribute('data-home-name')), 'Tab reaches the hidden name').toBe(
+            false,
+          );
+        }
+
+        await page.locator('h2#experience').evaluate((element) => element.scrollIntoView());
+        await expect.poll(() => nameState(page)).toEqual(shown);
+
+        await page.evaluate(() => window.scrollTo(0, 0));
+        await expect.poll(() => nameState(page)).toEqual(hidden);
+      });
+    }
+
+    test(`${at('/en/cv/')} shows the name at the top`, async ({ page }) => {
+      await page.goto(at('/en/cv/'));
+      await expect.poll(() => nameState(page)).toEqual(shown);
+    });
+  });
+}
+
+test.describe('the header name where the script does not take it over', () => {
+  test.describe('under reduced motion', () => {
+    test.use({ reducedMotion: 'reduce' });
+    test(`${at('/en/')} shows the name at the top`, async ({ page }) => {
+      await page.goto(at('/en/'));
+      expect(await nameState(page)).toEqual(shown);
+    });
+  });
+
+  test.describe('with JavaScript disabled', () => {
+    test.use({ javaScriptEnabled: false, reducedMotion: 'no-preference' });
+    test(`${at('/en/')} shows the name at the top`, async ({ page }) => {
+      await page.goto(at('/en/'));
+      const style = await page.locator(homeName).evaluate((element) => getComputedStyle(element).visibility);
+      expect(style).toBe('visible');
+    });
+  });
+});
