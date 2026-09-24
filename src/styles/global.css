@@ -222,6 +222,23 @@
     animation-name: enter-rise;
   }
 
+  /* A section heading or a grid's card below the first screen rises into
+     place once, the first time it scrolls in. The hidden state applies only
+     under `data-reveal` on the root, which the inline script sets in the same
+     function that starts the observer ending it, and only once it has marked
+     everything already on screen as revealed; so without the script, without
+     the observer, or under reduced motion, nothing here matches and nothing
+     is hidden. */
+  html[data-reveal] [data-reveal] {
+    transition:
+      opacity var(--duration-long) var(--ease-enter),
+      translate var(--duration-long) var(--ease-enter);
+  }
+  html[data-reveal] [data-reveal]:not([data-revealed]) {
+    opacity: 0;
+    translate: 0 0.75rem;
+  }
+
   /* A page to the next crossfades where the browser does it natively, with
      the header held still across the two. Elsewhere the page simply loads,
      which is all a browser without it loses. */
@@ -463,6 +480,12 @@ details[open] > summary .fold-chevron {
 
   main > * {
     animation: none;
+  }
+
+  /* Paper shows everything, whether or not it had scrolled into view. */
+  html[data-reveal] [data-reveal]:not([data-revealed]) {
+    opacity: 1;
+    translate: none;
   }
 
   /* Links print as their text. The contact addresses are already written

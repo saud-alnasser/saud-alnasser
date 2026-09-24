@@ -93,13 +93,15 @@ const nav = [
       The only script on the site. It applies a stored theme before first
       paint, so the page never flashes the other palette, wires the theme
       control once the document is parsed, closes the language menu on Escape
-      and on a click outside it, opens a certificate card in the page's
-      dialog, and turns a document page's download control into the form that
-      fills the contact line and prints, which it does only where the page's
-      address carries the marker. The last three all work without it: the menu
-      opens and closes on its own, a certificate card is the link to its PDF
-      that it already is, and the download control is the link to the published
-      PDF that it already is, which is what every unmarked click gets too.
+      and on a click outside it, rises the headings and cards below the first
+      screen into place as they scroll in, opens a certificate card in the
+      page's dialog, and turns a document page's download control into the
+      form that fills the contact line and prints, which it does only where
+      the page's address carries the marker. The last four all work without
+      it: the menu opens and closes on its own, nothing is ever hidden for the
+      reveal to undo, a certificate card is the link to its PDF that it already
+      is, and the download control is the link to the published PDF that it
+      already is, which is what every unmarked click gets too.
     -->
     <script is:inline>
       (function () {
@@ -355,9 +357,43 @@ const nav = [
           });
         }
 
+        // Rises each section heading and grid card below the first screen
+        // into place once, the first time a tenth of it scrolls into view.
+        // The hidden state is the stylesheet's, and it applies only while the
+        // root carries `data-reveal`, which is set here, last, after every
+        // marked element already on screen has been marked revealed and every
+        // other one handed to the observer that ends it. So a visitor who
+        // asked for reduced motion, a browser with no observer, and a page
+        // with no script at all never have anything hidden, and what is on
+        // screen at load is never hidden either: that belongs to the page's
+        // entrance.
+        function reveal() {
+          if (typeof IntersectionObserver !== 'function') return;
+          if (!matchMedia('(prefers-reduced-motion: no-preference)').matches) return;
+          var marked = document.querySelectorAll('[data-reveal]');
+          if (!marked.length) return;
+          var observer = new IntersectionObserver(
+            function (entries) {
+              entries.forEach(function (entry) {
+                if (!entry.isIntersecting) return;
+                entry.target.setAttribute('data-revealed', '');
+                observer.unobserve(entry.target);
+              });
+            },
+            { threshold: 0.1 },
+          );
+          var fold = window.innerHeight;
+          Array.prototype.forEach.call(marked, function (element) {
+            if (element.getBoundingClientRect().top < fold) element.setAttribute('data-revealed', '');
+            else observer.observe(element);
+          });
+          root.setAttribute('data-reveal', '');
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
           document.addEventListener('click', dismiss);
           document.addEventListener('keydown', dismiss);
+          reveal();
           certificates();
           documents();
 

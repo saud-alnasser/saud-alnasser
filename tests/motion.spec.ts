@@ -251,3 +251,79 @@ test.describe('with reduced motion', () => {
     expect(outside).toEqual([]);
   });
 });
+
+// The reveal on scroll: what it hides it always shows again, and where it
+// cannot run it hides nothing at all.
+const revealPages = pages.filter((path) => /\/(en|ar)\/(work\/|education\/)?$/.test(path));
+
+test.describe('the reveal on scroll', () => {
+  test.use({ reducedMotion: 'no-preference' });
+
+  for (const path of revealPages) {
+    test(`${path} shows every revealed element once scrolled to its foot`, async ({ page }) => {
+      await page.goto(path);
+      await settled(page);
+      expect(await page.evaluate(() => document.documentElement.hasAttribute('data-reveal')), 'the reveal is on').toBe(true);
+      // What is on screen at load is never hidden; it belongs to the entrance.
+      // The root carries the attribute too, as the switch, so the elements are
+      // looked for under the body.
+      const hiddenOnScreen = await page.evaluate(() =>
+        [...document.querySelectorAll('body [data-reveal]')]
+          .filter((node) => node.getBoundingClientRect().top < innerHeight && !node.hasAttribute('data-revealed'))
+          .map((node) => node.tagName.toLowerCase()),
+      );
+      expect(hiddenOnScreen, `elements on screen left hidden on ${path}`).toEqual([]);
+      // A step at a time, so the observer sees every element pass.
+      await page.evaluate(async () => {
+        for (let y = 0; y <= document.documentElement.scrollHeight; y += innerHeight / 2) {
+          scrollTo(0, y);
+          await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        }
+        scrollTo(0, document.documentElement.scrollHeight);
+      });
+      await expect
+        .poll(() =>
+          page.evaluate(() =>
+            [...document.querySelectorAll('body [data-reveal]')].filter((node) => getComputedStyle(node).opacity !== '1').length,
+          ),
+        )
+        .toBe(0);
+    });
+
+    test(`${path} hides nothing without an IntersectionObserver`, async ({ page }) => {
+      await page.addInitScript(() => {
+        delete (window as { IntersectionObserver?: unknown }).IntersectionObserver;
+      });
+      await page.goto(path);
+      await settled(page);
+      expect(await page.evaluate(() => document.documentElement.hasAttribute('data-reveal')), 'the reveal is off').toBe(false);
+      const faded = await page.evaluate(() =>
+        [...document.querySelectorAll('body [data-reveal]')].filter((node) => getComputedStyle(node).opacity !== '1').length,
+      );
+      expect(faded, `elements below opacity 1 on ${path}`).toBe(0);
+    });
+  }
+
+  // Beside it, a check that the observer has something to do: on the work
+  // page there are cards below the first screen, and they start hidden.
+  test('hides what is below the first screen until it scrolls in', async ({ page }) => {
+    await page.goto(at('/en/work/'));
+    const waiting = await page.evaluate(() => document.querySelectorAll('body [data-reveal]:not([data-revealed])').length);
+    expect(waiting).toBeGreaterThan(0);
+    const opacity = await page.locator('body [data-reveal]:not([data-revealed])').last().evaluate((node) => getComputedStyle(node).opacity);
+    expect(opacity).toBe('0');
+  });
+});
+
+test.describe('the reveal with JavaScript disabled', () => {
+  test.use({ javaScriptEnabled: false, reducedMotion: 'no-preference' });
+
+  for (const path of revealPages) {
+    test(`${path} shows every revealed element`, async ({ page }) => {
+      await page.goto(path);
+      const marked = page.locator('body [data-reveal]');
+      expect(await marked.count(), `marked elements on ${path}`).toBeGreaterThan(0);
+      for (const element of await marked.all()) await expect(element).toHaveCSS('opacity', '1');
+    });
+  }
+});

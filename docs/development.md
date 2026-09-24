@@ -37,7 +37,11 @@ pnpm scan:history # the identifier scan over the whole git history
 pnpm certificates:previews # renders the preview image beside every PDF under src/content/certificates/files/ and src/content/education/files/
 ```
 
-Node 22.12 or later (CI uses 24) and pnpm 12. The site is static files only.
+Node 22.12 or later (CI uses 24) and pnpm 12. The site is static files only,
+and it loads nothing from another origin: `pnpm check:dist` fails a built page
+or stylesheet that asks anywhere but the site itself for a font, a stylesheet,
+a script, or an image, naming the file and the address. A link a visitor
+follows is not a request the page makes, and is not checked.
 
 ## Contact details, and the documents that carry them
 

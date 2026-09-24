@@ -25,7 +25,7 @@ const t = strings[locale];
     entries.map((entry) => {
       const text = localized(locale, 'skills', entry.id);
       return (
-        <li class="h-full">
+        <li data-reveal class="h-full">
           <Card as="article" data-skill-card class="h-full">
             <h3 class="font-semibold tracking-tight">{text('name', entry.data.name)}</h3>
             {entry.data.level && <p class="mt-1 text-sm text-muted-foreground">{text('level', entry.data.level)}</p>}

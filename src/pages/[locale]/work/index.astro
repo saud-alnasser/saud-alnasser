@@ -44,11 +44,11 @@ const experience = (await getCollection('experience')).sort((a, b) => byStartDes
     cards and the reading order is the order the collection was sorted into.
   */}
   <section aria-labelledby="experience" class="mt-12">
-    <h2 id="experience" class="text-xl font-semibold tracking-tight">{t.sections.experience}</h2>
+    <h2 id="experience" data-reveal class="text-xl font-semibold tracking-tight">{t.sections.experience}</h2>
     <ol data-grid="experience" class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
       {
         experience.map((entry) => (
-          <li>
+          <li data-reveal>
             <Experience locale={locale} entry={entry} />
           </li>
         ))
@@ -57,11 +57,11 @@ const experience = (await getCollection('experience')).sort((a, b) => byStartDes
   </section>
 
   <section aria-labelledby="projects" class="mt-16">
-    <h2 id="projects" class="text-xl font-semibold tracking-tight">{t.sections.projects}</h2>
+    <h2 id="projects" data-reveal class="text-xl font-semibold tracking-tight">{t.sections.projects}</h2>
     <ol data-grid="projects" class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
       {
         projects.map((entry) => (
-          <li>
+          <li data-reveal>
             <Project locale={locale} entry={entry} />
           </li>
         ))

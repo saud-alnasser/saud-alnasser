@@ -869,6 +869,56 @@ async function basePaths() {
   return [`base paths: ${count} root-relative paths in ${files.length} files, all under ${context.prefix}`];
 }
 
+// Nothing the site loads comes from another origin: no font, stylesheet,
+// script, image, or icon is fetched from anywhere but the site itself, so a
+// visit tells no third party it happened and the page cannot break because
+// someone else's server did. Read from every built page and stylesheet: a
+// `src` or `srcset` on any element, the `href` of a `<link>` or a `<script>`,
+// and a CSS `url()` or `@import`, including those inside a page's own
+// styles. A link a visitor follows, `<a href>`, is not a request the page
+// makes, so the profile and repository links in the content are left alone.
+// The site's own origin, from astro.config.mjs, counts as its own, which is
+// what the canonical and alternate links carry.
+async function oneOrigin() {
+  const name = 'one origin';
+  const own = new URL(site).origin;
+  const origin = (value) => {
+    const address = value.trim();
+    if (address === '' || address.startsWith('data:') || address.startsWith('#')) return own;
+    try {
+      return new URL(address, `${own}/`).origin;
+    } catch {
+      return own;
+    }
+  };
+  const files = (await walk(context.dist)).filter((file) => ['.html', '.css'].includes(path.extname(file)));
+  let count = 0;
+  for (const file of files) {
+    const text = await readFile(path.join(context.dist, file), 'utf8');
+    const found = [
+      ...[...text.matchAll(/url\(\s*(["']?)(.*?)\1\s*\)/g)].map((match) => match[2]),
+      ...[...text.matchAll(/@import\s+(?:url\(\s*)?["']?([^"')\s;]+)/g)].map((match) => match[1]),
+    ];
+    if (file.endsWith('.html')) {
+      for (const [, tag, attributes] of text.matchAll(/<([a-z][\w:-]*)\b([^>]*)>/gi)) {
+        if (tag.toLowerCase() === 'a') continue;
+        const map = attributesOf(`<${tag}${attributes}>`, tag) ?? {};
+        if (map.src !== undefined) found.push(map.src);
+        if (map.srcset !== undefined) found.push(...map.srcset.split(',').map((candidate) => candidate.trim().split(/\s+/)[0]));
+        if (['link', 'script'].includes(tag.toLowerCase()) && map.href !== undefined) found.push(map.href);
+      }
+    }
+    for (const value of found) {
+      const from = origin(value);
+      if (from !== own) {
+        throw new CheckFailure(name, `dist/${file} loads ${value} from ${from}; everything a page loads is served by the site itself, from ${own}`);
+      }
+    }
+    count += found.length;
+  }
+  return [`one origin: ${count} addresses loaded by ${files.length} pages and stylesheets, all from ${own} or the page itself`];
+}
+
 // Every page a visitor lands on carries a title, a description, and the
 // Open Graph fields a social preview reads. Titles are unique across the
 // site, since two pages sharing one are one page to a search result.
@@ -1371,7 +1421,7 @@ async function readmeProfile() {
 // alone, and a topic or provider with no witness would otherwise surface
 // first as a reading-order failure over a PDF, named for the line rather
 // than the cause.
-const checks = [jsonResume, selfStudy, documentPdfs, qrCode, resumePages, localeTwins, hrefs, basePaths, metadata, sitemap, robots, identifiers, noContactDetails, nationalityWhereItBelongs, languagesWhereTheyBelong, gaps, noOverclaim, documentHazards, readmeProfile];
+const checks = [jsonResume, selfStudy, documentPdfs, qrCode, resumePages, localeTwins, hrefs, basePaths, oneOrigin, metadata, sitemap, robots, identifiers, noContactDetails, nationalityWhereItBelongs, languagesWhereTheyBelong, gaps, noOverclaim, documentHazards, readmeProfile];
 
 for (const check of checks) {
   try {
