@@ -11,7 +11,8 @@ Everything the site publishes is under
 
 | Path | What |
 | --- | --- |
-| `/en/`, `/ar/` | the site, in each language |
+| `/en/`, `/ar/` | the site, in each language: one page holding about, experience, projects, education, and skills |
+| `/en/work/`, `/ar/work/`, `/en/education/`, `/ar/education/` | the addresses the work and education pages had, each a page with no script that refreshes to its section of the home page (`src/lib/forwards.ts`); not in the sitemap |
 | `/en/cv/`, `/ar/cv/` | the CV page, printable: everything the site shows |
 | `/cv.en.pdf`, `/cv.ar.pdf` | the CV as a PDF, rendered at build time |
 | `/en/resume/`, `/ar/resume/` | the resume page, printable: the short document an application takes |

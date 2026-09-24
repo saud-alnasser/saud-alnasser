@@ -67,7 +67,7 @@ other, so check which document you mean first.
 | Field | Type | Per language | Meaning |
 | --- | --- | --- | --- |
 | `name` | text | yes | the name as it should appear |
-| `label` | text | yes | one line saying what Saud does, such as "Software developer" |
+| `label` | text | yes | one line saying what Saud does, such as "Software engineer" |
 | `summary` | text | yes | two or three sentences introducing Saud, read by the top of the site, the CV, the README profile block, and both JSON Resume documents. The resume does not read it |
 | `resumeSummary` | text | yes | the same, for the short resume alone, which reads this in place of `summary`. Two or three sentences naming only what the resume itself prints. Its length is measured rather than assumed, because the resume has one page to fit: see the comment above the field |
 | `email` | email address | no | Saud's address. Held here and rendered nowhere; see below |
@@ -101,10 +101,10 @@ One file per project.
 | `technologies` | list of text | no | languages, frameworks, and tools used. Each shows on the site as a badge, with its logo where `src/lib/technologies.ts` maps the name exactly as written here, and as the name alone otherwise. A new name is a badge without a logo until it is mapped there, which is also where its licence is checked |
 | `links` | `repository`, `live` | no | optional. Either key may be absent; omit `links` entirely for a project with no public link |
 | `visibility` | one of `public`, `described`, `hidden` | no | `public` shows the entry with its links; `described` shows the name and summary without links, for private work; `hidden` keeps the file but shows nothing anywhere |
-| `status` | one of `completed`, `in-progress` | no | whether the work is finished. Only a `completed` project is shown: an `in-progress` one stays in the file and appears in no output, not on the work page, not in the home page's count, not in the CV, the resume, or the JSON Resume document. A project whose state is not known is `in-progress` until it is |
+| `status` | one of `completed`, `in-progress` | no | whether the work is finished. Only a `completed` project is shown: an `in-progress` one stays in the file and appears in no output, not in the home page's projects, not in its count, not in the CV, the resume, or the JSON Resume document. A project whose state is not known is `in-progress` until it is |
 | `resume` | `true` | no | optional. Marks the project for the short resume; absent means it stays off. The CV shows every completed project whatever this says |
 | `order` | whole number | no | optional. Lower numbers sort first; entries without one sort by `period.start`, newest first |
-| `featured` | `true` or absent | no | the one project the work page and the home page put forward, as a wider card ahead of the others; it then leaves the grid below. Absent means no. The build refuses it on a project that is `hidden` or not `completed`, naming the file, and refuses two projects carrying it, naming both. It changes nothing on the CV, the resume, or `resume.json`, and it does not reorder anything: `order` still decides where a project sits everywhere else |
+| `featured` | `true` or absent | no | the one project the home page puts forward, as a wider card ahead of the others; it then leaves the grid below. Absent means no. The build refuses it on a project that is `hidden` or not `completed`, naming the file, and refuses two projects carrying it, naming both. It changes nothing on the CV, the resume, or `resume.json`, and it does not reorder anything: `order` still decides where a project sits everywhere else |
 
 Whether a project appears is decided in one place, `src/lib/shown.ts`: not
 `hidden`, and `completed`. Every output reads that function, so changing one
@@ -126,9 +126,9 @@ One file per job or placement.
 
 ## `education/`
 
-One file per institution attended. The education page is one timeline,
-newest first: the institutions by `period.start`, with one node for the
-online-courses phase placed just after the most recent institution, so
+One file per institution attended. The home page's education section is one
+timeline, newest first: the institutions by `period.start`, with one node for
+the online-courses phase placed just after the most recent institution, so
 university comes first, the online courses next, and high school last. That
 node stands for the courses, dated or not: it counts them, runs from the
 earliest dated one to the latest, and leads to the courses grid below the
@@ -167,8 +167,8 @@ changing this one field.
 
 Adding a recognised credential, a cloud or security certification for
 instance, is therefore one entry of kind `certification` with its redacted
-PDF and preview: the CV's Certifications section, the education page's
-section, and the home page's card all return with it and no other edit.
+PDF and preview: the CV's Certifications section and the home page's
+certifications, under Education, both return with it and no other edit.
 
 | Field | Type | Per language | Meaning |
 | --- | --- | --- | --- |
@@ -216,7 +216,7 @@ for the online-courses phase: "Self-study" with the years at the far edge,
 then the count of courses at the providers, then the topics. The count and
 the years are read from the course entries under `certificates/` at build
 time and are not authored here; a course added or removed moves them with no
-edit to this file. The education page's courses grid and the JSON Resume
+edit to this file. The home page's courses grid and the JSON Resume
 documents still carry every course. The resume prints no self-study entry.
 
 | Field | Type | Per language | Meaning |
