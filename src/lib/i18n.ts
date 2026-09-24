@@ -136,6 +136,8 @@ const en = {
     repository: 'Repository',
     live: 'Live site',
     technologies: 'Technologies',
+    // The label over the one project the work page puts forward.
+    featured: 'Featured',
   },
   experience: {
     training: 'Practical training',
@@ -323,6 +325,7 @@ const ar: Strings = {
     repository: 'المستودع',
     live: 'الموقع المنشور',
     technologies: 'التقنيات',
+    featured: 'مشروع مميز',
   },
   experience: {
     training: 'تدريب عملي',

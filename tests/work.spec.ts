@@ -28,6 +28,7 @@ interface Project {
   visibility: 'public' | 'described' | 'hidden';
   status: 'completed' | 'in-progress';
   technologies: string[];
+  featured?: boolean;
   links?: { repository?: string; live?: string };
 }
 
@@ -54,6 +55,11 @@ function collection<T>(name: string): T[] {
 // A hidden or unfinished project stays in the source and out of every output
 // (src/lib/shown.ts), so the page shows fewer cards than the directory holds.
 const projects = collection<Project>('projects').filter(isShown).sort(byOrderThenStartDescending);
+
+// The one project the content marks featured leads the projects as a wider
+// card and leaves the grid, so the grid holds the rest in the same order.
+const featured = projects.find((entry) => entry.featured === true);
+const gridProjects = projects.filter((entry) => entry !== featured);
 
 const experience = collection<Experience>('experience').sort(byStartDescending);
 
@@ -82,9 +88,9 @@ test.describe('the work page', () => {
 
     test(`${url} puts every entry inside a card`, async ({ page }) => {
       await page.goto(url);
-      await expect(page.locator('[data-grid="projects"] > li')).toHaveCount(projects.length);
+      await expect(page.locator('[data-grid="projects"] > li')).toHaveCount(gridProjects.length);
       await expect(page.locator('[data-grid="experience"] > li')).toHaveCount(experience.length);
-      await expect(page.locator('[data-entry="project"]')).toHaveCount(projects.length);
+      await expect(page.locator('[data-entry="project"]')).toHaveCount(gridProjects.length);
       await expect(page.locator('[data-entry="experience"]')).toHaveCount(experience.length);
 
       // A card is a bounded surface: its own colour, a border, and a radius.
@@ -99,7 +105,7 @@ test.describe('the work page', () => {
           };
         }),
       );
-      expect(surfaces.length).toBe(projects.length + experience.length);
+      expect(surfaces.length).toBe(gridProjects.length + experience.length);
       for (const [index, surface] of surfaces.entries()) {
         expect(surface.border, `border of card ${index} on ${url}`).toBeGreaterThan(0);
         expect(surface.radius, `radius of card ${index} on ${url}`).toBeGreaterThan(0);
@@ -153,7 +159,7 @@ test.describe('the work page', () => {
       await expect(card).toContainText(placement.location[locale]);
       await expect(card).toContainText(strings[locale].experience.training);
 
-      const entry = projects[0]!;
+      const entry = gridProjects[0]!;
       const project = page.locator('[data-entry="project"]').first();
       await expect(project.locator('h3')).toHaveText(entry.name);
       await expect(project).toContainText(formatPeriod(locale, entry.period));
@@ -176,7 +182,7 @@ test.describe('the work page', () => {
           summary: node.querySelector('details summary .fold-when-closed')?.textContent?.trim() ?? null,
         })),
       );
-      const expected = projects.map((entry) => ({
+      const expected = gridProjects.map((entry) => ({
         badges: entry.technologies.map((name) => ({ name, mark: technologyMark(name) ? 'true currentColor' : null })),
         inView: Math.min(entry.technologies.length, 5),
         summary:
@@ -204,7 +210,7 @@ test.describe('the work page', () => {
       // The cards in the order the collection was sorted into, each with the
       // destinations its entry allows: a described project is private work
       // and points at nothing.
-      const expected = projects.map((entry) => ({
+      const expected = gridProjects.map((entry) => ({
         name: entry.name,
         links:
           entry.visibility === 'public'
@@ -338,4 +344,52 @@ test('badge rows fill from the right in Arabic and the left in English', async (
   expect(arabic.right, 'the first Arabic badge at the right edge').toBeLessThanOrEqual(1);
   const english = await edges(at('/en/work/'));
   expect(english.left, 'the first English badge at the left edge').toBeLessThanOrEqual(1);
+});
+
+// The featured project: one raised card across the column, ahead of the
+// grid, under a "Featured" label with a star, carrying everything a grid card
+// does with every badge in view; and its project nowhere in the grid.
+test.describe('the featured project', () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  for (const locale of locales) {
+    const url = at(`/${locale}/work/`);
+
+    test(`${url} leads the projects with the featured one, once`, async ({ page }) => {
+      expect(featured, 'a project is marked featured in the content').toBeDefined();
+      await page.goto(url);
+      const card = page.locator('[data-featured-project]');
+      await expect(card).toHaveCount(1);
+      await expect(card.locator('h3')).toHaveText(featured!.name);
+      await expect(card).toContainText(strings[locale].project.featured);
+      await expect(card.locator('svg[data-icon="star"]')).toHaveAttribute('aria-hidden', 'true');
+      await expect(card).toContainText(formatPeriod(locale, featured!.period));
+      await expect(card.locator('[data-badge]')).toHaveText(featured!.technologies);
+      await expect(card.locator('details')).toHaveCount(0);
+      const links = await card.locator('a[href]').evaluateAll((nodes) => nodes.map((node) => node.getAttribute('href')));
+      expect(links).toEqual(
+        featured!.visibility === 'public' ? [featured!.links?.repository, featured!.links?.live].filter(Boolean) : [],
+      );
+
+      // Out of the grid, and ahead of it.
+      const names = await page.locator('[data-grid="projects"] h3').allTextContents();
+      expect(names).not.toContain(featured!.name);
+      const order = await page.evaluate(() => {
+        const cardNode = document.querySelector('[data-featured-project]')!;
+        const grid = document.querySelector('[data-grid="projects"]')!;
+        return Boolean(cardNode.compareDocumentPosition(grid) & Node.DOCUMENT_POSITION_FOLLOWING);
+      });
+      expect(order, 'the featured card comes before the grid').toBe(true);
+
+      // Wider than any card in the grid, and raised above them at rest.
+      const width = (await card.boundingBox())!.width;
+      const gridCard = (await page.locator('[data-entry="project"]').first().boundingBox())!.width;
+      expect(width, 'the featured card is wider than a grid card').toBeGreaterThan(gridCard);
+      const shadows = await page.evaluate(() => ({
+        featured: getComputedStyle(document.querySelector('[data-featured-project]')!).boxShadow,
+        grid: getComputedStyle(document.querySelector('[data-entry="project"]')!).boxShadow,
+      }));
+      expect(shadows.featured, 'the featured card rests raised').not.toBe(shadows.grid);
+    });
+  }
 });

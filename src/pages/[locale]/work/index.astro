@@ -1,12 +1,13 @@
 ---
 import { getCollection, getEntry } from 'astro:content';
 import Base from '../../../layouts/Base.astro';
+import FeaturedProject from '../../../components/FeaturedProject.astro';
 import Project from '../../../components/Project.astro';
 import Experience from '../../../components/Experience.astro';
 import { fill, locales, strings, type Locale } from '../../../lib/i18n';
 import { localized } from '../../../lib/localized';
 import { byOrderThenStartDescending, byStartDescending } from '../../../lib/order';
-import { isShown } from '../../../lib/shown';
+import { featuredProject, isShown } from '../../../lib/shown';
 
 export function getStaticPaths() {
   return locales.map((l) => ({ params: { locale: l.code } }));
@@ -23,6 +24,12 @@ const name = localized(locale, 'profile', profile.id)('name', profile.data.name)
 const projects = (await getCollection('projects', ({ data }) => isShown(data))).sort((a, b) =>
   byOrderThenStartDescending(a.data, b.data),
 );
+// The one project the content marks featured leads the projects as a wider
+// card, and leaves the grid, so it appears once. With none marked there is
+// no featured card and the grid holds every project.
+const featured = featuredProject(projects);
+const grid = featured ? projects.filter((project) => project.id !== featured.id) : projects;
+
 const experience = (await getCollection('experience')).sort((a, b) => byStartDescending(a.data, b.data));
 ---
 
@@ -58,9 +65,10 @@ const experience = (await getCollection('experience')).sort((a, b) => byStartDes
 
   <section aria-labelledby="projects" class="mt-16">
     <h2 id="projects" data-reveal class="text-xl font-semibold tracking-tight">{t.sections.projects}</h2>
+    {featured && <FeaturedProject locale={locale} entry={featured} class="mt-6" />}
     <ol data-grid="projects" class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
       {
-        projects.map((entry) => (
+        grid.map((entry) => (
           <li data-reveal>
             <Project locale={locale} entry={entry} />
           </li>

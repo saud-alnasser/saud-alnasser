@@ -33,6 +33,13 @@
 // fixture certification carries none and reaches the CV and stops there. Each
 // takes the path a real entry takes through src/lib/shown.ts.
 //
+// The featured mark is tried three ways after that, each on its own build. A
+// hidden project marked featured must fail the build naming its file; a second
+// project marked beside the real one must fail it naming both files; and the
+// real one's mark taken away must build with no featured card on the work
+// page or the home page. The real project's file is written back exactly as
+// it was, whatever happens, and the site is built once more from it.
+//
 // The fixture language carries no test, so what it proves is the mechanism
 // and not a score's format; the score's line is asserted by the browser tests
 // and the dist check over the real entries.
@@ -148,6 +155,38 @@ order: 99
 
 const fixtures = [project, course, certification, language];
 
+// The featured fixtures, which each build alone rather than with the four
+// above: a project marked featured while hidden, and a second shown project
+// marked featured beside the real one.
+const featuredText = (name, visibility) => `# Written by scripts/test-content-mechanism.mjs and removed by it. If this
+# file is in the tree, that script was interrupted; delete it.
+name: "${name}"
+period:
+  start: "2026-01"
+  end: "2026-02"
+role:
+  en: "Fixture role"
+  ar: "دور تجريبي"
+summary:
+  en: "A fixture project marked featured."
+  ar: "مشروع تجريبي معلّم بأنه مميز."
+technologies:
+  - "Fixture"
+visibility: ${visibility}
+status: completed
+featured: true
+`;
+const hiddenFeatured = {
+  name: 'fixture-featured-hidden-5a2d8b',
+  file: path.join(root, contentDir, 'projects', 'fixture-featured-hidden-5a2d8b.yaml'),
+  visibility: 'hidden',
+};
+const secondFeatured = {
+  name: 'fixture-featured-second-8e6c1f',
+  file: path.join(root, contentDir, 'projects', 'fixture-featured-second-8e6c1f.yaml'),
+  visibility: 'described',
+};
+
 class Failure extends Error {
   constructor(reason, message) {
     super(message);
@@ -197,6 +236,73 @@ async function build(step) {
     console.log(`${step}: built${gaps ? `, ${gaps.trim()}` : ''}`);
   } catch (error) {
     throw new Failure('build-failed', `${step}: astro build exited ${error.code ?? 'non-zero'}\n${error.stderr ?? ''}`);
+  }
+}
+
+// `astro build` where it must fail: it exits non-zero, and its output names
+// every file in `expected`, colour codes aside.
+async function buildFails(step, expected) {
+  const astro = path.join(root, 'node_modules', 'astro', 'bin', 'astro.mjs');
+  try {
+    await run(process.execPath, [astro, 'build'], { cwd: root, maxBuffer: 64 * 1024 * 1024 });
+  } catch (error) {
+    const output = `${error.stdout ?? ''}${error.stderr ?? ''}`.replace(/\x1b\[[0-9;]*m/g, '');
+    for (const text of expected) {
+      if (!output.includes(text)) throw new Failure('refusal-unnamed', `${step}: the build failed without naming ${text}`);
+    }
+    console.log(`${step}: the build refused, naming ${expected.join(' and ')}`);
+    return;
+  }
+  throw new Failure('refusal-missing', `${step}: the build passed`);
+}
+
+// The real project the content marks featured: its file and its text as
+// written, so it can be put back exactly.
+async function featuredEntry() {
+  const directory = path.join(root, contentDir, 'projects');
+  for (const name of (await readdir(directory)).filter((file) => file.endsWith('.yaml')).sort()) {
+    const file = path.join(directory, name);
+    const text = await readFile(file, 'utf8');
+    if (parseYaml(text)?.featured === true) return { file, text };
+  }
+  return null;
+}
+
+// The featured mark tried three ways: refused on a hidden project, refused on
+// a second project, and absent when no project carries it.
+async function assertFeatured(baseline) {
+  const real = await featuredEntry();
+  if (!real) throw new Failure('featured-missing', 'no project under src/content/projects/ is marked featured, and the fixtures test against one');
+  const relative = (file) => path.relative(root, file).split(path.sep).join('/');
+
+  try {
+    await writeFile(hiddenFeatured.file, featuredText(hiddenFeatured.name, hiddenFeatured.visibility), 'utf8');
+    await buildFails('a hidden project marked featured', [path.basename(hiddenFeatured.file)]);
+  } finally {
+    await rm(hiddenFeatured.file, { force: true });
+  }
+
+  try {
+    await writeFile(secondFeatured.file, featuredText(secondFeatured.name, secondFeatured.visibility), 'utf8');
+    await buildFails('two projects marked featured', [relative(real.file), relative(secondFeatured.file)]);
+  } finally {
+    await rm(secondFeatured.file, { force: true });
+  }
+
+  try {
+    const unmarked = real.text.replace(/^featured: true\r?\n/m, '');
+    if (unmarked === real.text) throw new Failure('featured-unwritable', `${relative(real.file)} carries its mark in a form this script cannot take away`);
+    await writeFile(real.file, unmarked, 'utf8');
+    await assertTreeUntouched('with no project marked featured', baseline, { allowContent: true });
+    await build('with no project marked featured');
+    for (const page of ['en/work/index.html', 'ar/work/index.html', 'en/index.html', 'ar/index.html']) {
+      if ((await readFile(path.join(dist, page), 'utf8')).includes('data-featured-project')) {
+        throw new Failure('featured-shown', `dist/${page} shows a featured card with no project marked featured`);
+      }
+    }
+    console.log('no project marked featured: built, with no featured card on either work page or home page');
+  } finally {
+    await writeFile(real.file, real.text, 'utf8');
   }
 }
 
@@ -306,7 +412,7 @@ async function assertAbsent(fixture) {
 }
 
 try {
-  for (const fixture of fixtures) {
+  for (const fixture of [...fixtures, hiddenFeatured, secondFeatured]) {
     try {
       await stat(fixture.file);
       throw new Failure('fixture-exists', `${path.relative(root, fixture.file)} already exists; a previous run was interrupted, delete it`);
@@ -337,6 +443,10 @@ try {
   await assertTreeUntouched('after the build without the fixtures', baseline, { allowContent: false });
   for (const fixture of fixtures) await assertAbsent(fixture);
   await assertCertificationsShown(false);
+
+  await assertFeatured(baseline);
+  await assertTreeUntouched('after the featured fixtures', baseline, { allowContent: false });
+  await build('from the content as it is');
   console.log('test-content-mechanism: passed');
 } catch (error) {
   if (error instanceof Failure) {

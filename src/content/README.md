@@ -104,6 +104,7 @@ One file per project.
 | `status` | one of `completed`, `in-progress` | no | whether the work is finished. Only a `completed` project is shown: an `in-progress` one stays in the file and appears in no output, not on the work page, not in the home page's count, not in the CV, the resume, or the JSON Resume document. A project whose state is not known is `in-progress` until it is |
 | `resume` | `true` | no | optional. Marks the project for the short resume; absent means it stays off. The CV shows every completed project whatever this says |
 | `order` | whole number | no | optional. Lower numbers sort first; entries without one sort by `period.start`, newest first |
+| `featured` | `true` or absent | no | the one project the work page and the home page put forward, as a wider card ahead of the others; it then leaves the grid below. Absent means no. The build refuses it on a project that is `hidden` or not `completed`, naming the file, and refuses two projects carrying it, naming both. It changes nothing on the CV, the resume, or `resume.json`, and it does not reorder anything: `order` still decides where a project sits everywhere else |
 
 Whether a project appears is decided in one place, `src/lib/shown.ts`: not
 `hidden`, and `completed`. Every output reads that function, so changing one

@@ -16,6 +16,22 @@ export function isShown(project: { visibility: Visibility; status: ProjectStatus
   return project.visibility !== 'hidden' && project.status === 'completed';
 }
 
+// The one project marked `featured` among those shown, or undefined when none
+// is. Two marked is a mistake the build stops on, naming both files, since
+// the page has room to put only one forward. The schema already refuses the
+// mark on a project that is not shown; checking it again here keeps the
+// answer right for a caller handed the whole collection.
+export function featuredProject<
+  E extends { id: string; filePath?: string; data: { featured?: boolean; visibility: Visibility; status: ProjectStatus } },
+>(projects: E[]): E | undefined {
+  const marked = projects.filter((project) => project.data.featured === true && isShown(project.data));
+  if (marked.length > 1) {
+    const files = marked.map((project) => project.filePath ?? `src/content/projects/${project.id}.yaml`);
+    throw new Error(`only one project can be featured, and ${files.length} are: ${files.join(' and ')}`);
+  }
+  return marked[0];
+}
+
 // An entry marked for the short resume. Absent means no.
 export function onResume(entry: { resume?: boolean }): boolean {
   return entry.resume === true;

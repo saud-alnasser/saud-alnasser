@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineCollection, z } from 'astro:content';
 import { file, glob } from 'astro/loaders';
+import { isShown } from './lib/shown';
 
 // The content contract. Every page and every CV output reads the collections
 // declared here, and the build refuses an entry that does not fit. src/content/README.md
@@ -114,8 +115,16 @@ const projects = defineCollection({
       status: z.enum(projectStatuses),
       resume,
       order: z.number().int().optional(),
+      // The one project the work page and the home page put forward, as a
+      // wider card ahead of the others. Absent means no. Only a project that
+      // is shown may carry it, and src/lib/shown.ts refuses two.
+      featured: z.boolean().optional(),
     })
-    .strict(),
+    .strict()
+    .refine((project) => !project.featured || isShown(project), {
+      message: 'only a shown project can be featured: one marked featured must be completed and not hidden',
+      path: ['featured'],
+    }),
 });
 
 const experience = defineCollection({

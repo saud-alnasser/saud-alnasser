@@ -13,7 +13,7 @@ import type { CollectionEntry } from 'astro:content';
 import Badge from './Badge.astro';
 import Card from './Card.astro';
 import Fold from './Fold.astro';
-import Icon from './Icon.astro';
+import ProjectLinks from './ProjectLinks.astro';
 import { formatPeriod, strings, type Locale } from '../lib/i18n';
 import { localized } from '../lib/localized';
 
@@ -26,10 +26,6 @@ const { locale, entry } = Astro.props;
 const { data } = entry;
 const t = strings[locale];
 const text = localized(locale, 'projects', entry.id);
-
-// Only a public project shows its links. A described one is private work,
-// shown by name and summary so nothing points at it.
-const links = data.visibility === 'public' ? (data.links ?? {}) : {};
 
 const inView = data.technologies.slice(0, 5);
 const folded = data.technologies.slice(5);
@@ -67,24 +63,7 @@ const folded = data.technologies.slice(5);
           </Fold>
         )
       }
-      {
-        (links.repository || links.live) && (
-          <p class="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm">
-            {links.repository && (
-              <a href={links.repository} class="group inline-flex items-center gap-1.5 text-primary">
-                <Icon name="github" class="size-4" />
-                <span class="underline underline-offset-4 group-hover:decoration-2">{t.project.repository}</span>
-              </a>
-            )}
-            {links.live && (
-              <a href={links.live} class="group inline-flex items-center gap-1.5 text-primary">
-                <Icon name="external-link" class="size-4" />
-                <span class="underline underline-offset-4 group-hover:decoration-2">{t.project.live}</span>
-              </a>
-            )}
-          </p>
-        )
-      }
+      <ProjectLinks locale={locale} entry={entry} />
     </div>
   </div>
 </Card>
