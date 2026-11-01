@@ -44,6 +44,11 @@ profile:
   # summary. So does cachescribe: no version on npm ships its built code, so
   # installing it has never given a working import.
   #
+  # On 2026-11-01, at Saud's request, `summary` gained a sentence naming AEP,
+  # which the CV and the home page now print as a project, so the README's
+  # profile block names it too. `resumeSummary` did not: the resume prints the
+  # entry, and the summary's length is the resume's to spend.
+  #
   # Length on the resume is measured, never assumed. Lengthening
   # `resumeSummary` means running `pnpm render:pdf` and reading the free
   # height at Letter against the floor in scripts/render-pdf.mjs; `summary`
@@ -52,13 +57,17 @@ profile:
     en: >-
       Software engineer and computer science graduate in Riyadh, working
       mainly in TypeScript and Rust. Sole developer of rentable, a desktop app
-      for tracking rent payments that works offline. Looking for a junior
-      software engineering role building products people rely on, alongside
-      an experienced team.
+      for tracking rent payments that works offline, and of AEP, an
+      agent-agnostic engineering protocol for building software with AI
+      coding agents. Looking for a junior software
+      engineering role building products people rely on, alongside an
+      experienced team.
     ar: >-
       مهندس برمجيات وخريج علوم حاسب في الرياض، يعمل في الغالب بلغتي
       TypeScript وRust. المطور الوحيد لـ rentable، تطبيق لسطح المكتب لتتبع
-      مدفوعات الإيجار يعمل دون اتصال. يتطلع إلى وظيفة مهندس برمجيات مبتدئ
+      مدفوعات الإيجار يعمل دون اتصال، ولـ AEP، بروتوكول هندسي مستقل عن الوكيل
+      لبناء البرمجيات مع وكلاء البرمجة بالذكاء الاصطناعي.
+      يتطلع إلى وظيفة مهندس برمجيات مبتدئ
       يبني فيها منتجات يعتمد عليها الناس، ضمن فريق ذي خبرة.
   resumeSummary:
     en: >-
