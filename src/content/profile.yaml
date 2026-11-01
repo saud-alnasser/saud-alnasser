@@ -49,6 +49,11 @@ profile:
   # profile block names it too. `resumeSummary` did not: the resume prints the
   # entry, and the summary's length is the resume's to spend.
   #
+  # Also on 2026-11-01, at Saud's request, the role `summary` closes on lost
+  # "junior" in English and "مبتدئ" in Arabic. The README is generated from
+  # this field, so the wording changes here and `pnpm readme` carries it
+  # across; an edit made to README.md alone fails `pnpm check:dist`.
+  #
   # Length on the resume is measured, never assumed. Lengthening
   # `resumeSummary` means running `pnpm render:pdf` and reading the free
   # height at Letter against the floor in scripts/render-pdf.mjs; `summary`
@@ -59,7 +64,7 @@ profile:
       mainly in TypeScript and Rust. Sole developer of rentable, a desktop app
       for tracking rent payments that works offline, and of AEP, an
       agent-agnostic engineering protocol for building software with AI
-      coding agents. Looking for a junior software
+      coding agents. Looking for a software
       engineering role building products people rely on, alongside an
       experienced team.
     ar: >-
@@ -67,7 +72,7 @@ profile:
       TypeScript وRust. المطور الوحيد لـ rentable، تطبيق لسطح المكتب لتتبع
       مدفوعات الإيجار يعمل دون اتصال، ولـ AEP، بروتوكول هندسي مستقل عن الوكيل
       لبناء البرمجيات مع وكلاء البرمجة بالذكاء الاصطناعي.
-      يتطلع إلى وظيفة مهندس برمجيات مبتدئ
+      يتطلع إلى وظيفة مهندس برمجيات
       يبني فيها منتجات يعتمد عليها الناس، ضمن فريق ذي خبرة.
   resumeSummary:
     en: >-
