@@ -1,8 +1,9 @@
 name: "Agentic Engineering Protocol (AEP)"
 # Shown from 2026-11-01, by Saud's request, on the home page, the CV, and the
 # resume. It is released (4.1.0 is the latest entry in its changelog) and
-# installable, which is what `completed` claims here, and it is still worked
-# on, which is why the period has no end. The repository was renamed from
+# installable, which is what `completed` claims here. It is still worked on,
+# but the period ends in 2026 by Saud's request, so every page and document
+# prints the year alone rather than "2026-Present". The repository was renamed from
 # `skills` to `aep`, and this file with it.
 #
 # The name is the one on Saud's LinkedIn profile, and the summary is that
@@ -14,6 +15,7 @@ name: "Agentic Engineering Protocol (AEP)"
 # means measuring again with `pnpm render:pdf`.
 period:
   start: "2026-07"
+  end: "2026"
 role:
   en: "Sole developer"
   ar: "المطور الوحيد"
