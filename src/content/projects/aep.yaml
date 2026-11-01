@@ -1,0 +1,32 @@
+name: "Agentic Engineering Protocol (AEP)"
+# Shown from 2026-11-01, by Saud's request, on the home page, the CV, and the
+# resume. It is released (4.1.0 is the latest entry in its changelog) and
+# installable, which is what `completed` claims here, and it is still worked
+# on, which is why the period has no end. The repository was renamed from
+# `skills` to `aep`, and this file with it.
+#
+# The name is the one on Saud's LinkedIn profile, and the summary is that
+# profile's description, shortened: "implementation plans" became "plans",
+# "project policies" became "policies", and the clause "providing a
+# structured and repeatable workflow" went. In full it ran to three lines on
+# the resume and left 6.9mm free at Letter, under the 10mm floor in
+# scripts/render-pdf.mjs; shortened it is two lines and 12.2mm. Lengthening it
+# means measuring again with `pnpm render:pdf`.
+period:
+  start: "2026-07"
+role:
+  en: "Sole developer"
+  ar: "المطور الوحيد"
+summary:
+  en: "An agent-agnostic engineering protocol for building software with AI coding agents. It keeps specifications, plans, task boundaries, policies, and verification evidence in the repository, without locking projects to a single AI tool."
+  ar: "بروتوكول هندسي مستقل عن الوكيل لبناء البرمجيات مع وكلاء البرمجة بالذكاء الاصطناعي. يحفظ المواصفات والخطط وحدود المهام والسياسات وأدلة التحقق في المستودع، دون أن يربط المشاريع بأداة ذكاء اصطناعي واحدة."
+technologies:
+  - "JavaScript"
+  - "Node.js"
+  - "Markdown"
+links:
+  repository: https://github.com/saud-alnasser/aep
+visibility: public
+status: completed
+resume: true
+order: 5
